@@ -1,6 +1,7 @@
 COMPOSE ?= podman compose -f docker-compose.yaml
+CADDYFILE ?= ../../src/auth-gateway/proxy/Caddyfile
 
-.PHONY: up down doctor rebuild verify
+.PHONY: up down rebuild doctor verify logs
 
 up:
 	$(COMPOSE) up -d
@@ -11,15 +12,20 @@ down:
 rebuild:
 	$(COMPOSE) up -d --build
 
+# Everything that must be true before `up` is worth running.
 doctor:
-	python3 -c 'from pathlib import Path; t=Path("docker-compose.yaml").read_text(); assert "services:" in t and "open_network" in t'
+	$(COMPOSE) config >/dev/null
+	test -f .env
 	test -f .env.example
-	test -f ../../.env.example
-	@if command -v podman >/dev/null 2>&1; then podman compose -f docker-compose.yaml config >/dev/null; \
-	elif command -v docker >/dev/null 2>&1; then docker compose -f docker-compose.yaml config >/dev/null; \
-	else echo "doctor: compose CLI is not installed; file shape checked"; fi
-	@echo "doctor: service code is not in the tree yet"
+	test -f $(CADDYFILE)
+	caddy validate --config $(CADDYFILE) --adapter caddyfile
+	cd ../../src/auth-gateway/gateway && go build ./...
+	@echo "doctor: ok"
 
+# The stand check: one request per SSO host through the proxy and directly to the
+# gateway, both probes, and the Caddyfile.
 verify:
-	@echo "verify: scripts/verify-edge.sh is not written yet" >&2
-	@exit 1
+	../../scripts/golden.sh
+
+logs:
+	$(COMPOSE) logs -f --tail=100

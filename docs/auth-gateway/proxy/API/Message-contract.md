@@ -12,7 +12,7 @@ Proxy does not set `Permissions-Policy`, `X-Frame-Options`, `X-Content-Type-Opti
 |---|---|---|
 | Public | `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `id.` | ACME HTTP-01. One A record per name. No wildcard. |
 | LAN / WireGuard | `meet.filenkov.store` | `tls internal`. Clients must install the local CA root. Say so wherever this host is documented. |
-| Outside SSO | `hermes.filenkov.store` → `127.0.0.1:9119`, `lite-llm.filenkov.store` → `127.0.0.1:4000` | Public ACME. Gateway does not authenticate them. |
+| Outside SSO | `hermes.filenkov.store` → `127.0.0.1:9119`, `lite-llm.filenkov.store` → `127.0.0.1:4000` | Public ACME. Gateway does not authenticate them. `hermes` also keeps a LAN / WireGuard `remote_ip` gate ([ADR-0005](../adrs/0005-port-from-auth-service.md)). |
 
 Protocols: `h1 h2`. No HTTP/3.
 
@@ -52,7 +52,11 @@ meet.filenkov.store {
 
 hermes.filenkov.store {
 	import secure
-	reverse_proxy 127.0.0.1:9119
+	@lan remote_ip 10.10.0.0/24 192.168.1.0/24 127.0.0.1
+	handle @lan {
+		reverse_proxy 127.0.0.1:9119
+	}
+	respond 403
 }
 
 lite-llm.filenkov.store {

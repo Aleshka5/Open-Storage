@@ -57,10 +57,6 @@ Gateway stores nothing. The session cookie holds the Keycloak refresh token. idp
 
 Who-may-edit-whom is enforced in gateway. Who-you-are stays in idp.
 
-## Open inconsistencies
+## Closed inconsistencies
 
-Fix these before code. They are conflicts in the previous spec, kept here so they are not smoothed over.
-
-1. Edge errors use a string body (`{"error":"unauthorized"}`). `/admin` uses an object (`{"error":{"code","message"}}`). One envelope is required.
-2. The audio catch-all route has no `policy`, while route validation requires `policy` on every route.
-3. One older plan listed resume on port 8080. The gateway upstream and the resume container use port 80. Port 80 is the contract.
+The previous spec carried three conflicts. They are closed, and the reasons are in [ADR-0005](adrs/0005-port-from-auth-service.md#status): one string error envelope for the edge and `/admin`; the audio catch-all is `policy: session`; resume is port 80.

@@ -13,6 +13,7 @@ What gateway requires, and the rules of talking to neighbors.
 | `SWITCH_TOKEN` | for `/api/services` | Injected as `X-Service-Token` |
 | `LLM_API_KEY` | for `/api/chat` | Injected upstream to LiteLLM |
 | `LOG_LEVEL` | no | Default `info` |
+| `METRICS_ADDR` | no | Default `:9000`. The metrics listener; the public port never serves `/metrics`. |
 
 A secret string in `config.yaml` fails startup. The file is in git.
 

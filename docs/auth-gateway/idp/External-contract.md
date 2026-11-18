@@ -30,7 +30,9 @@ KC_HTTP_ENABLED=true
 KC_PROXY_HEADERS=xforwarded
 ```
 
-Command: `start --optimized --import-realm`. Import is `ifResourceExists: SKIP` on an empty database. Realm file and theme are mounted read-only.
+Command: `start --import-realm`. Import is `ifResourceExists: SKIP` on an empty database. Realm file and theme are mounted read-only.
+
+`--optimized` is not used: Keycloak refuses it on a first-ever start, and the first start builds the server itself. That is why an empty database takes about 60 seconds.
 
 Import of a schema change: edit `realm.json`, recreate idp, confirm the issuer URL, sign in with Google, confirm `realm_access.roles`.
 

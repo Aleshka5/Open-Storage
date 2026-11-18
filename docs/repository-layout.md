@@ -38,6 +38,6 @@ Rules Group src
 
 Rules Group Shape
  - Namespaces in use: auth-gateway. Further namespaces get the same shape (for example common, web-storage).
- - Services inside auth-gateway: proxy, gateway, idp. The UI is documented under frontend and will be coded as src/auth-gateway/resume-page. Postgres is the idp database: src/auth-gateway/postgres.
- - Application code is not in the tree yet. The src/ and scripts/ entries are places, not implementations.
+ - Services inside auth-gateway: proxy (Caddyfile, run by the host), gateway (Go module), idp (realm.json and theme), idp_db (backup scripts in postgres/), resume-page (the SPA).
+ - A Go service is a module: src/<namespace>/<service>/go.mod, cmd/<service>/, internal/<package>/, Dockerfile.
  - Do not put a second copy of a contract at the old docs/services/ path.

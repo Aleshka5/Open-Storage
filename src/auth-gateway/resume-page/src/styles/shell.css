@@ -1,0 +1,204 @@
+.shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  /* The header is fixed, so the whole column clears it. */
+  padding-top: var(--header-h);
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--s4);
+  top: var(--s2);
+  z-index: 30;
+  transform: translateY(-200%);
+  background: var(--ink);
+  color: var(--paper);
+  padding: var(--s2) var(--s4);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+.header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 20;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  padding: 0 var(--s5);
+  transition:
+    transform var(--dur) var(--ease),
+    height var(--dur) var(--ease);
+}
+
+[data-header='hidden'] .header {
+  transform: translateY(-100%);
+}
+
+[data-header='condensed'] .header {
+  height: var(--header-h-c);
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+
+[data-header='condensed'] .brand-name,
+[data-header='condensed'] .service-nav {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  text-decoration: none;
+  color: var(--ink);
+  flex: none;
+}
+
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+
+.brand-name,
+.service-nav {
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.brand-name {
+  font-family: var(--serif);
+  font-size: var(--step-1);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.service-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.service-nav a {
+  text-decoration: none;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.service-nav a:hover {
+  color: var(--accent-text);
+}
+
+.service-lock {
+  font-size: 0.7em;
+  margin-left: 0.25em;
+}
+
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex: none;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: var(--step--1);
+}
+
+.main {
+  flex: 1;
+  padding: var(--s5) var(--s5) var(--s8);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  padding: var(--s5);
+  border-top: 1px solid var(--rule);
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+/* --- back to top --------------------------------------------------------- */
+
+/* A plain corner button, shown past 180px of scroll. It was the docked owl
+   before ADR-0006; the target and the label are all that is left. */
+.to-top {
+  position: fixed;
+  right: 24px;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 8px));
+  z-index: 15;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: var(--step-1);
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
+}
+
+.to-top:hover {
+  border-color: var(--accent-text);
+  color: var(--accent-text);
+}
+
+/* Keeps the hit area over 44px without inflating the 48px face. */
+.to-top::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
+@media (max-width: 760px) {
+  .main {
+    padding-left: var(--s4);
+    padding-right: var(--s4);
+  }
+
+  .header {
+    gap: var(--s4);
+    padding: 0 var(--s4);
+  }
+}
+
+/* Below this the brand wordmark, the service links and the sign-in control
+   cannot all fit. The wordmark goes first — the mark still says who this is. */
+@media (max-width: 620px) {
+  .brand-name {
+    display: none;
+  }
+
+  .service-nav {
+    gap: var(--s3);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .service-nav::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -1,0 +1,323 @@
+{
+  "realm": "filenkov",
+  "displayName": "filenkov",
+  "enabled": true,
+  "sslRequired": "external",
+  "duplicateEmailsAllowed": false,
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "verifyEmail": false,
+  "loginTheme": "filenkov",
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 300,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 2592000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Operator. /admin, hosts with policy admin, Keycloak console.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:storage:admin",
+        "description": "Full use of storage, may edit its roles.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:storage:family",
+        "description": "Ordinary use of storage.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:storage:blocked",
+        "description": "storage is closed for this account.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:image:admin",
+        "description": "Full use of image, may edit its roles.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:image:family",
+        "description": "Ordinary use of image.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:image:blocked",
+        "description": "image is closed for this account.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:rag:admin",
+        "description": "Full use of rag, may edit its roles.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:rag:family",
+        "description": "Ordinary use of rag.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:rag:blocked",
+        "description": "rag is closed for this account.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:audio:admin",
+        "description": "Full use of audio, may edit its roles.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:audio:family",
+        "description": "Ordinary use of audio.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "svc:audio:blocked",
+        "description": "audio is closed for this account.",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "account",
+      "name": "account",
+      "enabled": false,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "gateway",
+      "name": "gateway",
+      "description": "Edge gateway. Authorization code with PKCE S256.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "secret": "${IDP_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://filenkov.store/auth/callback"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "basic",
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "microprofile-jwt"
+      ],
+      "protocolMappers": [
+        {
+          "name": "audience account",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "account",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "gateway-admin",
+      "name": "gateway-admin",
+      "description": "Service account for the Keycloak Admin API.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "secret": "${IDP_ADMIN_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login filenkov",
+      "config": {
+        "clientId": "${GOOGLE_CLIENT_ID}",
+        "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+        "defaultScope": "openid profile email",
+        "syncMode": "IMPORT",
+        "useJwksUrl": "true",
+        "hostedDomain": "",
+        "disableUserInfo": ""
+      }
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "review profile config",
+      "config": {
+        "update.profile.on.first.login": "MISSING"
+      }
+    },
+    {
+      "alias": "create unique user config",
+      "config": {
+        "require.password.update.after.registration": "false"
+      }
+    }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "first broker login filenkov",
+      "description": "First broker login. Create the user if unique; no confirm-link step.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-review-profile",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "review profile config"
+        },
+        {
+          "flowAlias": "User creation or linking filenkov",
+          "authenticatorFlow": true,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "User creation or linking filenkov",
+      "description": "Creates the account, or links an existing one after email verification.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-create-user-if-unique",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "create unique user config"
+        },
+        {
+          "flowAlias": "Handle existing account filenkov",
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "Handle existing account filenkov",
+      "description": "Existing email. Confirm-link is off, so the mailbox is verified instead.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "flowAlias": "Verify existing account by Email filenkov",
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "Verify existing account by Email filenkov",
+      "description": "Sends a verification email to the existing account.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-email-verification",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-gateway-admin",
+      "enabled": true,
+      "serviceAccountClientId": "gateway-admin",
+      "clientRoles": {
+        "realm-management": [
+          "view-users",
+          "manage-users",
+          "query-users",
+          "view-realm"
+        ]
+      }
+    }
+  ]
+}

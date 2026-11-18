@@ -30,5 +30,5 @@ Rules Group While editing
 Rules Group Current map
  - Namespace auth-gateway is the identity and edge layer. Docs: docs/auth-gateway/. Deploy: deploy/auth-gateway/. Code will live in src/auth-gateway/.
  - auth-gateway is one block. It asks Google for login, asks Keycloak (inside the namespace) for identity, and calls product upstreams as resources: storage, image, rag, audio, llm, observer, meet, switch, litellm.
- - hermes and lite-llm are outside this SSO contract. The proxy forwards them to local ports.
- - Application code is not in the tree yet.
+ - hermes and lite-llm are outside this SSO contract. The proxy forwards them to local ports; hermes keeps a LAN and WireGuard gate.
+ - Application code lives in src/auth-gateway/: gateway (Go), idp (realm as code), proxy (Caddyfile), resume-page (SPA). Deploy is deploy/auth-gateway/.

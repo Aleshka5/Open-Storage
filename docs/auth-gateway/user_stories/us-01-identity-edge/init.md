@@ -6,7 +6,7 @@ As the operator of `filenkov.store`, I want one authentication and edge layer, s
 
 ## Status
 
-Not started. Application code is not in the tree.
+In progress. The gateway, the realm, the page, the proxy file and the scripts are in the tree; the stand, the consumers and the cutover are not.
 
 ## Scope
 
@@ -20,7 +20,7 @@ Namespace `auth-gateway`: proxy, gateway, idp, idp_db, resume-page. One release,
 - A role granted or removed in `/admin` takes effect within 5 minutes.
 - The last admin cannot be removed (`409`). A service admin cannot edit another service (`403`).
 - `go test ./...`, `npm test`, and `caddy validate` pass.
-- Gateway stays within 2000 lines of Go. No Redis, no catalog service, no `X-User-Id`.
+- Gateway stays within 4200 lines of Go ([ADR-0005](../../adrs/0007-gateway-line-budget.md)). No Redis, no catalog service, no `X-User-Id`.
 - The contracts in `docs/auth-gateway/` match the code.
 
 ## Out of scope

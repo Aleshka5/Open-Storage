@@ -6,7 +6,7 @@ One namespace is one block. A link is an action the block requests, or a resourc
 
 | Namespace | Block | Deploy | Code |
 |---|---|---|---|
-| auth-gateway | Identity and edge for `*.filenkov.store` | `deploy/auth-gateway/` | `src/auth-gateway/` (not written yet) |
+| auth-gateway | Identity and edge for `*.filenkov.store` | `deploy/auth-gateway/` | `src/auth-gateway/` |
 
 Detail inside the block: [auth-gateway/init.md](auth-gateway/init.md).
 
@@ -33,4 +33,4 @@ Product applications are outside this repository. The headers they receive are [
 
 SSO hosts, one upstream each, all into auth-gateway: `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `meet.`, `id.`.
 
-`meet.filenkov.store` is LAN and WireGuard only.
+`meet.filenkov.store` is LAN and WireGuard only. `hermes.filenkov.store` is outside SSO and LAN and WireGuard only.

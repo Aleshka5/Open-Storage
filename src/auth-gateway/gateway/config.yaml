@@ -1,0 +1,126 @@
+# Gateway configuration. Read once at start; a change is a restart (ADR-0004).
+# Shape and rules are owned by docs/auth-gateway/gateway/API/Message-contract.md.
+# Secrets are env:NAME only. A literal secret here fails startup.
+
+listen: ":8080"
+public_origin: "https://filenkov.store"
+
+idp:
+  issuer: "https://id.filenkov.store/realms/filenkov"
+  client_id: gateway
+  client_secret: "env:IDP_CLIENT_SECRET"
+  scopes: [openid, profile, email]
+  audience: account
+  authorized_party: gateway
+  jwks_ttl: 15m
+
+session:
+  cookie_domain: ".filenkov.store"
+  access_ttl: 5m
+  idle_ttl: 168h
+  key: "env:GATEWAY_SESSION_KEY"
+
+admin:
+  client_id: gateway-admin
+  client_secret: "env:IDP_ADMIN_SECRET"
+
+services: [storage, image, rag, audio]
+
+defaults:
+  timeouts: { connect: 5s, read_header: 15s, response_header: 60s, idle: 120s }
+  rate_limit: { requests: 600, per: 1m }
+
+upstreams:
+  resume: "resume:80"
+  idp: "idp:8080"
+  storage: "app:8000"
+  image: "qwen-image:8000"
+  llm: "qwen38:4001"
+  rag: "rag-edge:8080"
+  audio: "audio-api:8000"
+  audio_web: "frontend:80"
+  grafana: "grafana:3000"
+  jitsi: "jitsi-web:8000"
+  # The control plane runs on the host and needs nvidia-smi, so it is reached on
+  # the LAN address. host.docker.internal resolves to 169.254.1.2 under rootless
+  # podman 5.7 and that address does not answer from inside a container.
+  switch: "192.168.1.102:8095"
+  litellm: "litellm-proxy-server:4000"
+
+hosts:
+  - host: filenkov.store
+    upstream: resume
+    routes:
+      - { path: /auth/**, bff: true }
+      - { path: /admin/**, admin: true, policy: admin }
+      # The owl chat is out of scope for this release (ADR-0006). The route stays
+      # warm so the return is a page change, not a contract change.
+      - { path: /api/chat, methods: [POST], upstream: litellm, policy: public,
+          inject_headers: { X-Api-Key: "env:LLM_API_KEY" } }
+      - { path: /api/services, methods: [GET], upstream: switch, policy: session,
+          inject_headers: { X-Service-Token: "env:SWITCH_TOKEN" } }
+      - { path: /api/services/**, upstream: switch, policy: admin,
+          inject_headers: { X-Service-Token: "env:SWITCH_TOKEN" } }
+      - { path: /users/**, policy: deny }
+      - { path: /**, upstream: resume, policy: public }
+
+  - host: id.filenkov.store
+    upstream: idp
+    routes:
+      # The Keycloak console stays reachable for break-glass when gateway policy
+      # is wrong, as long as idp_db is alive.
+      - { path: /**, policy: public }
+
+  - host: storage.filenkov.store
+    upstream: storage
+    service: storage
+    timeouts: { response_header: 30m }
+    routes:
+      - { path: /health, policy: public }
+      - { path: /**, policy: "service(storage, family, admin)" }
+
+  - host: image.filenkov.store
+    upstream: image
+    service: image
+    timeouts: { response_header: 30m }
+    routes:
+      - { path: /healthz, policy: public }
+      - { path: /**, policy: "service(image, family, admin)" }
+
+  - host: rag.filenkov.store
+    upstream: rag
+    service: rag
+    timeouts: { response_header: 5m }
+    routes:
+      - { path: /health, policy: public }
+      - { path: /**, policy: "service(rag, family, admin)" }
+
+  - host: audio.filenkov.store
+    upstream: audio_web
+    service: audio
+    permissions_policy: "camera=(), microphone=(self), geolocation=()"
+    timeouts: { response_header: 30m }
+    routes:
+      - { path: /health, upstream: audio, policy: public }
+      - { path: /api/**, upstream: audio, policy: "service(audio, family, admin)" }
+      - { path: /**, policy: session }
+
+  - host: llm.filenkov.store
+    upstream: llm
+    timeouts: { response_header: 10m }
+    routes:
+      - { path: /**, policy: admin }
+
+  - host: observer.filenkov.store
+    upstream: grafana
+    timeouts: { response_header: 5m }
+    routes:
+      - { path: /api/health, policy: public }
+      - { path: /**, policy: session }
+
+  - host: meet.filenkov.store
+    upstream: jitsi
+    permissions_policy: "camera=(self), microphone=(self), display-capture=(self), geolocation=()"
+    timeouts: { response_header: 5m }
+    routes:
+      - { path: /**, policy: session }

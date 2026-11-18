@@ -37,6 +37,8 @@ First match wins. Specific routes go above general ones. Each host has exactly o
 
 `response_header` is time to the first response byte, not the life of the body. SSE and WebSocket length are not capped by it.
 
+`service:` on a host names the service that owns it. With it set, `svc:<service>:blocked` closes every non-public route on that host, including a `session` catch-all. Without it, `blocked` only denies `service(...)` routes.
+
 Fail start when:
 
 1. A host lacks exactly one `/**`, or `/**` is not last.
@@ -86,7 +88,7 @@ upstreams:
   audio_web: "frontend:80"
   grafana: "grafana:3000"
   jitsi: "jitsi-web:8000"
-  switch: "host.docker.internal:8095"
+  switch: "192.168.1.102:8095"
   litellm: "litellm-proxy-server:4000"
 hosts:
   - host: filenkov.store
@@ -131,7 +133,7 @@ hosts:
     routes:
       - { path: /health, upstream: audio, policy: public }
       - { path: /api/**, upstream: audio, policy: "service(audio, family, admin)" }
-      - { path: /** }                            # policy missing — see init.md
+      - { path: /**, policy: session }
   - host: llm.filenkov.store
     upstream: llm
     timeouts: { response_header: 10m }
@@ -227,20 +229,20 @@ Handled inside gateway on `filenkov.store`. Not proxied.
 
 `PUT /admin/users/{id}/admin` body: `{ "value": true }`. Caller must hold `admin`. Refusing to remove `admin` from the last admin returns `409`. A caller cannot remove `admin` from themselves when they are the last admin. `svc=admin` on the service-role path returns `400`.
 
-Admin error body, until the [envelope conflict](../../init.md) is closed:
+One envelope for the edge and for `/admin`: `{"error":"<snake_case>"}` ([ADR-0005](../../adrs/0005-port-from-auth-service.md)).
 
 ```json
-{ "error": { "code": "LAST_ADMIN", "message": "Cannot remove the last admin" } }
+{ "error": "last_admin" }
 ```
 
-| Code | HTTP |
-|---|---|
-| `UNAUTHORIZED` | 401 |
-| `FORBIDDEN` | 403 |
-| `NOT_FOUND` | 404 |
-| `VALIDATION` | 400 |
-| `LAST_ADMIN` | 409 |
-| `IDP_UNAVAILABLE` | 503 |
+| Value | HTTP | When |
+|---|---|---|
+| `unauthorized` | 401 | No session, or the session expired and could not be refreshed |
+| `forbidden` | 403 | Signed in, role does not allow |
+| `not_found` | 404 | Unknown user id |
+| `validation` | 400 | Bad body, or `svc=admin` on the service-role path |
+| `last_admin` | 409 | The change would leave no realm `admin` |
+| `idp_unavailable` | 503 | Keycloak Admin API did not answer |
 
 ## Probes
 
@@ -248,7 +250,7 @@ Admin error body, until the [envelope conflict](../../init.md) is closed:
 |---|---|
 | `GET /healthz` | Process up, config valid |
 | `GET /readyz` | idp discovery and JWKS loaded, else `503`. Does not check product upstreams. |
-| `GET /metrics` | Prometheus. Bound to `127.0.0.1` only. |
+| `GET /metrics` | Prometheus, on a second listener (`METRICS_ADDR`, default `:9000`) that is published to host loopback only. The public port answers `404`. |
 
 Metrics: `gateway_requests_total{host,route,policy,status}`, `gateway_request_duration_seconds{host,route}`, `gateway_token_refresh_total{result}`, `gateway_idp_request_total{op,status}`, `gateway_ws_active{host}`.
 

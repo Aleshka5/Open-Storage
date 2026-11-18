@@ -36,8 +36,10 @@ Otherwise verify the bearer JWT: RS256 against the realm JWKS, `iss` equals the 
 | 403 | `{"error":"blocked"}` | Account disabled in idp |
 | 404 | `{"error":"not_found"}` | No route, including `deny` |
 | 503 | `{"error":"auth_unavailable"}` | idp or JWKS unavailable |
+| 429 | `{"error":"rate_limited"}` | Above the per-IP budget of the host |
 | 502 | `{"error":"bad_gateway"}` | Upstream did not answer |
+| 504 | `{"error":"gateway_timeout"}` | Upstream sent no response header within the route timeout |
 
-`/admin` currently specifies a different error object. That conflict is open in [init.md](../init.md).
+`/admin` answers in the same envelope, with its own values ([gateway message contract](../gateway/API/Message-contract.md)).
 
 Names `X-User-Id` and `X-Storage-Role` are not accepted.
