@@ -1,0 +1,9 @@
+name: auth-gateway
+
+networks:
+  open_network:
+    name: open_network
+
+# Services are added with their code: proxy, gateway, idp, idp_db, resume.
+# Contracts: docs/auth-gateway/init.md
+services: {}
