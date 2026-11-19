@@ -46,6 +46,7 @@ fi
 
 HOSTS=(
     filenkov.store
+    mvp.filenkov.store
     storage.filenkov.store
     image.filenkov.store
     rag.filenkov.store
@@ -67,6 +68,7 @@ HOSTS=(
 #   a signed-in non-admin 403 — all three are contract answers.
 declare -A EXPECT_ANON=(
     [filenkov.store]="200"   # public, resume page
+    [mvp.filenkov.store]="200" # public, resume page (MVP stand)
     [storage.filenkov.store]="302"
     [image.filenkov.store]="302"
     [rag.filenkov.store]="302"
@@ -74,7 +76,7 @@ declare -A EXPECT_ANON=(
     [llm.filenkov.store]="302 401 403"
     [observer.filenkov.store]="302"
     [meet.filenkov.store]="302"
-    [id.filenkov.store]="200" # public: break-glass console
+    [id.filenkov.store]="302 200" # public: Keycloak's welcome page redirects
 )
 
 # A signed-in account with no realm roles. storage, image, rag and llm need a
@@ -82,6 +84,7 @@ declare -A EXPECT_ANON=(
 # `session` (200).
 declare -A EXPECT_SIGNED_IN=(
     [filenkov.store]="200"
+    [mvp.filenkov.store]="200"
     [storage.filenkov.store]="403"
     [image.filenkov.store]="403"
     [rag.filenkov.store]="403"
@@ -89,12 +92,13 @@ declare -A EXPECT_SIGNED_IN=(
     [llm.filenkov.store]="403"
     [observer.filenkov.store]="200"
     [meet.filenkov.store]="200"
-    [id.filenkov.store]="200"
+    [id.filenkov.store]="302 200"
 )
 
 # The `admin` realm role opens every host.
 declare -A EXPECT_ADMIN=(
     [filenkov.store]="200"
+    [mvp.filenkov.store]="200"
     [storage.filenkov.store]="200"
     [image.filenkov.store]="200"
     [rag.filenkov.store]="200"
@@ -102,7 +106,7 @@ declare -A EXPECT_ADMIN=(
     [llm.filenkov.store]="200"
     [observer.filenkov.store]="200"
     [meet.filenkov.store]="200"
-    [id.filenkov.store]="200"
+    [id.filenkov.store]="302 200"
 )
 
 # --- checks ----------------------------------------------------------------
@@ -192,6 +196,21 @@ cookie_conf() { # name cookie-value -> writes a 0600 curl config, prints path
     printf '%s' "$path"
 }
 
+# Hosts to leave out of this run. A stand that does not own a name (the MVP stand
+# renames the apex, meet. is served by Jitsi's own Caddy block) says so here
+# rather than carrying an expectation it cannot meet.
+if [ -n "${SKIP_HOSTS:-}" ]; then
+    filtered=()
+    for host in "${HOSTS[@]}"; do
+        drop=0
+        for skipped in $SKIP_HOSTS; do
+            [ "$skipped" = "$host" ] && drop=1
+        done
+        [ "$drop" = "0" ] && filtered+=("$host")
+    done
+    HOSTS=("${filtered[@]}")
+fi
+
 # Every host needs an expectation before anything is requested.
 for host in "${HOSTS[@]}"; do
     if [ -z "${EXPECT_ANON[$host]+set}" ]; then
@@ -259,8 +278,11 @@ fi
 # edge, so it is a failure, not a warning.
 
 CONFIG_YAML=${GATEWAY_CONFIG:-$repo_root/src/auth-gateway/gateway/config.yaml}
+# A stand that renames the apex (mvp.filenkov.store) serves a different host set
+# by design, so it runs with DRIFT_CHECK=0 and says so in the Makefile target.
+DRIFT_CHECK=${DRIFT_CHECK:-1}
 
-if [ -f "$CONFIG_YAML" ]; then
+if [ "$DRIFT_CHECK" = "1" ] && [ -f "$CONFIG_YAML" ]; then
     mapfile -t config_hosts < <(
         awk '
             /^hosts:[[:space:]]*$/ { in_hosts = 1; next }

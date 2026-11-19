@@ -68,10 +68,29 @@ func (i *Identity) ServiceLevel(service string) string {
 	if i == nil {
 		return ""
 	}
-	for _, r := range i.Roles {
-		parts := strings.Split(r, ":")
-		if len(parts) == 3 && parts[0] == "svc" && parts[1] == service {
-			return parts[2]
+	return ServiceLevelFromRoles(i.Roles, service)
+}
+
+// LevelPrecedence is how two `svc:<service>:*` roles on one account resolve,
+// most restrictive first. `blocked` wins over everything: a closed account stays
+// closed even if another mapping still grants it. Both the edge and `/admin`
+// read this order, so the table and the decision can never disagree.
+var LevelPrecedence = []string{"blocked", "admin", "family"}
+
+// ServiceLevelFromRoles answers the same question for a bare role list, which is
+// what the Keycloak Admin API hands back for /admin.
+func ServiceLevelFromRoles(roles []string, service string) string {
+	prefix := "svc:" + service + ":"
+	held := make(map[string]bool, len(LevelPrecedence))
+	for _, r := range roles {
+		if !strings.HasPrefix(r, prefix) {
+			continue
+		}
+		held[strings.TrimPrefix(r, prefix)] = true
+	}
+	for _, level := range LevelPrecedence {
+		if held[level] {
+			return level
 		}
 	}
 	return ""

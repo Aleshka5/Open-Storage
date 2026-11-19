@@ -65,8 +65,7 @@ type metrics struct {
 	observed map[string]int64
 	wsActive map[string]int
 
-	refreshOK   int64
-	refreshFail int64
+	refresh     map[string]int64
 	idpRequests map[string]map[int]int64
 }
 
@@ -81,6 +80,7 @@ func newMetrics() *metrics {
 		duration:    make(map[string]time.Duration),
 		observed:    make(map[string]int64),
 		wsActive:    make(map[string]int),
+		refresh:     make(map[string]int64),
 		idpRequests: make(map[string]map[int]int64),
 	}
 }
@@ -109,14 +109,16 @@ func (m *metrics) wsDelta(host string, delta int) {
 	m.mu.Unlock()
 }
 
-// Refresh counts one token refresh by result.
+// Refresh counts one token exchange by honest result: `ok`, `invalid_grant`
+// (the idp said no), `idp_error` (it answered 5xx) or `transport_error` (it did
+// not answer). Folding an outage into `invalid_grant` made a dead idp look like a
+// signed-out user.
 func (m *metrics) Refresh(result string) {
-	m.mu.Lock()
-	if result == "ok" {
-		m.refreshOK++
-	} else {
-		m.refreshFail++
+	if result == "" {
+		result = "unknown"
 	}
+	m.mu.Lock()
+	m.refresh[result]++
 	m.mu.Unlock()
 }
 
@@ -146,7 +148,7 @@ func (m *metrics) render() []byte {
 			k.host, k.route, k.policy, k.status, m.requests[k])
 	}
 
-	b.WriteString("# TYPE gateway_request_duration_seconds_sum gauge\n")
+	b.WriteString("# TYPE gateway_request_duration_seconds_sum counter\n")
 	obs := make([]string, 0, len(m.duration))
 	for k := range m.duration {
 		obs = append(obs, k)
@@ -168,7 +170,15 @@ func (m *metrics) render() []byte {
 		fmt.Fprintf(&b, "gateway_ws_active{host=%q} %d\n", h, m.wsActive[h])
 	}
 
-	fmt.Fprintf(&b, "# TYPE gateway_token_refresh_total counter\ngateway_token_refresh_total{result=\"ok\"} %d\ngateway_token_refresh_total{result=\"invalid_grant\"} %d\n", m.refreshOK, m.refreshFail)
+	b.WriteString("# TYPE gateway_token_refresh_total counter\n")
+	results := make([]string, 0, len(m.refresh))
+	for result := range m.refresh {
+		results = append(results, result)
+	}
+	sort.Strings(results)
+	for _, result := range results {
+		fmt.Fprintf(&b, "gateway_token_refresh_total{result=%q} %d\n", result, m.refresh[result])
+	}
 
 	b.WriteString("# TYPE gateway_idp_request_total counter\n")
 	ops := make([]string, 0, len(m.idpRequests))

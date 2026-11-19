@@ -199,6 +199,27 @@ func (s *Server) patchUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx, uid := r.Context(), r.PathValue("id")
+	// Disabling is the only write here that can cost the realm its last way in,
+	// so it carries the same guard as removing the role. A repeated no-op must
+	// not trip it: only a change is checked.
+	if !*body.Enabled {
+		mappings, err := s.realmMappings(ctx, uid)
+		if err != nil {
+			s.failErr(w, err)
+			return
+		}
+		if hasRole(mappings, roleAdmin) {
+			n, err := s.adminCount(ctx)
+			if err != nil {
+				s.failErr(w, err)
+				return
+			}
+			if n <= 1 {
+				fail(w, errLastAdmin)
+				return
+			}
+		}
+	}
 	obj, err := s.userObject(ctx, uid)
 	if err != nil {
 		s.failErr(w, err)
@@ -383,14 +404,18 @@ func withPrefix(roles []kcRole, prefix string) []kcRole {
 	return out
 }
 
-// levelFor reads the one level the account holds for a service. Admin wins over
-// family if the realm ever drifted into holding two.
+// levelFor reads the one level the account holds for a service. The precedence
+// belongs to the edge (oidc.LevelPrecedence), so a drifted realm that holds two
+// mappings shows the level the edge is actually enforcing.
 func levelFor(roles []kcRole, svc string) *string {
-	for _, level := range []string{"admin", "family", "blocked"} {
-		if hasRole(roles, "svc:"+svc+":"+level) {
-			l := level
-			return &l
-		}
+	names := make([]string, 0, len(roles))
+	for _, r := range roles {
+		names = append(names, r.Name)
 	}
-	return nil
+	level := oidc.ServiceLevelFromRoles(names, svc)
+	if level == "" {
+		return nil
+	}
+	l := level
+	return &l
 }

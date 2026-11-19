@@ -135,13 +135,17 @@ func TestFlightsCollapseToOneExchange(t *testing.T) {
 			t.Fatalf("caller %d got %+v", i, o)
 		}
 	}
-	// A later call is a new flight.
+	// A call that arrives right after the flight finished is answered from it: the
+	// idp rotates refresh tokens, so a second exchange of the same one would
+	// revoke the session (see TestFlightsAnswerALateCaller).
 	if got := atomic.LoadInt32(&calls); got != 1 {
 		t.Fatal("flights leaked")
 	}
-	f.Do("key-1", func() Outcome { atomic.AddInt32(&calls, 1); return Outcome{} })
-	if got := atomic.LoadInt32(&calls); got != 2 {
-		t.Fatalf("after the flight ended, calls = %d", got)
+	if late := f.Do("key-1", func() Outcome { atomic.AddInt32(&calls, 1); return Outcome{} }); !late.OK {
+		t.Fatalf("late caller got %+v", late)
+	}
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Fatalf("a late caller started a second exchange (calls = %d)", got)
 	}
 }
 

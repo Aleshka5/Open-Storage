@@ -124,19 +124,26 @@ func (s *Server) MetricsHandler() http.Handler {
 
 func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
+	block := s.router.HostBlock(r.Host)
+	// The budget covers every request, probes included: an endpoint that answers
+	// for free is a free way to hammer the process. The container's own
+	// healthcheck arrives on loopback and has its own bucket.
+	if !s.limiter.allow(clientIP(r)) {
+		name := "unknown"
+		if block != nil {
+			name = block.Name
+		}
+		s.metrics.count(name, "rate_limit", "-", http.StatusTooManyRequests)
+		s.writeError(w, http.StatusTooManyRequests, "rate_limited")
+		return
+	}
 	// Probes answer on any Host: a container healthcheck sends 127.0.0.1, and
 	// /readyz must work before the first certificate exists.
-	block := s.router.HostBlock(r.Host)
 	if s.probe(w, r, block) {
 		return
 	}
 	if block == nil {
 		s.writeError(w, http.StatusNotFound, "not_found")
-		return
-	}
-	if !s.limiter.allow(clientIP(r)) {
-		s.metrics.count(block.Name, "rate_limit", "-", http.StatusTooManyRequests)
-		s.writeError(w, http.StatusTooManyRequests, "rate_limited")
 		return
 	}
 	route, ok := s.match(block, r)
@@ -294,12 +301,29 @@ func (s *Server) writeError(w http.ResponseWriter, status int, value string) {
 	_, _ = w.Write([]byte(`{"error":"` + value + `"}`))
 }
 
+// clientIP is the caller for the rate limit and the access log. The gateway only
+// ever hears from the proxy in front of it, and that proxy appends (or rewrites)
+// X-Forwarded-For, so the *last* entry is the one it vouches for; everything to
+// the left of it came from the client and is attacker-controlled. A value that is
+// not an IP is ignored, and so is a request with no header at all.
 func clientIP(r *http.Request) string {
-	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-		if i := strings.IndexByte(fwd, ','); i >= 0 {
-			return strings.TrimSpace(fwd[:i])
+	if raw := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); raw != "" {
+		parts := strings.Split(raw, ",")
+		for i := len(parts) - 1; i >= 0; i-- {
+			candidate := strings.TrimSpace(parts[i])
+			if candidate == "" || strings.EqualFold(candidate, "unknown") {
+				continue
+			}
+			if ip := net.ParseIP(candidate); ip != nil {
+				return ip.String()
+			}
+			// A proxy that forwards a host:port pair is still telling the truth.
+			if host, _, err := net.SplitHostPort(candidate); err == nil {
+				if ip := net.ParseIP(host); ip != nil {
+					return ip.String()
+				}
+			}
 		}
-		return strings.TrimSpace(fwd)
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

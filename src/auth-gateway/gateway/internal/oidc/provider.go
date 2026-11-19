@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -24,6 +25,16 @@ type Provider struct {
 // issuer differs from the configured one: a mismatch would verify tokens the idp
 // did not issue.
 func Discover(ctx context.Context, issuer string, hc *http.Client) (*Provider, error) {
+	return DiscoverServerSide(ctx, issuer, "", hc)
+}
+
+// DiscoverServerSide does the same read, but fetches and then rewrites the
+// endpoints this process calls to `serverBase`. The browser is sent to
+// `AuthorizationURL` and must keep the public origin; discovery, JWKS, token,
+// revocation, logout and the admin API are server-side, so they may take an
+// address that only the container can reach. `iss` is still the public issuer,
+// which is what every token carries.
+func DiscoverServerSide(ctx context.Context, issuer, serverBase string, hc *http.Client) (*Provider, error) {
 	issuer = strings.TrimRight(strings.TrimSpace(issuer), "/")
 	if issuer == "" {
 		return nil, fmt.Errorf("issuer is required")
@@ -31,7 +42,12 @@ func Discover(ctx context.Context, issuer string, hc *http.Client) (*Provider, e
 	if hc == nil {
 		hc = &http.Client{Timeout: 10 * time.Second}
 	}
-	url := issuer + "/.well-known/openid-configuration"
+	serverBase = strings.TrimRight(strings.TrimSpace(serverBase), "/")
+	fetchFrom := issuer
+	if serverBase != "" {
+		fetchFrom = serverBase
+	}
+	url := fetchFrom + "/.well-known/openid-configuration"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -58,7 +74,43 @@ func Discover(ctx context.Context, issuer string, hc *http.Client) (*Provider, e
 	if p.JWKSURL == "" || p.AuthURL == "" || p.TokenURL == "" {
 		return nil, fmt.Errorf("discovery: document is missing an endpoint")
 	}
+	if serverBase != "" {
+		for _, field := range []*string{&p.TokenURL, &p.JWKSURL, &p.RevokeURL, &p.EndSessionURL} {
+			if *field == "" {
+				continue
+			}
+			rewritten, err := rebase(*field, issuer, serverBase)
+			if err != nil {
+				return nil, fmt.Errorf("discovery: %w", err)
+			}
+			*field = rewritten
+		}
+	}
 	return &p, nil
+}
+
+// rebase points one endpoint at serverBase. An endpoint outside the issuer is
+// left alone: the idp is free to host its token endpoint elsewhere.
+func rebase(endpoint, issuer, serverBase string) (string, error) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", fmt.Errorf("endpoint %q: %w", endpoint, err)
+	}
+	iss, err := url.Parse(issuer)
+	if err != nil {
+		return "", fmt.Errorf("issuer %q: %w", issuer, err)
+	}
+	if !strings.EqualFold(u.Scheme, iss.Scheme) || !strings.EqualFold(u.Host, iss.Host) {
+		return endpoint, nil
+	}
+	if !strings.HasPrefix(u.Path, iss.Path) {
+		return endpoint, nil
+	}
+	base := strings.TrimRight(serverBase, "/")
+	if iss.Path == "" {
+		return base + u.Path, nil
+	}
+	return base + strings.TrimPrefix(u.Path, iss.Path), nil
 }
 
 // JWKSKeys reports how many keys the endpoint publishes. Used at start and on

@@ -187,12 +187,20 @@ func (s *Server) logoutUser(ctx context.Context, uid string) error {
 	return err
 }
 
-// adminCount reads at most two members: enough to tell "one" from "more than
-// one" without pulling a list we would only count.
+// adminCount reads at most fifty members and counts the enabled ones: a disabled
+// admin cannot reach /admin, so it is not a way in. Fifty is enough to tell "the
+// last one" from "one more"; a realm with more admins than that has stopped being
+// a guard rail anyway.
 func (s *Server) adminCount(ctx context.Context) (int, error) {
 	var users []kcUser
-	if err := s.getJSON(ctx, "/roles/"+roleAdmin+"/users?first=0&max=2", &users); err != nil {
+	if err := s.getJSON(ctx, "/roles/"+roleAdmin+"/users?first=0&max=50", &users); err != nil {
 		return 0, err
 	}
-	return len(users), nil
+	n := 0
+	for _, u := range users {
+		if u.Enabled {
+			n++
+		}
+	}
+	return n, nil
 }

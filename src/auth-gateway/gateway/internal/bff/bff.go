@@ -224,14 +224,16 @@ func (s *Server) handleCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, flow.ReturnTo, http.StatusFound)
 }
 
+// logout ends the local session and, best effort, the idp one. A cross-site page
+// must not be able to do this, and it cannot: a form POST from another site
+// carries `Origin`, which has to be one of ours, and a scripted request without
+// a cookie header cannot pass at all because the session cookie is SameSite=Lax.
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusNotFound, "not_found")
 		return
 	}
-	// A cross-site form can post without a body it controls; the header is the
-	// only proof that the request came from our own page.
-	if r.Header.Get("Origin") == "" && r.Header.Get("X-Requested-With") == "" {
+	if !s.sameSite(r) {
 		writeError(w, http.StatusForbidden, "forbidden")
 		return
 	}
@@ -409,14 +411,22 @@ func (s *Server) token(ctx context.Context, form url.Values) (*tokenResponse, in
 	res, err := s.client.Do(req)
 	if err != nil {
 		s.metrics.IdP("token", 0)
+		s.metrics.Refresh("transport_error")
 		return nil, 0, err
 	}
 	defer res.Body.Close()
 	s.metrics.IdP("token", res.StatusCode)
+	// A 4xx is an invalid grant; a transport error or a 5xx is an idp that is not
+	// answering. The distinction decides 401 versus 503, and it decides the metric
+	// label too: an outage must not look like a revoked session.
 	if res.StatusCode != http.StatusOK {
-		s.metrics.Refresh("invalid_grant")
 		var body json.RawMessage
 		_ = json.NewDecoder(res.Body).Decode(&body)
+		if res.StatusCode >= 500 {
+			s.metrics.Refresh("idp_error")
+		} else {
+			s.metrics.Refresh("invalid_grant")
+		}
 		return nil, res.StatusCode, fmt.Errorf("token endpoint answered %d: %s", res.StatusCode, truncate(string(body), 200))
 	}
 	var out tokenResponse
@@ -428,6 +438,25 @@ func (s *Server) token(ctx context.Context, form url.Values) (*tokenResponse, in
 		return nil, res.StatusCode, fmt.Errorf("token answer has no access_token")
 	}
 	return &out, res.StatusCode, nil
+}
+
+// sameSite reports whether a write request came from our own pages. `Origin` is
+// what a browser attaches to a cross-site form POST, so its presence is not a
+// pass — its value has to be a host this namespace serves. A same-origin fetch
+// may omit it; the page then sets X-Requested-With, which a form cannot.
+func (s *Server) sameSite(r *http.Request) bool {
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		return r.Header.Get("X-Requested-With") != ""
+	}
+	u, err := url.Parse(origin)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	if u.Scheme != "https" && !s.devHTTP {
+		return false
+	}
+	return s.file.AllowsHost(u.Host)
 }
 
 func (s *Server) returnTo(r *http.Request) string {

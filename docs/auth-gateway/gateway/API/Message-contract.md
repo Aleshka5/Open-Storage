@@ -35,6 +35,10 @@ First match wins. Specific routes go above general ones. Each host has exactly o
   timeouts: { response_header: 30m }
 ```
 
+A host also carries `frame: self` when its own UI frames itself (Jitsi Meet, the ASR UI). The default is `deny`, which sends `X-Frame-Options: DENY`; the choice belongs to the host entry, not to a prefix of its name.
+
+`identity: passthrough` marks a host that is not an application under identity v1 — today only `id.filenkov.store`, the idp's own console. On such a host nothing is stripped and nothing is injected: the client's own `Authorization` is what the upstream needs. Every other host is `inject` (the default) and never sees a header the client sent.
+
 `response_header` is time to the first response byte, not the life of the body. SSE and WebSocket length are not capped by it.
 
 `service:` on a host names the service that owns it. With it set, `svc:<service>:blocked` closes every non-public route on that host, including a `session` catch-all. Without it, `blocked` only denies `service(...)` routes.
@@ -49,6 +53,9 @@ Fail start when:
 6. A value looks like a secret and is not `env:NAME`.
 7. `aliases` overlap another host.
 8. `strip_prefix` leaves an empty path.
+9. `frame` is neither `deny` nor `self`.
+10. `identity` is neither `inject` nor `passthrough`.
+11. `idp.internal_url` is not an absolute `http`/`https` URL.
 
 ## Hosts
 
@@ -59,6 +66,11 @@ listen: ":8080"
 public_origin: "https://filenkov.store"
 idp:
   issuer: "https://id.filenkov.store/realms/filenkov"
+  # Optional. Where this process reaches the idp; discovery, JWKS, token, logout
+  # and the Admin API go here, the browser still follows the public endpoints and
+  # `iss` stays the public issuer. Set it to the container address so a start does
+  # not depend on the LAN resolver answering for the public host.
+  internal_url: "http://idp:8080/realms/filenkov"
   client_id: gateway
   client_secret: "env:IDP_CLIENT_SECRET"
   scopes: [openid, profile, email]
@@ -166,6 +178,8 @@ Cookies: `HttpOnly; Secure; SameSite=Lax; Path=/; Domain=.filenkov.store`. Prefi
 | `__Secure-open_flow` | `{state, nonce, code_verifier, return_to}` | 10m, login only |
 
 No roles and no email in the session cookie. Roles are read from the access token on every request. Rotating `GATEWAY_SESSION_KEY` signs everyone out.
+
+One refresh runs at a time per session cookie, and its answer is reused for 30 seconds. The idp rotates refresh tokens with no reuse tolerance (`revokeRefreshToken`, `refreshTokenMaxReuse: 0`), so a second exchange of the same token is theft in its eyes: a request that was already in flight with the old cookie has to get the finished answer, not a new exchange. Without that window, two tabs opened at the same moment sign the user out.
 
 `GET /auth/login?return_to=`
 

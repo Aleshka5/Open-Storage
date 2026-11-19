@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aleshka5/open-storage/auth-gateway/internal/config"
@@ -42,10 +43,12 @@ func withIdentity(r *http.Request, id *oidc.Identity, access string) *http.Reque
 }
 
 type proxy struct {
-	server     *Server
-	transports map[time.Duration]*http.Transport
-	fallback   *http.Transport
-	rp         *httputil.ReverseProxy
+	server          *Server
+	transports      map[time.Duration]*http.Transport
+	fallback        *http.Transport
+	fallbackTimeout time.Duration
+	missOnce        sync.Once
+	rp              *httputil.ReverseProxy
 }
 
 func newProxy(s *Server) *proxy {
@@ -73,15 +76,19 @@ func newProxy(s *Server) *proxy {
 		return t
 	}
 	p.fallback = add(s.file.Defaults.Timeouts.ResponseHeader.D())
+	p.fallbackTimeout = s.file.Defaults.Timeouts.ResponseHeader.D()
+	// Register every response-header timeout the compiled routes can ask for, so
+	// transportFor never has to guess. Aliases share a block, so iterate the host
+	// entries and resolve each to the block it compiled into.
+	router := s.file.Router()
 	for i := range s.file.Hosts {
-		h := &s.file.Hosts[i]
-		if h.Timeouts != nil {
-			add(config.MergeTimeouts(s.file.Defaults.Timeouts, h.Timeouts).ResponseHeader)
+		b := router.HostBlock(s.file.Hosts[i].Host)
+		if b == nil {
+			continue
 		}
-		for j := range h.Routes {
-			if h.Routes[j].Timeouts != nil {
-				add(config.MergeTimeouts(s.file.Defaults.Timeouts, h.Routes[j].Timeouts).ResponseHeader)
-			}
+		add(b.Timeouts.ResponseHeader)
+		for j := range b.Routes {
+			add(b.Routes[j].Timeouts.ResponseHeader)
 		}
 	}
 	p.rp = &httputil.ReverseProxy{
@@ -103,12 +110,18 @@ func newProxy(s *Server) *proxy {
 				pr.Out.Header.Set("X-Forwarded-Proto", proto)
 			}
 			// A client never supplies its own identity, and never overrides a
-			// config header: strip first, then set.
-			stripInboundIdentity(pr.Out.Header)
+			// config header: strip first, then set. A passthrough host is the
+			// exception: it is not an app under identity v1 (the idp console),
+			// and its headers are the client's business.
+			if !t.block.IdentityPass {
+				stripInboundIdentity(pr.Out.Header)
+			}
 			for name, value := range t.route.Headers {
 				pr.Out.Header.Set(name, value)
 			}
-			injectIdentity(pr.Out.Header, t.id, t.access)
+			if !t.block.IdentityPass {
+				injectIdentity(pr.Out.Header, t.id, t.access)
+			}
 		},
 		ModifyResponse: func(resp *http.Response) error {
 			if resp == nil {
@@ -122,7 +135,7 @@ func newProxy(s *Server) *proxy {
 			if t == nil || t.block == nil {
 				return nil
 			}
-			applySecurityHeaders(resp.Header, t.block.PermissionsPolicy, denyFraming(t.block.Name))
+			applySecurityHeaders(resp.Header, t.block.PermissionsPolicy, t.block.FrameDeny)
 			return nil
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
@@ -146,6 +159,13 @@ func (t transportFor) RoundTrip(r *http.Request) (*http.Response, error) {
 	if tr, ok := t.p.transports[timeout]; ok {
 		return tr.RoundTrip(r)
 	}
+	// newProxy registers every timeout the compiled routes can ask for, so this
+	// is a defect in that table, not a normal branch. Say so once instead of
+	// quietly downgrading a 30m route to the default 60s.
+	t.p.missOnce.Do(func() {
+		t.p.server.log.Warn("gateway_transport_missing",
+			"timeout", timeout.String(), "fallback", t.p.fallbackTimeout.String())
+	})
 	return t.p.fallback.RoundTrip(r)
 }
 
@@ -200,14 +220,17 @@ func forwardedProto(r *http.Request, devHTTP bool) string {
 }
 
 // stripInboundIdentity removes every name a client could use to claim an
-// identity, with no exception.
+// identity, with no exception. `Authorization` is on the list because the
+// contract says the application receives the bearer the gateway injected, never
+// one the client wrote.
 func stripInboundIdentity(h http.Header) {
 	for name := range h {
 		lower := strings.ToLower(name)
 		switch {
 		case strings.HasPrefix(lower, "x-auth-"):
 			h.Del(name)
-		case lower == "x-user-id", lower == "x-storage-role", lower == "x-original-user":
+		case lower == "authorization",
+			lower == "x-user-id", lower == "x-storage-role", lower == "x-original-user":
 			h.Del(name)
 		}
 	}
@@ -249,11 +272,6 @@ func applySecurityHeaders(h http.Header, permissionsPolicy string, denyFrame boo
 		policy = defaultPermissionsPolicy
 	}
 	h.Set("Permissions-Policy", policy)
-}
-
-// denyFraming is false for the hosts whose own UI frames itself.
-func denyFraming(host string) bool {
-	return !strings.HasPrefix(host, "meet.") && !strings.HasPrefix(host, "audio.")
 }
 
 // probe answers the gateway's own probes. A host that routes a literal /healthz

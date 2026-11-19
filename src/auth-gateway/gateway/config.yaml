@@ -7,6 +7,11 @@ public_origin: "https://filenkov.store"
 
 idp:
   issuer: "https://id.filenkov.store/realms/filenkov"
+  # Where this process reaches the idp. Server-side calls (discovery, JWKS,
+  # token, logout, the Admin API) use it; the browser still follows the public
+  # endpoints and `iss` stays the public issuer. Without it, a start depends on
+  # the LAN resolver answering for the public host, which it does not always do.
+  internal_url: "http://idp:8080/realms/filenkov"
   client_id: gateway
   client_secret: "env:IDP_CLIENT_SECRET"
   scopes: [openid, profile, email]
@@ -66,6 +71,9 @@ hosts:
 
   - host: id.filenkov.store
     upstream: idp
+    # Keycloak's own console authenticates with a bearer the browser holds, and
+    # it is not an app under identity v1: headers pass through untouched.
+    identity: passthrough
     routes:
       # The Keycloak console stays reachable for break-glass when gateway policy
       # is wrong, as long as idp_db is alive.
@@ -98,6 +106,8 @@ hosts:
   - host: audio.filenkov.store
     upstream: audio_web
     service: audio
+    # The ASR UI frames its own pages; X-Frame-Options: DENY would blank it.
+    frame: self
     permissions_policy: "camera=(), microphone=(self), geolocation=()"
     timeouts: { response_header: 30m }
     routes:
@@ -120,6 +130,8 @@ hosts:
 
   - host: meet.filenkov.store
     upstream: jitsi
+    # Jitsi Meet frames itself (the conference UI is an iframe).
+    frame: self
     permissions_policy: "camera=(self), microphone=(self), display-capture=(self), geolocation=()"
     timeouts: { response_header: 5m }
     routes:

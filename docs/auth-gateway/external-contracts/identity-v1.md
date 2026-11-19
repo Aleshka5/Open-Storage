@@ -16,9 +16,11 @@ Owned here because product applications live outside the namespace. Gateway is t
 | `X-Auth-Session` | `sid`. Session id, not a user id. Two logins of one person are two `sid` values. Data tied to `sid` dies when idp kills the session. No callback. |
 | `X-Forwarded-Host`, `X-Forwarded-Proto`, `X-Forwarded-For` | Set by proxy, rewritten by gateway |
 
-Before injection, these are removed with no exception: any `X-Auth-*` (any case), `X-User-Id`, `X-Storage-Role`, `X-Original-User`.
+Before injection, these are removed with no exception: any `X-Auth-*` (any case), `X-User-Id`, `X-Storage-Role`, `X-Original-User`, and `Authorization`.
 
-An application never receives an identity header that the client sent.
+An application never receives an identity header that the client sent. `Authorization` is on that list because it is an identity header: the value an application sees is the one the gateway injected, or nothing at all on a `public` route.
+
+`X-Forwarded-For` is the caller as the proxy in front of the gateway saw it: the last hop of the header, not the first, because the part a client can write comes before it.
 
 ## How an application checks
 

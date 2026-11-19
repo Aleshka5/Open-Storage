@@ -66,6 +66,7 @@ hosts:
   - host: audio.filenkov.store
     upstream: audio_web
     service: audio
+    frame: self
     permissions_policy: "camera=(), microphone=(self), geolocation=()"
     timeouts: { response_header: 500ms }
     routes:

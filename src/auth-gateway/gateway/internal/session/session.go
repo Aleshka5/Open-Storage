@@ -291,44 +291,101 @@ type Outcome struct {
 	Status int
 }
 
+// ReuseWindow is how long a finished refresh keeps answering for its key. The
+// idp rotates refresh tokens and treats a second exchange of the old one as
+// theft (`revokeRefreshToken`, zero reuse tolerance), so a request that was
+// already in flight with the old cookie must get the same answer instead of
+// starting a new exchange that would revoke the session.
+const ReuseWindow = 30 * time.Second
+
 // Flights collapses parallel refreshes of one session into a single token
-// exchange. Keycloak rotates refresh tokens, so two exchanges would invalidate
-// each other.
+// exchange, and answers a late caller from the result of the one that just ran.
 type Flights struct {
-	mu    sync.Mutex
-	calls map[string]*flight
+	mu     sync.Mutex
+	calls  map[string]*flight
+	window time.Duration
+	now    func() time.Time
 }
 
 type flight struct {
 	done    chan struct{}
 	outcome Outcome
+	at      time.Time // set when the exchange finished
 }
 
-// Do runs fn once per key; concurrent callers wait for that result.
+// Do runs fn once per key; concurrent callers wait for that result, and a caller
+// arriving inside ReuseWindow after it finished gets the same outcome without a
+// second exchange. A panic in fn is not an answer: it ends the flight as
+// "continue as anonymous" instead of leaving every waiter blocked on a channel
+// that never closes.
 func (f *Flights) Do(key string, fn func() Outcome) Outcome {
 	if f == nil {
-		return fn()
+		return safeCall(fn)
 	}
 	f.mu.Lock()
+	if f.now == nil {
+		f.now = time.Now
+	}
+	if f.window <= 0 {
+		f.window = ReuseWindow
+	}
 	if f.calls == nil {
 		f.calls = make(map[string]*flight)
 	}
 	if c, ok := f.calls[key]; ok {
-		f.mu.Unlock()
-		<-c.done
-		return c.outcome
+		finished := !c.at.IsZero()
+		if finished && f.now().Sub(c.at) < f.window {
+			out := c.outcome
+			f.mu.Unlock()
+			return out
+		}
+		if finished {
+			delete(f.calls, key)
+		} else {
+			f.mu.Unlock()
+			<-c.done
+			return c.outcome
+		}
 	}
 	c := &flight{done: make(chan struct{})}
 	f.calls[key] = c
 	f.mu.Unlock()
 
-	c.outcome = fn()
-	close(c.done)
+	out := safeCall(fn)
 
 	f.mu.Lock()
-	delete(f.calls, key)
+	c.outcome = out
+	c.at = f.now()
+	close(c.done)
+	f.sweepLocked()
 	f.mu.Unlock()
-	return c.outcome
+	return out
+}
+
+// sweepLocked drops finished flights whose window has passed, so the map cannot
+// grow with every token the process has ever refreshed.
+func (f *Flights) sweepLocked() {
+	if len(f.calls) < 64 {
+		return
+	}
+	now := f.now()
+	for key, c := range f.calls {
+		if !c.at.IsZero() && now.Sub(c.at) >= f.window {
+			delete(f.calls, key)
+		}
+	}
+}
+
+// safeCall turns a panic inside the exchange into a zero outcome: the caller
+// continues as anonymous and the cookies are cleared, instead of the process
+// dying on one bad response.
+func safeCall(fn func() Outcome) (out Outcome) {
+	defer func() {
+		if r := recover(); r != nil {
+			out = Outcome{}
+		}
+	}()
+	return fn()
 }
 
 // Key hashes a refresh token so the in-memory map never holds a credential.

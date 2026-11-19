@@ -134,7 +134,8 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "https://filenkov.store/auth/callback"
+        "https://filenkov.store/auth/callback",
+        "https://mvp.filenkov.store/auth/callback"
       ],
       "webOrigins": [],
       "attributes": {

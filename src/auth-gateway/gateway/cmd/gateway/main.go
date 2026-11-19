@@ -44,13 +44,22 @@ func run(l *slog.Logger) error {
 	if file.Admin.ClientID == "" {
 		return fmt.Errorf("admin.client_id is required: /admin has no service account")
 	}
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	// Keycloak takes tens of seconds to import a realm on an empty database. A
 	// bounded wait keeps the first start from becoming a crash loop, and still
-	// fails loudly when the idp is simply absent.
-	provider, err := discoverWithRetry(ctx, file.IdP.Issuer, l)
+	// fails loudly when the idp is simply absent. The wait is cancellable: a
+	// `stop` during startup must not be swallowed until the deadline expires.
+	provider, err := discoverWithRetry(ctx, file.IdP.Issuer, file.IdP.InternalURL, l)
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil
+		}
 		return err
+	}
+	if file.IdP.InternalURL != "" {
+		l.Info("idp_internal_base", "issuer", file.IdP.Issuer, "server_side", file.IdP.InternalURL)
 	}
 	verifier, err := oidc.NewVerifier(ctx, provider, file.IdP.Audience, file.IdP.AuthorizedParty, file.IdP.ClientID, file.IdP.JWKSTTL.D(), nil)
 	if err != nil {
@@ -61,7 +70,7 @@ func run(l *slog.Logger) error {
 		return err
 	}
 	admin, err := adminapi.New(adminapi.Config{
-		BaseURL:      baseURL(file.IdP.Issuer),
+		BaseURL:      adminBase(file),
 		Realm:        realmOf(file.IdP.Issuer),
 		ClientID:     file.Admin.ClientID,
 		ClientSecret: file.Secrets().AdminClient,
@@ -119,10 +128,8 @@ func run(l *slog.Logger) error {
 		ReadHeaderTimeout: file.Defaults.Timeouts.ReadHeader.D(),
 		IdleTimeout:       file.Defaults.Timeouts.Idle.D(),
 	}
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		<-stop
+		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		_ = metricsServer.Shutdown(shutdownCtx)
@@ -135,19 +142,35 @@ func run(l *slog.Logger) error {
 	return nil
 }
 
-func discoverWithRetry(ctx context.Context, issuer string, l *slog.Logger) (*oidc.Provider, error) {
+func discoverWithRetry(ctx context.Context, issuer, serverBase string, l *slog.Logger) (*oidc.Provider, error) {
 	deadline := time.Now().Add(90 * time.Second)
 	for {
-		provider, err := oidc.Discover(ctx, issuer, nil)
+		provider, err := oidc.DiscoverServerSide(ctx, issuer, serverBase, nil)
 		if err == nil {
 			return provider, nil
+		}
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
 		}
 		if time.Now().After(deadline) {
 			return nil, err
 		}
 		l.Warn("idp_not_ready", "err", err, "retry_in", "3s")
-		time.Sleep(3 * time.Second)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(3 * time.Second):
+		}
 	}
+}
+
+// adminBase is where the Admin API lives. It follows idp.internal_url when that
+// is set, so /admin works without the process resolving the public name.
+func adminBase(f *config.File) string {
+	if f.IdP.InternalURL != "" {
+		return baseURL(f.IdP.InternalURL)
+	}
+	return baseURL(f.IdP.Issuer)
 }
 
 // baseURL drops the /realms/... suffix: the Admin API takes the issuer base.

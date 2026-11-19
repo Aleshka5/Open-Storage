@@ -69,7 +69,12 @@ type File struct {
 
 // IdP is the identity provider block.
 type IdP struct {
-	Issuer          string   `yaml:"issuer"`
+	Issuer string `yaml:"issuer"`
+	// InternalURL is where this process reaches the idp, when that differs from
+	// the public issuer. Server-side calls (discovery, JWKS, token, logout, the
+	// admin API) use it; the browser still sees the public endpoints, and `iss`
+	// stays the public issuer. Empty means "use the issuer".
+	InternalURL     string   `yaml:"internal_url"`
 	ClientID        string   `yaml:"client_id"`
 	ClientSecretRef string   `yaml:"client_secret"`
 	Scopes          []string `yaml:"scopes"`
@@ -115,10 +120,18 @@ type RateLimit struct {
 
 // Host is one site on the block.
 type Host struct {
-	Host              string    `yaml:"host"`
-	Upstream          string    `yaml:"upstream"`
-	Aliases           []string  `yaml:"aliases"`
-	Service           string    `yaml:"service"`
+	Host     string   `yaml:"host"`
+	Upstream string   `yaml:"upstream"`
+	Aliases  []string `yaml:"aliases"`
+	Service  string   `yaml:"service"`
+	// Frame is `deny` (default) or `self`: an app that frames its own UI must
+	// not be sent X-Frame-Options: DENY.
+	Frame string `yaml:"frame"`
+	// Identity is `inject` (default) or `passthrough`. A passthrough host is not
+	// an application under identity v1 — the idp's own console is the only one —
+	// so its `Authorization` and `X-Auth-*` headers are neither stripped nor
+	// written: the client's own bearer is what the upstream needs.
+	Identity          string    `yaml:"identity"`
 	PermissionsPolicy string    `yaml:"permissions_policy"`
 	Timeouts          *Timeouts `yaml:"timeouts"`
 	Routes            []Route   `yaml:"routes"`
@@ -146,9 +159,14 @@ type Secrets struct {
 
 // Block is a compiled host.
 type Block struct {
-	Name              string
-	Upstream          *url.URL
-	Service           string
+	Name     string
+	Upstream *url.URL
+	Service  string
+	// FrameDeny is true unless the host declares `frame: self`.
+	FrameDeny bool
+	// IdentityPass is true for a host that is not an application under identity
+	// v1: headers are forwarded untouched and nothing is injected.
+	IdentityPass      bool
 	PermissionsPolicy string
 	Timeouts          Trimmed
 	Routes            []Compiled
@@ -261,6 +279,16 @@ func (f *File) compile() error {
 	if strings.TrimSpace(f.IdP.Issuer) == "" || f.IdP.ClientID == "" {
 		return fmt.Errorf("idp.issuer and idp.client_id are required")
 	}
+	if raw := strings.TrimSpace(f.IdP.InternalURL); raw != "" {
+		u, err := url.Parse(raw)
+		if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+			return fmt.Errorf("idp.internal_url must be an absolute http or https URL")
+		}
+		if _, err := url.ParseRequestURI(strings.TrimRight(raw, "/") + "/.well-known/openid-configuration"); err != nil {
+			return fmt.Errorf("idp.internal_url %q cannot carry a discovery path", raw)
+		}
+		f.IdP.InternalURL = strings.TrimRight(raw, "/")
+	}
 	if _, err := envRef("idp.client_secret", f.IdP.ClientSecretRef); err != nil {
 		return err
 	}
@@ -315,6 +343,22 @@ func (f *File) compileHost(h *Host, i int) (*Block, error) {
 		return nil, fmt.Errorf("%s: service %q is not in services", prefix, h.Service)
 	}
 	b := &Block{Name: name, Upstream: upstream, Service: h.Service, PermissionsPolicy: strings.TrimSpace(h.PermissionsPolicy)}
+	switch frame := strings.ToLower(strings.TrimSpace(h.Frame)); frame {
+	case "", "deny":
+		b.FrameDeny = true
+	case "self":
+		b.FrameDeny = false
+	default:
+		return nil, fmt.Errorf("%s: frame %q must be deny or self", prefix, h.Frame)
+	}
+	switch identity := strings.ToLower(strings.TrimSpace(h.Identity)); identity {
+	case "", "inject":
+		b.IdentityPass = false
+	case "passthrough":
+		b.IdentityPass = true
+	default:
+		return nil, fmt.Errorf("%s: identity %q must be inject or passthrough", prefix, h.Identity)
+	}
 	b.Timeouts = mergeTimeouts(f.Defaults.Timeouts, h.Timeouts)
 	if len(h.Routes) == 0 {
 		return nil, fmt.Errorf("%s: at least one route is required", prefix)
