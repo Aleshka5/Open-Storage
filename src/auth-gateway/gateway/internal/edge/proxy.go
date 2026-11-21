@@ -141,7 +141,7 @@ func newProxy(s *Server) *proxy {
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			status, value := timeoutStatus(err)
 			s.log.Warn("gateway_upstream", "err", err, "host", r.Host, "path", r.URL.Path)
-			s.writeError(w, status, value)
+			s.writeError(w, r, status, value)
 		},
 	}
 	return p
@@ -289,7 +289,7 @@ func (s *Server) probe(w http.ResponseWriter, r *http.Request, block *config.Blo
 		return true
 	case "/readyz":
 		if err := s.verifier.Ready(); err != nil {
-			s.writeError(w, http.StatusServiceUnavailable, "auth_unavailable")
+			s.writeError(w, r, http.StatusServiceUnavailable, "auth_unavailable")
 			return true
 		}
 		s.writeJSON(w, http.StatusOK, `{"status":"ready"}`)
@@ -297,7 +297,7 @@ func (s *Server) probe(w http.ResponseWriter, r *http.Request, block *config.Blo
 	case "/metrics":
 		// The public listener never serves metrics: they belong to a second
 		// listener that only the host loopback publishes.
-		s.writeError(w, http.StatusNotFound, "not_found")
+		s.writeError(w, r, http.StatusNotFound, "not_found")
 		return true
 	}
 	return false
@@ -366,3 +366,37 @@ func (w *statusWriter) Flush() {
 }
 
 func (w *statusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+// chatWriter stamps the security headers on whatever the chat handler writes. The
+// handler is in-process, so it bypasses the proxy's ModifyResponse, and a stream
+// that carried no security headers would be the one response on this host that
+// did not match the others.
+type chatWriter struct {
+	http.ResponseWriter
+	block *config.Block
+	wrote bool
+}
+
+func (w *chatWriter) WriteHeader(code int) {
+	if !w.wrote {
+		w.wrote = true
+		applySecurityHeaders(w.Header(), w.block.PermissionsPolicy, w.block.FrameDeny)
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *chatWriter) Write(b []byte) (int, error) {
+	if !w.wrote {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+// Flush keeps the SSE stream going as the answer arrives.
+func (w *chatWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+func (w *chatWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }

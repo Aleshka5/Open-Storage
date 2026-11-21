@@ -2,7 +2,7 @@
 
 Development rules that do not depend on a stack. One list. No commentary.
 
-Rules Group Documents
+Documents
  - Every document in this repository is English.
  - A document states the necessary facts and stops.
  - Prefer a new short document over a longer one.
@@ -11,13 +11,13 @@ Rules Group Documents
  - This file holds rules. docs/repository-layout.md holds the directory map.
  - A specification change lands in the same change as the behavior it describes.
 
-Rules Group Decisions
+Decisions
  - A decision that binds the whole system goes in adrs/.
  - A decision that binds one namespace goes in docs/<namespace>/adrs/.
  - An ADR states the decision, the rejected options, and the cost.
  - Reopen a decision only with a new argument, recorded in a new ADR.
 
-Rules Group Boundaries
+Boundaries
  - A namespace is one network, one env file, and one compose file.
  - A service does not take over a fact another service already owns.
  - One component sets one response header. A duplicated header is a defect.
@@ -26,7 +26,7 @@ Rules Group Boundaries
  - A credential does not go in JavaScript, a URL, or a log.
  - Session state lives in one store.
 
-Rules Group Change
+Change
  - One meaning has one name and one version.
  - A breaking contract change updates every consumer in the same release.
  - Invalid configuration does not start.

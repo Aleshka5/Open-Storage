@@ -21,7 +21,7 @@ There is no Redis, no user-catalog service, and no second identity store.
 
 ## Run
 
-From `deploy/auth-gateway/`. The proxy is the host's Caddy; `src/auth-gateway/proxy/Caddyfile` is symlinked to `/etc/caddy/Caddyfile`.
+From `deploy/auth-gateway/`. The proxy is the host's Caddy; `deploy/auth-gateway/Caddyfile` is the source and `/etc/caddy/Caddyfile` is a symlink to it.
 
 ```bash
 cp ../../.env.example .env

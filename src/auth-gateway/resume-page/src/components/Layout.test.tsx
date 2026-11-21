@@ -17,6 +17,8 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
   setScrollY(0)
+  // jsdom keeps <html> between tests; a leftover 'docked' would leak into the next one.
+  delete document.documentElement.dataset.owl
 })
 
 function setScrollY(y: number) {
@@ -167,27 +169,31 @@ describe('Layout', () => {
     expect(first).toHaveAttribute('href', '#node-article')
   })
 
-  it('shows Back to top only past 180px of scroll', async () => {
+  it('shows the docked owl only past 180px of scroll, and it goes back to the top', async () => {
     const scrollTo = vi.fn()
     vi.stubGlobal('scrollTo', scrollTo)
     stubSession(stranger)
     renderLayout()
     await screen.findByText('Ann')
-    expect(screen.queryByRole('button', { name: 'Back to top' })).not.toBeInTheDocument()
+    // The button exists at all times; at the top it is the hero, not a control.
+    await waitFor(() => expect(document.documentElement.dataset.owl).toBe('hero'))
+    const heroButton = document.querySelector<HTMLButtonElement>('.owl')!
+    expect(heroButton.tabIndex).toBe(-1)
+    expect(heroButton.getAttribute('aria-hidden')).toBe('true')
 
     act(() => {
       setScrollY(180)
       window.dispatchEvent(new Event('scroll'))
     })
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: 'Back to top' })).not.toBeInTheDocument(),
-    )
+    await waitFor(() => expect(document.documentElement.dataset.owl).toBe('hero'))
 
     act(() => {
       setScrollY(181)
       window.dispatchEvent(new Event('scroll'))
     })
-    const button = await screen.findByRole('button', { name: 'Back to top' })
+    await waitFor(() => expect(document.documentElement.dataset.owl).toBe('docked'))
+    const button = screen.getByRole('button', { name: 'Back to top' })
+    expect(button).toHaveAttribute('aria-hidden', 'false')
     await userEvent.click(button)
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
   })

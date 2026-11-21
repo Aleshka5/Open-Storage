@@ -69,6 +69,17 @@ func run(l *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	// The owl chat is not load-bearing: an incomplete `llm` block disables
+	// POST /api/chat and leaves sign-in, routing and the page alone.
+	chatHandler, shutdownTracing, err := newChat(ctx, file, l)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = shutdownTracing(stopCtx)
+	}()
 	admin, err := adminapi.New(adminapi.Config{
 		BaseURL:      adminBase(file),
 		Realm:        realmOf(file.IdP.Issuer),
@@ -84,6 +95,7 @@ func run(l *slog.Logger) error {
 		Verifier: verifier,
 		Sealer:   sealer,
 		Admin:    admin.Handler(),
+		Chat:     chatHandler,
 		Logger:   l,
 	})
 	if err != nil {

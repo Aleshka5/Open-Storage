@@ -4,7 +4,7 @@
 
 | Path | What |
 |---|---|
-| `src/auth-gateway/proxy/Caddyfile` | Site config, in git |
+| `deploy/auth-gateway/Caddyfile` | Site config, in git. The live edge reads it via the `/etc/caddy/Caddyfile` symlink; `make mvp-config` generates `Caddyfile.mvp` from it for the MVP stand |
 | `/etc/caddy/Caddyfile` | Symlink to that file |
 | `/var/lib/caddy/.local/share/caddy/` | ACME certs and the local CA. Not backed up. Reissued, except the CA root clients already trust. |
 

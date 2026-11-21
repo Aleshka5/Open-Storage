@@ -52,16 +52,28 @@ upstreams:
   switch: "192.168.1.102:8095"
   litellm: "litellm-proxy-server:4000"
 
+# The owl's model, OpenAI-compatible. Optional as a whole: an incomplete block
+# leaves POST /api/chat answering 503 and everything else running. The key is
+# env:LLM_API_KEY (set in .env), never a literal in this file.
+llm:
+  host: "https://api.deepseek.com/v1"
+  api_key: "env:LLM_API_KEY"
+  model: "deepseek-flash"
+  # "none" keeps a reasoning model from thinking before a two-sentence answer.
+  reasoning_effort: "none"
+  timeout: 5m
+
 hosts:
   - host: filenkov.store
     upstream: resume
     routes:
       - { path: /auth/**, bff: true }
       - { path: /admin/**, admin: true, policy: admin }
-      # The owl chat is out of scope for this release (ADR-0006). The route stays
-      # warm so the return is a page change, not a contract change.
-      - { path: /api/chat, methods: [POST], upstream: litellm, policy: public,
-          inject_headers: { X-Api-Key: "env:LLM_API_KEY" } }
+      # The owl chat is served by the gateway itself: `chat: true` compiles the
+      # route into the in-process handler, because the prompt and the node map
+      # travel with the binary, not with a YAML file. ADR-0009 supersedes
+      # ADR-0006, which kept this route proxied to the model with no caller.
+      - { path: /api/chat, methods: [POST], chat: true, policy: public }
       - { path: /api/services, methods: [GET], upstream: switch, policy: session,
           inject_headers: { X-Service-Token: "env:SWITCH_TOKEN" } }
       - { path: /api/services/**, upstream: switch, policy: admin,
@@ -74,6 +86,10 @@ hosts:
     # Keycloak's own console authenticates with a bearer the browser holds, and
     # it is not an app under identity v1: headers pass through untouched.
     identity: passthrough
+    # Keycloak serves check_session_iframe, which a page on this origin frames as
+    # part of OIDC session polling. DENY there fails the login with a 3rd-party
+    # check iframe timeout (ADR-0008).
+    frame: self
     routes:
       # The Keycloak console stays reachable for break-glass when gateway policy
       # is wrong, as long as idp_db is alive.

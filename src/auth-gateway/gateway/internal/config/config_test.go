@@ -248,3 +248,61 @@ func TestHostNormalizationAndAliases(t *testing.T) {
 		t.Fatal("return_to allowlist is wrong")
 	}
 }
+
+// --- the owl chat ---------------------------------------------------------
+
+// A chat route is served in this process and names no upstream. Both together
+// would mean two things at once.
+func TestChatRouteCannotAlsoNameAnUpstream(t *testing.T) {
+	wantError(t, `  - host: a.example
+    upstream: resume
+    routes:
+      - { path: /api/chat, methods: [POST], chat: true, upstream: app, policy: public }
+      - { path: /**, policy: public }
+`, "chat and upstream are exclusive")
+}
+
+func TestChatRouteCompiles(t *testing.T) {
+	f := mustParse(t, `  - host: a.example
+    upstream: resume
+    routes:
+      - { path: /api/chat, methods: [POST], chat: true, policy: public }
+      - { path: /**, policy: public }
+`)
+	_, rt, ok := f.Router().Match("a.example", "POST", "/api/chat")
+	if !ok || rt == nil || !rt.Chat {
+		t.Fatalf("chat route did not compile: %+v ok=%v", rt, ok)
+	}
+}
+
+// The model key is optional: an unset variable leaves the chat disabled instead
+// of failing the start, because sign-in does not depend on the owl.
+func TestLLMKeyIsOptional(t *testing.T) {
+	f, err := Parse([]byte(strings.Replace(header,
+		`  resume: "resume:80"`,
+		`  resume: "resume:80"`+"\n"+`llm:
+  host: "http://litellm:4000/v1"
+  model: "gpt-4o-mini"
+  api_key: "env:LLM_API_KEY"`, 1) + "hosts:\n  - host: a.example\n    upstream: resume\n    routes:\n      - { path: /**, policy: public }\n"))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	env := map[string]string{
+		"IDP_CLIENT_SECRET":   "idp",
+		"GATEWAY_SESSION_KEY": "k",
+		"IDP_ADMIN_SECRET":    "admin",
+	}
+	if err := f.ResolveEnv(func(k string) (string, bool) { v, ok := env[k]; return v, ok }); err != nil {
+		t.Fatalf("an unset LLM_API_KEY must not fail startup: %v", err)
+	}
+	if f.Secrets().LLMAPIKey != "" {
+		t.Fatalf("key %q", f.Secrets().LLMAPIKey)
+	}
+	env["LLM_API_KEY"] = "sk-1"
+	if err := f.ResolveEnv(func(k string) (string, bool) { v, ok := env[k]; return v, ok }); err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if f.Secrets().LLMAPIKey != "sk-1" {
+		t.Fatalf("key %q", f.Secrets().LLMAPIKey)
+	}
+}

@@ -37,7 +37,7 @@ Rate limit default: 600 requests per minute per IP, in process. One replica. Do 
 |---|---|---|
 | `Permissions-Policy` | per host | Microphone and camera depend on the host |
 | `X-Content-Type-Options`, `Referrer-Policy` | yes | |
-| `X-Frame-Options: DENY` | yes, except `meet` and `audio` | Those apps frame themselves |
+| `X-Frame-Options: DENY` | yes, except `meet`, `audio` and `id` | Those apps frame themselves |
 | `X-Forwarded-*` | rewritten | Must be the real host |
 | Identity headers | injected after the strip | [identity v1](../external-contracts/identity-v1.md) |
 

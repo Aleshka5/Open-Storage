@@ -31,11 +31,33 @@ First match wins. Specific routes go above general ones. Each host has exactly o
   strip_prefix: /api
   bff: true                     # internal /auth/*
   admin: true                   # internal /admin/*
+  chat: true                    # internal POST /api/chat, no upstream (ADR-0009)
   inject_headers: { X-Service-Token: "env:SWITCH_TOKEN" }
   timeouts: { response_header: 30m }
 ```
 
-A host also carries `frame: self` when its own UI frames itself (Jitsi Meet, the ASR UI). The default is `deny`, which sends `X-Frame-Options: DENY`; the choice belongs to the host entry, not to a prefix of its name.
+`chat: true` serves the route with the gateway's own handler and forbids an
+`upstream` on the same route: the model host, key, model and reasoning effort
+live in the top-level `llm` block instead.
+
+```yaml
+llm:
+  host: "http://litellm-proxy-server:4000/v1"   # OpenAI-compatible base URL
+  api_key: "env:LLM_API_KEY"                   # optional; unset disables the chat
+  model: "gpt-4o-mini"
+  reasoning_effort: "none"                     # omit the field by leaving it empty
+  timeout: 5m
+```
+
+Every field is optional. An `llm` block that names no host or no model leaves
+`POST /api/chat` answering `503 chat_unavailable` and changes no other route;
+`LLM_HOST`, `LLM_MODEL` and `LLM_REASONING_EFFORT` in the environment override
+the block, and `MLFLOW_TRACING_ENDPOINT` with `MLFLOW_EXPERIMENT_ID` add OTLP
+traces to the same file. `POST /api/chat` answers one question as
+`text/event-stream` — `data: {"delta":"…"}` frames, then `data: [DONE]` — and
+keeps nothing between requests.
+
+A host also carries `frame: self` when its own UI frames itself (Jitsi Meet, the ASR UI, and the idp — Keycloak serves `check_session_iframe`, and a `DENY` there fails login with a 3rd-party check iframe timeout, [ADR-0008](../../adrs/0008-idp-host-frame-self.md)). The default is `deny`, which sends `X-Frame-Options: DENY`; the choice belongs to the host entry, not to a prefix of its name. The setting covers every response the edge produces for that host: proxied responses, the `302` to login, and the JSON errors.
 
 `identity: passthrough` marks a host that is not an application under identity v1 — today only `id.filenkov.store`, the idp's own console. On such a host nothing is stripped and nothing is injected: the client's own `Authorization` is what the upstream needs. Every other host is `inject` (the default) and never sees a header the client sent.
 
@@ -108,8 +130,7 @@ hosts:
     routes:
       - { path: /auth/**, bff: true }
       - { path: /admin/**, admin: true, policy: admin }
-      - { path: /api/chat, methods: [POST], upstream: litellm, policy: public,
-          inject_headers: { X-Api-Key: "env:LLM_API_KEY" }, timeouts: { response_header: 60s } }
+      - { path: /api/chat, methods: [POST], chat: true, policy: public }
       - { path: /api/services, methods: [GET], upstream: switch, policy: session,
           inject_headers: { X-Service-Token: "env:SWITCH_TOKEN" } }
       - { path: /api/services/**, upstream: switch, policy: admin,

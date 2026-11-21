@@ -1,0 +1,212 @@
+[
+  {
+    "path": "/",
+    "title": "Alexey Filenkov",
+    "teaser": "The visit card. Everything else is one click down a branch."
+  },
+  {
+    "path": "/about-project",
+    "title": "About this project",
+    "teaser": "This site is one of the projects on the map. What it runs on, and why it is a tree instead of one long page."
+  },
+  {
+    "path": "/about-project/architecture",
+    "title": "Architecture",
+    "teaser": "The live service map, box by box: TLS at the edge, the gateway, the product hosts, and the shared data plane under them."
+  },
+  {
+    "path": "/about-project/architecture/auth-cache",
+    "title": "Rejected cache",
+    "teaser": "Redis on auth_network. Rejected tokens by jti and by user, OAuth CSRF state, IP rate-limit counters, and the auth_session → user map."
+  },
+  {
+    "path": "/about-project/architecture/auth-gateway",
+    "title": "Auth Gateway",
+    "teaser": "Go, :8083. The single place identity is decided: YAML host/path routing, access-JWT check, incoming X-Auth-* stripped and its own injected."
+  },
+  {
+    "path": "/about-project/architecture/caddy-https",
+    "title": "Caddy HTTPS",
+    "teaser": "The only box on the external network. Terminates TLS with Let’s Encrypt on :80/:443 and hands every host to the gateway — it decides nothing."
+  },
+  {
+    "path": "/about-project/architecture/common-data",
+    "title": "Common Postgres & Redis",
+    "teaser": "One Postgres and one Redis on common_network, shared by the product services. Each keeps its own schema; none of them keeps a session."
+  },
+  {
+    "path": "/about-project/architecture/hermes",
+    "title": "Hermes",
+    "teaser": "Agent workspace on its own host, hermes.filenkov.store, behind the same Auth-Service JWT rather than a second password. Talks to MLflow and LiteLLM."
+  },
+  {
+    "path": "/about-project/architecture/hub",
+    "title": "Hub (filenkov.store)",
+    "teaser": "This page. A static Vite container on :80 behind the gateway: /auth/session, /auth/login, /auth/logout and /admin are answered by the edge itself, and the rest of the tree is static files. Only the gateway is published."
+  },
+  {
+    "path": "/about-project/architecture/llm",
+    "title": "Chat",
+    "teaser": "llm.filenkov.store → llama.cpp (container qwen38) on :4001, admins only. LiteLLM on :4000 stays internal behind /api/chat. Identity headers at the edge, no token downstream."
+  },
+  {
+    "path": "/about-project/architecture/minio",
+    "title": "Common MinIO S3",
+    "teaser": "Shared object store on :9000 — home_storage buckets, MLflow artifacts, and service backups."
+  },
+  {
+    "path": "/about-project/architecture/mlflow",
+    "title": "MLflow",
+    "teaser": "Experiment tracking on :5000, reached with client-certificate validation rather than the browser cookie. Artifacts to MinIO, metadata to the shared Postgres."
+  },
+  {
+    "path": "/about-project/architecture/observability",
+    "title": "Prometheus & Grafana",
+    "teaser": "observability_network. Prometheus scrapes the badged services — gateway, storage, Hermes, User-Service — and Grafana reads Prometheus. Nothing scrapes from outside."
+  },
+  {
+    "path": "/about-project/architecture/storage",
+    "title": "Storage",
+    "teaser": "storage.filenkov.store: a Python app on :8000 behind its own SPA. Gets X-User-Id and X-Storage-Role from the gateway, blobs on the shared MinIO."
+  },
+  {
+    "path": "/about-project/architecture/user-service",
+    "title": "User-Service",
+    "teaser": "The directory of people on user_network — UUID, google_sub, username, global and per-service roles — with its own Postgres and Redis. Never sees a JWT."
+  },
+  {
+    "path": "/about-project/art",
+    "title": "Owl art",
+    "teaser": "The owl is the site mascot: four moods, three clips, one tab icon. Every drawing in one place."
+  },
+  {
+    "path": "/about-project/site-stack",
+    "title": "Site stack",
+    "teaser": "React and Vite in a static nginx container, behind a Go gateway that routes by YAML and injects identity."
+  },
+  {
+    "path": "/about-project/why-a-tree",
+    "title": "Why a tree",
+    "teaser": "A scrolling resume gives every reader the same words in the same order. A tree lets each one choose."
+  },
+  {
+    "path": "/achievements",
+    "title": "Achievements",
+    "teaser": "What the work produced: measured numbers, and the services that run behind this domain."
+  },
+  {
+    "path": "/achievements/numbers",
+    "title": "The numbers",
+    "teaser": "Four outcomes from Sber and AeroClub, each with the measurement behind it."
+  },
+  {
+    "path": "/achievements/projects",
+    "title": "Projects",
+    "teaser": "Services on one domain, one Google sign-in, and roles that stop at the host that granted them."
+  },
+  {
+    "path": "/achievements/projects/auth-hub",
+    "title": "Auth hub",
+    "teaser": "One Google sign-in. The Auth Gateway sits in front of Filenkov hosts — no tokens in the URL."
+  },
+  {
+    "path": "/achievements/projects/llm",
+    "title": "LLM",
+    "teaser": "Personal LLM workspace behind the same auth gate."
+  },
+  {
+    "path": "/achievements/projects/resume-studio",
+    "title": "Resume studio",
+    "teaser": "AI resume and cover-letter generator: chat a vacancy, get a tailored PDF."
+  },
+  {
+    "path": "/achievements/projects/storage",
+    "title": "Storage",
+    "teaser": "Home cloud for family files — same sign-in, roles that stay on this host."
+  },
+  {
+    "path": "/experience",
+    "title": "Experience",
+    "teaser": "Five years, two companies: mail routing and extraction, then agent graphs that write reports."
+  },
+  {
+    "path": "/experience/aeroclub",
+    "title": "AeroClub",
+    "teaser": "Middle LLM Engineer. Mail routing fully automated: 85% precision, 80% recall on new data."
+  },
+  {
+    "path": "/experience/aeroclub/human-in-the-loop",
+    "title": "Human-in-the-loop framework",
+    "teaser": "One framework for agent logic, LabelStudio for hard cases, RabbitMQ for the async loop."
+  },
+  {
+    "path": "/experience/aeroclub/mail-routing",
+    "title": "Multi-label mail routing",
+    "teaser": "Mistral Large, prompt-only. No fine-tune for the production scores."
+  },
+  {
+    "path": "/experience/aeroclub/ner",
+    "title": "NER at 80%+",
+    "teaser": "Entity extraction on new mail, again prompt-only, then shipped behind FastAPI."
+  },
+  {
+    "path": "/experience/education",
+    "title": "Education",
+    "teaser": "MAI, Data Science and ML. Before that MPEI, Computer Systems and Engineering."
+  },
+  {
+    "path": "/experience/sber",
+    "title": "Sber",
+    "teaser": "Middle+ AI Agents. Automated reporting: ~1M ₽/year saved at 1,000 reports a week."
+  },
+  {
+    "path": "/experience/sber/cheaper-tokens",
+    "title": "2× cheaper tokens",
+    "teaser": "A graph rewrite cut one report from 60,000 to 30,000 tokens, at the same output quality."
+  },
+  {
+    "path": "/experience/sber/mcp-tools",
+    "title": "Tools as MCP",
+    "teaser": "Agent tools live in a separate MCP service — two product services, one tool layer."
+  },
+  {
+    "path": "/experience/sber/report-memory",
+    "title": "Reports that remember",
+    "teaser": "Memory links reports to each other; RAG covers the domain so later runs stay consistent."
+  },
+  {
+    "path": "/for-interviewer",
+    "title": "For interviewer",
+    "teaser": "The short path: what I build with, how I take a task from ask to shipped, and the logistics."
+  },
+  {
+    "path": "/for-interviewer/how-i-work",
+    "title": "How I work",
+    "teaser": "From a business ask to a shipped agent: how I scope, how I review, and what I need from a team."
+  },
+  {
+    "path": "/for-interviewer/logistics",
+    "title": "Logistics",
+    "teaser": "Years, English, and how to reach me — the first five minutes of a screening call, in a list."
+  },
+  {
+    "path": "/for-interviewer/stack",
+    "title": "Stack",
+    "teaser": "Three layers: agents that do the work, a backend that can be trusted, an edge that puts it on one domain."
+  },
+  {
+    "path": "/for-interviewer/stack/ai-agents",
+    "title": "AI agents",
+    "teaser": "Agents that route work, extract facts, and write reports without a human in every loop."
+  },
+  {
+    "path": "/for-interviewer/stack/backend",
+    "title": "Backend",
+    "teaser": "APIs other services can trust: identity, roles, and queues."
+  },
+  {
+    "path": "/for-interviewer/stack/infra",
+    "title": "Infra",
+    "teaser": "One domain, TLS at the edge, object storage shared by the house."
+  }
+]

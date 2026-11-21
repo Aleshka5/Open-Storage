@@ -41,6 +41,8 @@ upstreams:
   image: "qwen-image:8000"
   audio: "audio-api:8000"
   audio_web: "frontend:80"
+  idp: "idp:8080"
+  jitsi: "jitsi-web:8000"
 hosts:
   - host: filenkov.store
     upstream: resume
@@ -71,6 +73,17 @@ hosts:
     timeouts: { response_header: 500ms }
     routes:
       - { path: /api/**, upstream: audio, policy: "service(audio, family, admin)" }
+      - { path: /**, policy: session }
+  - host: id.filenkov.store
+    upstream: idp
+    identity: passthrough
+    frame: self
+    routes:
+      - { path: /**, policy: public }
+  - host: meet.filenkov.store
+    upstream: jitsi
+    frame: self
+    routes:
       - { path: /**, policy: session }
 `
 

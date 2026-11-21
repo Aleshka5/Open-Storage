@@ -56,7 +56,3 @@ Gateway stores nothing. The session cookie holds the Keycloak refresh token. idp
 | What the page shows | resume-page |
 
 Who-may-edit-whom is enforced in gateway. Who-you-are stays in idp.
-
-## Closed inconsistencies
-
-The previous spec carried three conflicts. They are closed, and the reasons are in [ADR-0005](adrs/0005-port-from-auth-service.md#status): one string error envelope for the edge and `/admin`; the audio catch-all is `policy: session`; resume is port 80.

@@ -61,6 +61,7 @@ type File struct {
 	Services     []string          `yaml:"services"`
 	Defaults     Defaults          `yaml:"defaults"`
 	Upstreams    map[string]string `yaml:"upstreams"`
+	LLM          LLM               `yaml:"llm"`
 	Hosts        []Host            `yaml:"hosts"`
 
 	secrets Secrets
@@ -139,15 +140,33 @@ type Host struct {
 
 // Route is one host+path+method rule.
 type Route struct {
-	Path          string            `yaml:"path"`
-	Methods       []string          `yaml:"methods"`
-	Policy        string            `yaml:"policy"`
-	Upstream      string            `yaml:"upstream"`
-	StripPrefix   string            `yaml:"strip_prefix"`
-	BFF           bool              `yaml:"bff"`
-	Admin         bool              `yaml:"admin"`
+	Path        string   `yaml:"path"`
+	Methods     []string `yaml:"methods"`
+	Policy      string   `yaml:"policy"`
+	Upstream    string   `yaml:"upstream"`
+	StripPrefix string   `yaml:"strip_prefix"`
+	BFF         bool     `yaml:"bff"`
+	Admin       bool     `yaml:"admin"`
+	// Chat serves the owl's question in this process (POST /api/chat). It takes
+	// no upstream: the model host comes from `llm`, which needs a prompt and a
+	// node map that a route table cannot carry.
+	Chat          bool              `yaml:"chat"`
 	InjectHeaders map[string]string `yaml:"inject_headers"`
 	Timeouts      *Timeouts         `yaml:"timeouts"`
+}
+
+// LLM is the owl's model endpoint. Every field is optional: an incomplete block
+// leaves POST /api/chat answering 503 and the rest of the edge untouched, because
+// the chat is not load-bearing for sign-in.
+type LLM struct {
+	// Host is the OpenAI-compatible base URL, e.g. http://litellm-proxy-server:4000/v1
+	Host   string `yaml:"host"`
+	APIKey string `yaml:"api_key"`
+	Model  string `yaml:"model"`
+	// ReasoningEffort is sent as `reasoning_effort`; "none" keeps a reasoning
+	// model from thinking before a two-sentence answer.
+	ReasoningEffort string   `yaml:"reasoning_effort"`
+	Timeout         Duration `yaml:"timeout"`
 }
 
 // Secrets are the resolved values of every `env:NAME` reference.
@@ -155,6 +174,7 @@ type Secrets struct {
 	IdPClient   string
 	AdminClient string
 	SessionKey  string
+	LLMAPIKey   string
 }
 
 // Block is a compiled host.
@@ -181,8 +201,10 @@ type Compiled struct {
 	StripPrefix string
 	BFF         bool
 	Admin       bool
-	Headers     map[string]string
-	Timeouts    Trimmed
+	// Chat is served in this process by the gateway's own handler.
+	Chat     bool
+	Headers  map[string]string
+	Timeouts Trimmed
 }
 
 // Router is a validated host+path lookup table. First matching route wins.
@@ -439,6 +461,12 @@ func (f *File) compileRoute(host string, rt *Route, i int, hostTimeouts Trimmed)
 		}
 		c.Upstream = up
 	}
+	// `chat` without an upstream serves the request in this process; with one,
+	// the rule would mean two things at once and one of them would silently win.
+	c.Chat = rt.Chat
+	if rt.Chat && rt.Upstream != "" {
+		return Compiled{}, fmt.Errorf("%s: chat and upstream are exclusive", prefix)
+	}
 	headers, err := compileHeaders(prefix, rt.InjectHeaders)
 	if err != nil {
 		return Compiled{}, err
@@ -525,6 +553,17 @@ func (f *File) ResolveEnv(lookup func(string) (string, bool)) error {
 	if f.Admin.ClientID != "" {
 		if f.secrets.AdminClient, err = get("admin.client_secret", f.Admin.ClientSecretRef); err != nil {
 			return err
+		}
+	}
+	// The owl's key is optional: without it the chat answers 503 and nothing
+	// else changes. A key that is written as env:NAME-but-unset is the same case.
+	if ref := strings.TrimSpace(f.LLM.APIKey); strings.HasPrefix(ref, "env:") {
+		name, err := envRef("llm.api_key", ref)
+		if err != nil {
+			return err
+		}
+		if v, ok := lookup(name); ok {
+			f.secrets.LLMAPIKey = v
 		}
 	}
 	for _, b := range f.router.hosts {

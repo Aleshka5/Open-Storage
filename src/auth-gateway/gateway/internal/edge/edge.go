@@ -41,7 +41,10 @@ type Config struct {
 	Refresher Refresher
 	BFF       http.Handler
 	Admin     http.Handler
-	Logger    *slog.Logger
+	// Chat answers a route compiled with `chat: true`. Nil means such a route
+	// answers 503, which is also what a route without a model config should do.
+	Chat   http.Handler
+	Logger *slog.Logger
 	// DevHTTP accepts plain HTTP cookies in tests. Production never sets it.
 	DevHTTP bool
 }
@@ -55,6 +58,7 @@ type Server struct {
 	refresher Refresher
 	bff       http.Handler
 	admin     http.Handler
+	chat      http.Handler
 	log       *slog.Logger
 	devHTTP   bool
 	proxy     *proxy
@@ -81,6 +85,7 @@ func New(cfg Config) (*Server, error) {
 		refresher: cfg.Refresher,
 		bff:       cfg.BFF,
 		admin:     cfg.Admin,
+		chat:      cfg.Chat,
 		log:       cfg.Logger,
 		devHTTP:   cfg.DevHTTP,
 		limiter:   newLimiter(cfg.File.Defaults.RateLimit.Requests, cfg.File.Defaults.RateLimit.Per.D()),
@@ -134,7 +139,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 			name = block.Name
 		}
 		s.metrics.count(name, "rate_limit", "-", http.StatusTooManyRequests)
-		s.writeError(w, http.StatusTooManyRequests, "rate_limited")
+		s.writeError(w, r, http.StatusTooManyRequests, "rate_limited")
 		return
 	}
 	// Probes answer on any Host: a container healthcheck sends 127.0.0.1, and
@@ -143,24 +148,24 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if block == nil {
-		s.writeError(w, http.StatusNotFound, "not_found")
+		s.writeError(w, r, http.StatusNotFound, "not_found")
 		return
 	}
 	route, ok := s.match(block, r)
 	if !ok {
-		s.writeError(w, http.StatusNotFound, "not_found")
+		s.writeError(w, r, http.StatusNotFound, "not_found")
 		return
 	}
 	// A `deny` route is indistinguishable from a missing one: no route, no login
 	// prompt, no hint that something lives here.
 	if route.Policy.Kind == policy.Deny {
-		s.writeError(w, http.StatusNotFound, "not_found")
+		s.writeError(w, r, http.StatusNotFound, "not_found")
 		return
 	}
 	id, access := s.identity(r)
 	if route.BFF {
 		if s.bff == nil {
-			s.writeError(w, http.StatusNotFound, "not_found")
+			s.writeError(w, r, http.StatusNotFound, "not_found")
 			return
 		}
 		s.bff.ServeHTTP(w, withIdentity(r, id, access))
@@ -174,6 +179,18 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		s.deny(w, r, block, route, id)
 		return
 	}
+	if route.Chat {
+		if s.chat == nil {
+			s.metrics.count(block.Name, route.Path, route.Policy.Original, http.StatusServiceUnavailable)
+			s.writeError(w, r, http.StatusServiceUnavailable, "chat_unavailable")
+			return
+		}
+		// Served in this process, so the policy above has already been applied
+		// and the identity is the verified one, from the cookie only.
+		s.chat.ServeHTTP(&chatWriter{ResponseWriter: w, block: block}, withIdentity(r, id, access))
+		s.metrics.count(block.Name, route.Path, route.Policy.Original, http.StatusOK)
+		return
+	}
 	if id == nil && route.Policy.Kind != policy.Public && s.refresher != nil {
 		if token, status := s.refresher.Refresh(w, r); token != "" {
 			access = token
@@ -182,13 +199,13 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 			}
 		} else if status > 0 {
 			s.metrics.count(block.Name, route.Path, route.Policy.Original, status)
-			s.writeError(w, status, statusText(status))
+			s.writeError(w, r, status, statusText(status))
 			return
 		}
 	}
 	if policy.Blocked(id, block.Service) {
 		s.metrics.count(block.Name, route.Path, route.Policy.Original, http.StatusForbidden)
-		s.writeError(w, http.StatusForbidden, "blocked")
+		s.writeError(w, r, http.StatusForbidden, "blocked")
 		return
 	}
 	if !route.Policy.Allow(id) {
@@ -215,17 +232,17 @@ func (s *Server) deny(w http.ResponseWriter, r *http.Request, block *config.Bloc
 		status, body = http.StatusUnauthorized, "unauthorized"
 		if wantsJSON(r) {
 			s.metrics.count(block.Name, route.Path, route.Policy.Original, status)
-			s.writeError(w, status, body)
+			s.writeError(w, r, status, body)
 			return
 		}
 		status = http.StatusFound
-		applySecurityHeaders(w.Header(), "", true)
+		applySecurityHeaders(w.Header(), "", block.FrameDeny)
 		http.Redirect(w, r, s.loginURL(r), http.StatusFound)
 		s.metrics.count(block.Name, route.Path, route.Policy.Original, status)
 		return
 	}
 	s.metrics.count(block.Name, route.Path, route.Policy.Original, status)
-	s.writeError(w, status, body)
+	s.writeError(w, r, status, body)
 }
 
 func (s *Server) loginURL(r *http.Request) string {
@@ -294,8 +311,19 @@ func statusText(status int) string {
 	}
 }
 
-func (s *Server) writeError(w http.ResponseWriter, status int, value string) {
-	applySecurityHeaders(w.Header(), "", true)
+// writeError answers with JSON. The host that owns the request decides whether
+// the answer may be framed: an app that declares `frame: self` frames its own
+// error pages too, and DENY here would contradict the proxied responses.
+func (s *Server) writeError(w http.ResponseWriter, r *http.Request, status int, value string) {
+	denyFrame := true
+	// The target is set by forward and survives into ErrorHandler. Falling back
+	// to Request.Host covers the paths that answer before a target exists.
+	if t := targetOf(r); t != nil && t.block != nil {
+		denyFrame = t.block.FrameDeny
+	} else if block := s.router.HostBlock(r.Host); block != nil {
+		denyFrame = block.FrameDeny
+	}
+	applySecurityHeaders(w.Header(), "", denyFrame)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(`{"error":"` + value + `"}`))

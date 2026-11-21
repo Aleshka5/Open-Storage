@@ -8,7 +8,7 @@ Story: [US-01](../init.md)
 
 ## Paths
 
-- `src/auth-gateway/proxy/Caddyfile`
+- `deploy/auth-gateway/Caddyfile`
 
 ## Done when
 

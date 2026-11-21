@@ -39,12 +39,46 @@ beforeEach(() => {
 afterEach(() => {
   document.querySelector('.header')?.remove()
   delete root.dataset.header
+  delete root.dataset.owl
+  document.querySelector('.owl')?.remove()
 })
 
 describe('useScrollChrome', () => {
   it('starts at the top', () => {
     renderHook(() => useScrollChrome())
     expect(root.dataset.header).toBe('top')
+  })
+
+  it('parks the owl as the hero at the top', () => {
+    renderHook(() => useScrollChrome())
+    expect(root.dataset.owl).toBe('hero')
+  })
+
+  it('docks the owl past the threshold and undocks it with hysteresis', async () => {
+    renderHook(() => useScrollChrome())
+
+    await scrollTo(181)
+    expect(root.dataset.owl).toBe('docked')
+
+    // Between the two thresholds the owl keeps the state it had.
+    await scrollTo(160)
+    expect(root.dataset.owl).toBe('docked')
+
+    await scrollTo(139)
+    expect(root.dataset.owl).toBe('hero')
+  })
+
+  it('hides the docked button from assistive tech while it is the hero', async () => {
+    const button = document.createElement('button')
+    button.className = 'owl'
+    document.body.append(button)
+    renderHook(() => useScrollChrome())
+    expect(button.getAttribute('aria-hidden')).toBe('true')
+    expect(button.tabIndex).toBe(-1)
+
+    await scrollTo(400)
+    expect(button.getAttribute('aria-hidden')).toBe('false')
+    expect(button.tabIndex).toBe(0)
   })
 
   it('walks top -> hidden -> condensed -> top', async () => {

@@ -137,41 +137,203 @@
   font-size: var(--step--1);
 }
 
-/* --- back to top --------------------------------------------------------- */
+/* --- the owl ------------------------------------------------------------- */
 
-/* A plain corner button, shown past 180px of scroll. It was the docked owl
-   before ADR-0006; the target and the label are all that is left. */
-.to-top {
+/* The hero owl sits in the flow and scrolls with the page. The slot is also the
+   greeting bubble's anchor, so it stays a positioned grid cell. */
+.owl-slot {
+  position: relative;
+  height: 128px;
+  margin: var(--s5) 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.owl-hero-button {
+  width: 128px;
+  height: 128px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  pointer-events: auto;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.owl-hero-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Docked, the hero has faded out — it must stop taking clicks with it. */
+[data-owl='docked'] .owl-hero-button {
+  pointer-events: none;
+}
+
+.owl-hero {
+  width: 128px;
+  height: 128px;
+  transform-origin: center;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+.owl-hero svg,
+.owl-art svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+[data-owl='docked'] .owl-hero {
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+/* The docked owl is a real button, fixed in the corner. */
+.owl {
   position: fixed;
   right: 24px;
   bottom: max(24px, calc(env(safe-area-inset-bottom) + 8px));
-  z-index: 15;
   width: 48px;
   height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  z-index: 15;
   display: grid;
   place-items: center;
-  padding: 0;
-  border: 1px solid var(--rule);
-  border-radius: 50%;
-  background: var(--paper-raised);
-  color: var(--ink);
-  font-size: var(--step-1);
-  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.6);
+  transform-origin: center;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+  will-change: transform, opacity;
+}
+
+.owl-art {
+  width: 48px;
+  height: 48px;
+  pointer-events: none;
+}
+
+[data-owl='docked'] .owl {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
   cursor: pointer;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
 }
 
-.to-top:hover {
-  border-color: var(--accent-text);
-  color: var(--accent-text);
-}
-
-/* Keeps the hit area over 44px without inflating the 48px face. */
-.to-top::after {
+/* Keeps the hit area over 44px without inflating the 48px art. */
+[data-owl='docked'] .owl::after {
   content: '';
   position: absolute;
   inset: -4px;
 }
+
+/* Read progress around the docked owl. */
+.owl-ring {
+  position: absolute;
+  inset: -4px;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+}
+
+.owl-ring circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 151;
+  stroke-dashoffset: calc(151 * (1 - var(--read)));
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+/* --- the greeting bubble ------------------------------------------------- */
+
+.owl-bubble {
+  position: absolute;
+  left: calc(50% + 76px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5; /* the sticky spine paints later in the flow; the greeting wins */
+  max-width: min(280px, 42vw);
+  padding: var(--s3) var(--s4);
+  padding-right: var(--s5);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: var(--step--1);
+  line-height: 1.45;
+  pointer-events: auto;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 12%);
+  /* The text grows a letter at a time; reserve two lines' worth of height so
+     the article below does not shuffle upward on every tick. */
+  min-height: 3.4em;
+}
+
+.owl-bubble::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateY(-50%) rotate(45deg);
+  border-left: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: inherit;
+}
+
+.owl-bubble-close {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font-size: var(--step-0);
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+[data-owl='docked'] .owl-bubble {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+
+@media (max-width: 760px) {
+  .owl-bubble {
+    left: 50%;
+    top: calc(100% - 4px);
+    transform: translateX(-50%);
+    max-width: min(320px, 88vw);
+  }
+
+  .owl-bubble::before {
+    left: 50%;
+    top: -6px;
+    transform: translateX(-50%) rotate(135deg);
+  }
+}
+
+/* --- back to top --------------------------------------------------------- */
+
+/* Nothing here on purpose: the corner button is the docked owl (see "the owl"),
+   so "back to top" and the mascot are one target, as they were before ADR-0006. */
 
 @media (max-width: 760px) {
   .main {

@@ -156,6 +156,31 @@ func TestFrameHeaderFollowsConfig(t *testing.T) {
 	}
 }
 
+// Keycloak serves check_session_iframe on its own origin, so a DENY on the idp
+// host turns into a 3rd-party check iframe timeout at login (ADR-0008).
+func TestIdPHostFrameSelf(t *testing.T) {
+	h := newHarness(t)
+	if rec := h.do(t, "id.filenkov.store", "GET", "/realms/filenkov/", "", nil); rec.Header().Get("X-Frame-Options") != "" {
+		t.Fatalf("idp frames its own check_session_iframe, got X-Frame-Options = %q", rec.Header().Get("X-Frame-Options"))
+	}
+}
+
+// The gateway's own answers follow the host too: a `frame: self` host must not
+// get a DENY on a 404 or on the 302 to login.
+func TestOwnAnswersFollowHostFrame(t *testing.T) {
+	h := newHarness(t)
+	if rec := h.do(t, "id.filenkov.store", "GET", "/no-such-path-here", "", nil); rec.Header().Get("X-Frame-Options") != "" {
+		t.Fatalf("idp 404 X-Frame-Options = %q, want empty", rec.Header().Get("X-Frame-Options"))
+	}
+	if rec := h.do(t, "storage.filenkov.store", "GET", "/no-such-path-here", "", nil); rec.Header().Get("X-Frame-Options") != "DENY" {
+		t.Fatalf("storage 404 X-Frame-Options = %q, want DENY", rec.Header().Get("X-Frame-Options"))
+	}
+	// meet frames itself and answers an anonymous caller with a 302 to login.
+	if rec := h.do(t, "meet.filenkov.store", "GET", "/", "", nil); rec.Header().Get("X-Frame-Options") != "" {
+		t.Fatalf("meet 302 X-Frame-Options = %q, want empty", rec.Header().Get("X-Frame-Options"))
+	}
+}
+
 // Every timeout a route can ask for has a transport, and the one it gets is the
 // route's own: a silent downgrade to the default is what this guards.
 func TestTransportCoversEveryRouteTimeout(t *testing.T) {

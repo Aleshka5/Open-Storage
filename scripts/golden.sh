@@ -7,7 +7,7 @@
 #   1. scripts/verify-edge.sh — one request per SSO host, proxy and gateway.
 #   2. GET /healthz on the gateway — process up, config valid.
 #   3. GET /readyz  on the gateway — idp discovery and JWKS loaded.
-#   4. `caddy validate` on src/auth-gateway/proxy/Caddyfile.
+#   4. `caddy validate` on deploy/auth-gateway/Caddyfile.
 #
 # Steps 2 and 3 follow docs/auth-gateway/gateway/API/Message-contract.md §Probes.
 # /readyz does not check product upstreams, so a green /readyz with a red edge
@@ -21,7 +21,7 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(dirname -- "$script_dir")
 
 GATEWAY_ADDR=${GATEWAY_ADDR:-127.0.0.1:8080}
-CADDYFILE=${CADDYFILE:-$repo_root/src/auth-gateway/proxy/Caddyfile}
+CADDYFILE=${CADDYFILE:-$repo_root/deploy/auth-gateway/Caddyfile}
 CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-3}
 HTTP_TIMEOUT=${HTTP_TIMEOUT:-10}
 

@@ -2,9 +2,9 @@ import { useState, type MouseEvent } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { loginPath } from '../api'
 import { useAuth } from '../auth'
+import { Owl } from './owl/Owl'
 import { useScrollChrome } from '../hooks/useScrollChrome'
 import { canUseService, isAdmin } from '../types'
-import { BackToTop } from './BackToTop'
 
 function Mark() {
   return (
@@ -105,13 +105,15 @@ export function Layout() {
         </div>
       </header>
       <main className="main" id="main">
+        {/* The hero owl is the first thing in the flow, as it was before ADR-0006.
+            Docked, the same component becomes the "Back to top" button. */}
+        <Owl />
         <Outlet />
       </main>
       <footer className="footer">
         <span>Filenkov · personal tools</span>
         <span>Google sign-in · httpOnly cookies on .filenkov.store</span>
       </footer>
-      <BackToTop />
     </div>
   )
 }
