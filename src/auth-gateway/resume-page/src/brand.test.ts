@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { apply, persist, readPreference, resolve, watchSystem } from './theme'
+import { apply, brandStaysInApp, HUB_ORIGIN, persist, readPreference, resolve, watchSystem } from './theme'
 
 const pageRoot = process.cwd()
 
@@ -192,6 +192,11 @@ describe('theme preference', () => {
     new Function(script)()
     media.emit(false)
     expect(document.documentElement.dataset.theme).toBe('light')
+  })
+
+  it('keeps the wordmark in-app only on the hub origin', () => {
+    expect(brandStaysInApp(HUB_ORIGIN)).toBe(true)
+    expect(brandStaysInApp('http://127.0.0.1:4173')).toBe(false)
   })
 
   it('does not store a session in localStorage', () => {
