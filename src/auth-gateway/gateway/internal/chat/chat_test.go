@@ -93,7 +93,7 @@ func TestPassesTheKeyAndThePromptUpstream(t *testing.T) {
 	}
 }
 
-func TestNoConfigIsA503(t *testing.T) {
+func TestNilClientIsChatUnavailableBeforeAnyStream(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"question":"hi"}`))
 	New(nil, nil).ServeHTTP(rec, req)
@@ -101,8 +101,14 @@ func TestNoConfigIsA503(t *testing.T) {
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status %d", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "chat is not configured") {
+	if rec.Body.String() != `{"error":"chat_unavailable"}` {
 		t.Fatalf("body %q", rec.Body.String())
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("content type %q", ct)
+	}
+	if strings.Contains(rec.Body.String(), "data:") || rec.Header().Get("Cache-Control") != "" {
+		t.Fatalf("stream started: headers=%v body=%q", rec.Header(), rec.Body.String())
 	}
 }
 

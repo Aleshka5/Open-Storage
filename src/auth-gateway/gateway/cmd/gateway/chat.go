@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -46,9 +47,12 @@ func newChat(ctx context.Context, file *config.File, l *slog.Logger) (http.Handl
 	cfg.Tracer = tracer
 
 	client, err := llm.New(cfg)
-	if err != nil {
+	if err != nil || strings.TrimSpace(cfg.APIKey) == "" {
 		// A route that asks for `chat: true` still answers, with 503, and says
-		// why in the log.
+		// why in the log. No host, no model, or no key is the same answer.
+		if err == nil {
+			err = errors.New("llm api key is not set")
+		}
 		l.Warn("chat_disabled", "err", err)
 		return chat.New(nil, l), shutdown, nil
 	}

@@ -2,6 +2,10 @@
 
 Story: [US-02](../init.md)
 
+## Status
+
+Done
+
 ## Outcome
 
 `POST /api/chat` answers `503 {"error":"chat_unavailable"}` when the owl cannot run.

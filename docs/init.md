@@ -72,11 +72,3 @@ The full path with ports and host classes is ([auth-gateway/init.md](auth-gatewa
 ## Decisions that bind the shape
 
 ([adrs/init.md](../adrs/init.md)) owns system-wide decisions: one contract version, roles in the token, one session store. Namespace decisions, including the edge-in-one-process shape, are ([auth-gateway/adrs/init.md](auth-gateway/adrs/init.md)).
-
-## Mismatches: docs and code
-
-Found while drawing this map. Each is left for its owner document to settle.
-
-| Fact | Docs say | Code says |
-|---|---|---|
-| Unconfigured `POST /api/chat` | `503 {"error":"chat_unavailable"}` ([ADR-0009](auth-gateway/adrs/9-owl-chat-in-the-gateway.md), [gateway API contract](auth-gateway/gateway/api-contract.md)) | the handler is always installed and a nil client answers `{"error":"chat is not configured"}` ([US-02](user_stories/us-02-chat-unavailable/init.md)) |
