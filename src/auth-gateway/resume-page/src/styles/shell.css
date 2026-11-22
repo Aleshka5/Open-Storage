@@ -123,6 +123,7 @@
 
 .theme-segment {
   position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -153,13 +154,13 @@
 }
 
 .theme-segment:has(:checked) {
-  background: var(--ink);
-  color: var(--paper);
+  background: transparent;
+  color: var(--ink);
 }
 
 .theme-segment:has(:checked):hover {
-  background: var(--ink);
-  color: var(--paper);
+  background: transparent;
+  color: var(--ink);
 }
 
 .user-name {

@@ -1,5 +1,5 @@
 > **ID:** task-02
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-04](../init.md), [brand book §1](../../../brand-book/init.md)
 
 ## Overview
@@ -19,5 +19,5 @@ Replace the solid selected segment with one sliding glass thumb. The radiogroup,
 
 ## Definition of Done
 
-- [ ] The thumb slides, and the solid `--ink` face is the fallback.
-- [ ] Brand book §1 describes that thumb and that fallback.
+- [x] The thumb slides, and the solid `--ink` face is the fallback.
+- [x] Brand book §1 describes that thumb and that fallback.

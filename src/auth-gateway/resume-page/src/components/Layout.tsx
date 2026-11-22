@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { loginPath } from '../api'
 import { useAuth } from '../auth'
 import { Owl } from './owl/Owl'
+import { ThemeControl } from './ThemeControl'
 import { useScrollChrome } from '../hooks/useScrollChrome'
 import { canUseService, isAdmin } from '../types'
 import {
@@ -14,12 +15,6 @@ import {
   watchSystem,
   type Preference,
 } from '../theme'
-
-const themeOptions = [
-  { value: 'light', label: 'light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
-] as const satisfies ReadonlyArray<{ value: Preference; label: string }>
 
 function Mark() {
   return (
@@ -126,20 +121,7 @@ export function Layout() {
           {admin ? <Link to="/admin">Admin</Link> : null}
         </nav>
         <div className="header-right">
-          <div className="theme-switch" role="radiogroup" aria-label="Theme">
-            {themeOptions.map((option) => (
-              <label key={option.value} className="theme-segment">
-                <input
-                  type="radio"
-                  name="theme"
-                  value={option.value}
-                  checked={preference === option.value}
-                  onChange={() => onTheme(option.value)}
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
+          <ThemeControl preference={preference} onChange={onTheme} />
           {loading ? (
             <span className="muted">Checking sign-in…</span>
           ) : user ? (
