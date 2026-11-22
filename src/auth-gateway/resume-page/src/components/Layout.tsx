@@ -1,10 +1,25 @@
-import { useState, type MouseEvent } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState, type MouseEvent } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { loginPath } from '../api'
 import { useAuth } from '../auth'
 import { Owl } from './owl/Owl'
 import { useScrollChrome } from '../hooks/useScrollChrome'
 import { canUseService, isAdmin } from '../types'
+import {
+  HUB_ORIGIN,
+  apply,
+  brandStaysInApp,
+  persist,
+  readPreference,
+  watchSystem,
+  type Preference,
+} from '../theme'
+
+const themeOptions = [
+  { value: 'light', label: 'light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+] as const satisfies ReadonlyArray<{ value: Preference; label: string }>
 
 function Mark() {
   return (
@@ -33,11 +48,39 @@ const services = [
 export function Layout() {
   const { user, loading, logout } = useAuth()
   const { pathname, search } = useLocation()
+  const navigate = useNavigate()
   const [departing, setDeparting] = useState(false)
+  const [preference, setPreference] = useState<Preference>(() => readPreference())
   const admin = isAdmin(user)
   const here = `${pathname}${search}`
 
   useScrollChrome()
+
+  useEffect(() => {
+    apply(readPreference())
+    return watchSystem(() => apply(readPreference()))
+  }, [])
+
+  function onBrandClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return
+    }
+    if (!brandStaysInApp(window.location.origin)) return
+    event.preventDefault()
+    navigate('/')
+  }
+
+  function onTheme(next: Preference) {
+    setPreference(next)
+    persist(next)
+  }
 
   async function onSignOut(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
@@ -55,10 +98,10 @@ export function Layout() {
         Skip to article
       </a>
       <header className="header">
-        <Link className="brand" to="/">
+        <a className="brand" href={HUB_ORIGIN} onClick={onBrandClick}>
           <Mark />
           <span className="brand-name">Filenkov</span>
-        </Link>
+        </a>
         <nav className="service-nav" aria-label="Primary">
           {services.map((service) => {
             const allowed = service.service ? canUseService(user, service.service) : Boolean(user)
@@ -83,6 +126,20 @@ export function Layout() {
           {admin ? <Link to="/admin">Admin</Link> : null}
         </nav>
         <div className="header-right">
+          <div className="theme-switch" role="radiogroup" aria-label="Theme">
+            {themeOptions.map((option) => (
+              <label key={option.value} className="theme-segment">
+                <input
+                  type="radio"
+                  name="theme"
+                  value={option.value}
+                  checked={preference === option.value}
+                  onChange={() => onTheme(option.value)}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
           {loading ? (
             <span className="muted">Checking sign-in…</span>
           ) : user ? (

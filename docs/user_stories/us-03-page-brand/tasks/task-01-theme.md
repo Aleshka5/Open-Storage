@@ -1,5 +1,5 @@
 > **ID:** task-01
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-03](../init.md), [brand book](../../../brand-book/init.md)
 
 ## Overview
@@ -21,7 +21,7 @@ The resume page resolves `Light`, `Dark`, and `System` before first paint, and t
 
 ## Definition of Done
 
-- [ ] `data-theme` and `color-scheme` are set before first paint.
-- [ ] `theme.preference` stores the preference. An unknown value behaves as `dark`. `system` follows `prefers-color-scheme`.
-- [ ] `[data-theme="light"]` replaces every color token. `--surface-raised` and `--danger-wash` exist. The error banner uses `--danger-wash`.
-- [ ] The radiogroup name is `Theme`, and its labels are `light`, `Dark`, and `System`.
+- [x] `data-theme` and `color-scheme` are set before first paint.
+- [x] `theme.preference` stores the preference. An unknown value behaves as `dark`. `system` follows `prefers-color-scheme`.
+- [x] `[data-theme="light"]` replaces every color token. `--surface-raised` and `--danger-wash` exist. The error banner uses `--danger-wash`.
+- [x] The radiogroup name is `Theme`, and its labels are `light`, `Dark`, and `System`.

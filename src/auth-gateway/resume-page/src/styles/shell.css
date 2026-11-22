@@ -116,6 +116,52 @@
   flex: none;
 }
 
+.theme-switch {
+  display: inline-flex;
+  flex: none;
+}
+
+.theme-segment {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--step--1);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.theme-segment input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.theme-segment:hover {
+  background: var(--chip);
+  color: var(--ink);
+}
+
+.theme-segment:has(:checked) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.theme-segment:has(:checked):hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .user-name {
   font-weight: 600;
   font-size: var(--step--1);
@@ -165,7 +211,7 @@
 }
 
 .owl-hero-button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 4px;
 }
 
@@ -271,13 +317,11 @@
   padding: var(--s3) var(--s4);
   padding-right: var(--s5);
   border: 1px solid var(--rule);
-  border-radius: 14px;
   background: var(--paper-raised);
   color: var(--ink);
   font-size: var(--step--1);
   line-height: 1.45;
   pointer-events: auto;
-  box-shadow: 0 6px 24px rgb(0 0 0 / 12%);
   /* The text grows a letter at a time; reserve two lines' worth of height so
      the article below does not shuffle upward on every tick. */
   min-height: 3.4em;
@@ -348,7 +392,8 @@
 }
 
 /* Below this the brand wordmark, the service links and the sign-in control
-   cannot all fit. The wordmark goes first — the mark still says who this is. */
+   cannot all fit. The wordmark goes first — the mark still says who this is.
+   The theme control stays. */
 @media (max-width: 620px) {
   .brand-name {
     display: none;

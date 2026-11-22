@@ -37,11 +37,12 @@ describe('Art', () => {
     const first = container.querySelector('.art-open') as HTMLButtonElement
 
     await act(async () => first.click())
-    const overlay = container.querySelector('.art-overlay')
+    const overlay = document.body.querySelector('.art-overlay')
     expect(overlay).not.toBeNull()
+    expect(overlay?.parentElement).toBe(document.body)
 
     const close = overlay!.querySelector('button') as HTMLButtonElement
     await act(async () => close.click())
-    expect(container.querySelector('.art-overlay')).toBeNull()
+    expect(document.body.querySelector('.art-overlay')).toBeNull()
   })
 })

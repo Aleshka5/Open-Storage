@@ -1,10 +1,10 @@
 > **ID:** US-03
-> **Status:** REVIEW
+> **Status:** DONE
 > **Specs:** [brand book](../../brand-book/init.md), [resume-page design](../../auth-gateway/frontend/design.md)
 
 ## Overview
 
-The resume page is the only frontend in this repository, and it is the hub. It already serves the self-hosted fonts, the grain, the diamond header mark, and the motion tokens. It is light only. This story brings theme, palettes, and square chrome in line with the brand book. The palette stays owned by the brand book. Tasks: [theme](tasks/task-01-theme.md), [square chrome](tasks/task-02-square-chrome.md), [checks](tasks/task-03-checks.md).
+The resume page is the only frontend in this repository, and it is the hub. It serves the self-hosted fonts, the grain, the diamond header mark, and the motion tokens, and it follows the brand book for theme and square chrome. The palette stays owned by the brand book. Tasks: [theme](tasks/task-01-theme.md), [square chrome](tasks/task-02-square-chrome.md), [checks](tasks/task-03-checks.md).
 
 ## Locked decisions
 
@@ -45,7 +45,7 @@ The resume page is the only frontend in this repository, and it is the hub. It a
 
 ## Definition of Done
 
-- [ ] `npm test` passes.
-- [ ] `npm run build` passes inside the 95 KB initial JS budget.
-- [ ] The acceptance items above hold on the resume page.
-- [ ] `docs/auth-gateway/frontend/design.md` links the brand book for theme and chrome.
+- [x] `npm test` passes.
+- [x] `npm run build` passes inside the 95 KB initial JS budget.
+- [x] The acceptance items above hold on the resume page.
+- [x] `docs/auth-gateway/frontend/design.md` links the brand book for theme and chrome.

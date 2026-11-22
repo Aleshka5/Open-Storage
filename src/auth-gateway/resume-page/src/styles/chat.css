@@ -13,10 +13,8 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--rule);
-  border-radius: 16px;
   background: var(--paper-raised);
   color: var(--ink);
-  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
   overflow: hidden;
 }
 
@@ -112,8 +110,8 @@
 
 .owl-chat-code {
   padding: 0.1em 0.35em;
-  border-radius: 5px;
   background: var(--paper);
+  color: var(--ink);
   border: 1px solid var(--rule);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.92em;
@@ -124,8 +122,8 @@
   margin: 0 0 var(--s3);
   padding: var(--s3);
   border: 1px solid var(--rule);
-  border-radius: 10px;
   background: var(--paper);
+  color: var(--ink);
   /* Code sets its own width; the panel must not grow with it. */
   overflow-x: auto;
 }
@@ -194,15 +192,14 @@
   resize: none;
   padding: var(--s3);
   border: 1px solid var(--rule);
-  border-radius: 10px;
   background: var(--paper);
-  color: inherit;
+  color: var(--ink);
   font: inherit;
   font-size: var(--step--1);
 }
 
 .owl-chat-input:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 1px;
 }
 
