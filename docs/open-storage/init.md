@@ -146,3 +146,4 @@ The legacy product is WebStorage `~/projects/WebStorage`. Below, **legacy doc** 
 - Dependencies and what each must satisfy: [app/external-contract.md](app/external-contract.md).
 - Header names, strip list, roles: [identity v1](../auth-gateway/external-contracts/identity-v1.md), [idp roles](../auth-gateway/idp/init.md).
 - Where a request enters: [docs/init.md](../init.md), [upstreams](../auth-gateway/external-contracts/upstreams.md).
+- The storage host declaration and the tests that lock it: [edge.md](edge.md).
