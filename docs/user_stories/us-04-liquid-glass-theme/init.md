@@ -1,5 +1,5 @@
 > **ID:** US-04
-> **Status:** IN PROGRESS
+> **Status:** DONE
 > **Specs:** [brand book §1](../../brand-book/init.md), [brand book §3](../../brand-book/init.md), [resume-page design](../../auth-gateway/frontend/design.md)
 
 ## Overview
@@ -45,7 +45,7 @@ The resume page already stores `theme.preference`, paints both palettes, and sho
 
 ## Definition of Done
 
-- [ ] `npm test` covers the reduced-motion skip and the same-theme skip, and passes.
-- [ ] The acceptance items above hold on the resume page.
-- [ ] [brand book](../../brand-book/init.md) §1 describes the sliding glass thumb and the solid fallback. §3 lists the radial reveal, the refractive rim, and `--dur-theme`. Square corners, no drop shadow, and the rest of “anything else is still” stay.
-- [ ] An ADR in `docs/auth-gateway/adrs/` rejects a refraction filter on the disk interior and on the page after the reveal. It accepts the rim band, points at the brand book for the look, and is written before the page code, in the same change.
+- [x] `npm test` covers the reduced-motion skip and the same-theme skip, and passes.
+- [x] The acceptance items above hold on the resume page.
+- [x] [brand book](../../brand-book/init.md) §1 describes the sliding glass thumb and the solid fallback. §3 lists the radial reveal, the refractive rim, and `--dur-theme`. Square corners, no drop shadow, and the rest of “anything else is still” stay.
+- [x] An ADR in `docs/auth-gateway/adrs/` rejects a refraction filter on the disk interior and on the page after the reveal. It accepts the rim band, points at the brand book for the look, and is written before the page code, in the same change.

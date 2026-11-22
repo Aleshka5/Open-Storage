@@ -1,5 +1,5 @@
 > **ID:** task-05
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-04](../init.md)
 
 ## Overview
@@ -18,6 +18,6 @@ Lock the skips with tests, and close the story when the acceptance items hold.
 
 ## Definition of Done
 
-- [ ] `npm test` passes, including the two skips.
-- [ ] `npm run build` passes.
-- [ ] US-04’s definition of done is checked.
+- [x] `npm test` passes, including the two skips.
+- [x] `npm run build` passes.
+- [x] US-04’s definition of done is checked.
