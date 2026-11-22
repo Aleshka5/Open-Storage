@@ -294,6 +294,51 @@ func TestRolesDecideAccess(t *testing.T) {
 	}
 }
 
+// TestStorageHostEnvelopes is the storage.filenkov.store case of the same
+// refusal path: public /health, JSON 401 on /api, 403 forbidden for a stranger,
+// 403 blocked when the host service is closed, and family or svc:storage:admin
+// forwarded. The bodies are the gateway envelope, not the app's.
+func TestStorageHostEnvelopes(t *testing.T) {
+	h := newHarness(t)
+	stranger := &oidc.Identity{Subject: "st-stranger"}
+	family := &oidc.Identity{Subject: "st-family", Roles: []string{"svc:storage:family"}}
+	storageAdmin := &oidc.Identity{Subject: "st-admin", Roles: []string{"svc:storage:admin"}}
+	blocked := &oidc.Identity{Subject: "st-blocked", Roles: []string{"svc:storage:family", "svc:storage:blocked"}}
+
+	if rec := h.do(t, "storage.filenkov.store", "GET", "/health", "", nil); rec.Code != http.StatusOK || rec.Body.String() != "upstream" {
+		t.Fatalf("anonymous /health = %d %q", rec.Code, rec.Body.String())
+	}
+
+	rec := h.do(t, "storage.filenkov.store", "GET", "/api/files", "", nil)
+	wantEdgeError(t, rec, http.StatusUnauthorized, "unauthorized")
+
+	for _, path := range []string{"/", "/api/files"} {
+		rec = h.do(t, "storage.filenkov.store", "GET", path, h.sealTok(stranger), nil)
+		wantEdgeError(t, rec, http.StatusForbidden, "forbidden")
+		if loc := rec.Header().Get("Location"); loc != "" {
+			t.Fatalf("stranger %s redirected to %q", path, loc)
+		}
+
+		rec = h.do(t, "storage.filenkov.store", "GET", path, h.sealTok(blocked), nil)
+		wantEdgeError(t, rec, http.StatusForbidden, "blocked")
+
+		for _, id := range []*oidc.Identity{family, storageAdmin} {
+			rec = h.do(t, "storage.filenkov.store", "GET", path, h.sealTok(id), nil)
+			if rec.Code != http.StatusOK || rec.Body.String() != "upstream" {
+				t.Fatalf("%s %s = %d %q", id.Subject, path, rec.Code, rec.Body.String())
+			}
+		}
+	}
+}
+
+func wantEdgeError(t *testing.T, rec *httptest.ResponseRecorder, code int, name string) {
+	t.Helper()
+	want := `{"error":"` + name + `"}`
+	if rec.Code != code || rec.Body.String() != want {
+		t.Fatalf("got %d %q, want %d %s", rec.Code, rec.Body.String(), code, want)
+	}
+}
+
 func TestIdentityIsStrippedAndInjected(t *testing.T) {
 	h := newHarness(t)
 	id := &oidc.Identity{Subject: "sub-1", Email: "ada@example.com", Name: "Ada", SID: "sid-1", Roles: []string{"svc:storage:family", "admin"}}

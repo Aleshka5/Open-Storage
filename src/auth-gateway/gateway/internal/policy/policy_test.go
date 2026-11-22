@@ -84,6 +84,13 @@ func TestBlockedBeatsSession(t *testing.T) {
 	if Blocked(blocked, "storage") {
 		t.Fatal("blocked is per service")
 	}
+	storageBlocked := &oidc.Identity{Subject: "s", Roles: []string{"svc:storage:family", "svc:storage:blocked"}}
+	if !Blocked(storageBlocked, "storage") {
+		t.Fatal("svc:storage:blocked closes storage even when family is also present")
+	}
+	if Blocked(storageBlocked, "audio") {
+		t.Fatal("a storage block does not close audio")
+	}
 	if Blocked(nil, "audio") || Blocked(blocked, "") {
 		t.Fatal("blocked must need an identity and a service")
 	}
