@@ -4,7 +4,7 @@
 
 ## Overview
 
-The resume page resolves `light`, `Dark`, and `System` before first paint, and the header changes that choice without a reload. Files: `index.html`, `src/styles/theme.css`, `src/styles/tokens.css`, `src/components/Layout.tsx` under `src/auth-gateway/resume-page`.
+The resume page resolves `Light`, `Dark`, and `System` before first paint, and the header changes that choice without a reload. Files: `index.html`, `src/styles/theme.css`, `src/styles/tokens.css`, `src/components/Layout.tsx` under `src/auth-gateway/resume-page`.
 
 ## Goals
 

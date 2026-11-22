@@ -20,7 +20,7 @@ The resume page is the only frontend in this repository, and it is the hub. It a
 
 ## Goals
 
-- Resolve `light`, `Dark`, or `System` before first paint, and change it from the header without a reload.
+- Resolve `Light`, `Dark`, or `System` before first paint, and change it from the header without a reload.
 - Paint both palettes from one `theme.css`, with `:root` dark.
 - Make panels, fields, and focus rings square, with both faces set, and no drop shadow.
 
