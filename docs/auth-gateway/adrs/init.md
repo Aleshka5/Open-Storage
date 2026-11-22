@@ -8,4 +8,5 @@
 - ([10-gateway-line-budget.md](10-gateway-line-budget.md)) - The gateway's Go budget is 5500 lines excluding tests, measured at 4953 after the owl packages.
 - ([8-idp-host-frame-self.md](8-idp-host-frame-self.md)) - The `id.filenkov.store` host is served with `frame: self` because Keycloak's `check_session_iframe` must frame itself for session polling.
 - ([9-owl-chat-in-the-gateway.md](9-owl-chat-in-the-gateway.md)) - The owl chat returns, answered by the gateway itself via `llm:` config and ported `llm`/`tracing`/`chat` packages; supersedes ADR-0006.
-- ([11-theme-reveal-rim.md](11-theme-reveal-rim.md)) - A theme circle refracts only on a 36px rim; the disk interior and the page after the reveal stay unfiltered. The look is the brand book.
+- ([11-theme-reveal-rim.md](11-theme-reveal-rim.md)) - A theme circle refracts only on a 36px rim; the disk interior and the page after the reveal stay unfiltered (superseded by ADR-0012).
+- ([12-theme-reveal-without-rim.md](12-theme-reveal-without-rim.md)) - The theme reveal is one hard-edged circle, with no rim, no displacement filter and no SVG filter; supersedes ADR-0011.

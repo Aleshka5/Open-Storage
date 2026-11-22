@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { persist } from './theme'
-import { chooseTheme, paintRimMap, RIM_BAND, RIM_SHIFT, themeRevealIdle } from './themeReveal'
+import { chooseTheme, durationMs, themeRevealIdle } from './themeReveal'
 
 function rect(): DOMRect {
   return new DOMRect(8, 12, 180, 36)
@@ -152,73 +152,61 @@ describe('theme reveal skips', () => {
   })
 })
 
-describe('theme rim', () => {
-  function shift(data: Uint8ClampedArray, width: number, x: number, y: number) {
-    const i = (y * width + x) * 4
-    const scale = RIM_SHIFT * 2
-    const dx = scale * (data[i] / 255 - 0.5)
-    const dy = scale * (data[i + 1] / 255 - 0.5)
-    return { mag: Math.hypot(dx, dy), alpha: data[i + 3], hair: data[i + 2] }
-  }
-
-  it('displaces only a 36px band, by at most 12px, and leaves the interior alone', () => {
-    const width = 160
-    const height = 160
-    const data = new Uint8ClampedArray(width * height * 4)
-    const cx = 80
-    const cy = 80
-    const radius = 70
-    paintRimMap(data, width, height, cx, cy, radius)
-
-    expect(shift(data, width, cx, cy).alpha).toBe(0)
-    expect(shift(data, width, cx + Math.round(radius - RIM_BAND - 3), cy).alpha).toBe(0)
-
-    let edge = 0
-    let inner = 0
-    let samples = 0
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const dist = Math.hypot(x + 0.5 - cx, y + 0.5 - cy)
-        const sample = shift(data, width, x, y)
-        if (sample.alpha === 0) continue
-        samples += 1
-        expect(sample.mag).toBeLessThanOrEqual(RIM_SHIFT + 0.05)
-        expect(dist).toBeGreaterThanOrEqual(radius - RIM_BAND - 0.75)
-        expect(dist).toBeLessThanOrEqual(radius + 0.75)
-        if (dist >= radius - 1.25) edge = Math.max(edge, sample.mag)
-        if (dist <= radius - RIM_BAND + 2) inner = Math.max(inner, sample.mag)
-        if (sample.hair > 0) expect(radius - dist).toBeLessThanOrEqual(1.25)
-      }
-    }
-    expect(samples).toBeGreaterThan(0)
-    expect(edge).toBeGreaterThan(RIM_SHIFT * 0.75)
-    expect(inner).toBeLessThan(edge / 2)
+describe('theme duration', () => {
+  it('reads a seconds token as milliseconds', () => {
+    expect(durationMs('700ms')).toBe(700)
+    expect(durationMs('.7s')).toBe(700)
+    expect(durationMs('1ms')).toBe(1)
+    expect(durationMs('0.7s')).toBe(700)
+    expect(durationMs('1.5s')).toBe(1500)
   })
 
-  it('removes the rim filter when the circle finishes', async () => {
+  it('answers NaN for a token it cannot read, so the caller keeps 700', () => {
+    expect(Number.isFinite(durationMs(''))).toBe(false)
+    expect(Number.isFinite(durationMs('fast'))).toBe(false)
+  })
+
+  it('does not cancel the transition before it can run', async () => {
     media(false)
     persist('dark')
-    installTransition()
-    const animate = vi.fn(
-      () =>
-        ({
-          finished: Promise.resolve(),
-          cancel() {},
-          playState: 'finished',
-          effect: { getComputedTiming: () => ({ progress: 1 }) },
-        }) as unknown as Animation,
-    )
+    // A transition that ends on its own once its animations end, as the real one
+    // does: `finished` stays pending until then, and `skipTransition` only ends
+    // it early. A 20ms clip inside a 120ms watchdog must not trip the watchdog.
+    let endTransition = () => {}
+    const finished = new Promise<void>((resolve) => {
+      endTransition = resolve
+    })
+    const skipTransition = vi.fn(() => endTransition())
+    const start = vi.fn((update: () => void) => {
+      update()
+      return { ready: Promise.resolve(), finished, updateCallbackDone: finished, skipTransition }
+    })
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      writable: true,
+      value: start,
+    })
+    const clip = {
+      finished: new Promise<void>((resolve) => {
+        setTimeout(() => {
+          resolve()
+          endTransition()
+        }, 20)
+      }),
+      cancel() {},
+      playState: 'running',
+      effect: { getComputedTiming: () => ({ progress: 0.5 }) },
+    } as unknown as Animation
     Object.defineProperty(document.documentElement, 'animate', {
       configurable: true,
-      value: animate,
+      value: () => clip,
     })
 
     chooseTheme('light', rect(), group(), () => {})
     await themeRevealIdle()
 
-    expect(animate).toHaveBeenCalled()
-    expect(document.getElementById('theme-rim')).toBeNull()
-    expect(document.body.querySelector('feDisplacementMap')).toBeNull()
-    expect(document.documentElement.style.filter).toBe('')
+    expect(start).toHaveBeenCalledOnce()
+    expect(skipTransition).not.toHaveBeenCalled()
+    expect(document.documentElement.dataset.theme).toBe('light')
   })
 })

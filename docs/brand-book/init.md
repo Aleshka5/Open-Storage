@@ -143,7 +143,9 @@ A field’s fill is `--paper`, its text is `--ink`, and its border is `1px solid
 | `--dur-theme` | `700ms` | The theme circle |
 | `--ease` | `cubic-bezier(0.2, 0, 0, 1)` | Every duration |
 
-`prefers-reduced-motion: reduce` sets `--dur-fast`, `--dur`, and `--dur-theme` to `1ms`, disables the view entrance, skips the theme circle, draws no rim, and makes `scrollTo` use `behavior: 'auto'`.
+`prefers-reduced-motion: reduce` sets `--dur-fast`, `--dur`, and `--dur-theme` to `1ms`, disables the view entrance, skips the theme circle, and makes `scrollTo` use `behavior: 'auto'`.
+
+A duration token read by JavaScript is a number with a unit, and the production build minifies `700ms` to `.7s`. A reader must convert the unit, not assume milliseconds: `parseFloat` alone answers `0.7` and the animation finishes on its first frame. `durationMs` in `themeReveal.ts` is the one reader; a second reader of any `--dur-*` token must do the same.
 
 | What moves | How |
 |---|---|
@@ -152,9 +154,24 @@ A field’s fill is `--paper`, its text is `--ink`, and its border is `1px solid
 | Wordmark and service list in the condensed header | Opacity over `--dur-fast` |
 | A choice row | A 2px `--accent` bar on the left, `scaleY(0 → 1)` from the top, over `--dur-fast` |
 | A button | Background color over `--dur-fast` |
-| A flipped theme | One circle from the control’s border box. `clip-path: circle()` on `::view-transition-new(root)` over `--dur-theme` with `--ease`. The new theme is inside. The old theme stays outside until the circle covers the viewport. No circle when the choice does not change the resolved theme, when the OS changes under System, under reduced motion, or without `startViewTransition` |
-| The circle’s edge | A 36px band. Displacement is radial, at most 12px, from one SVG `feDisplacementMap` on that band only. Saturate 1.7 and a 1px specular hairline. The disk interior is not filtered. The filter is removed when the circle ends |
+| A flipped theme | One circle from the control’s border box. `clip-path: circle()` on `::view-transition-new(root)` over `--dur-theme` with `--ease`. The new theme is inside. The old theme stays outside until the circle covers the viewport. The edge is a hard cut. No circle when the choice does not change the resolved theme, when the OS changes under System, under reduced motion, or without `startViewTransition` |
 | Anything else | Still |
+
+### The theme circle
+
+A flipped theme reveals through one circle, and that is the whole of the effect. The shape is a decision, not a detail: [ADR-0012](../auth-gateway/adrs/12-theme-reveal-without-rim.md) fixes it, because the refractive rim it replaced did not read at this size.
+
+| Property | Value |
+|---|---|
+| Centre | The theme control’s border box, horizontal midpoint and vertical midpoint. The circle starts at the control, not at the pointer |
+| Start radius | `0px` |
+| End radius | The distance from the centre to the farthest viewport corner, so the circle always covers the viewport in one run |
+| Mask | `clip-path: circle()` on `::view-transition-new(root)`, in the new theme’s colour. The old theme is `::view-transition-old(root)` and stays fully opaque underneath |
+| Duration and easing | `--dur-theme` with `--ease` |
+| Edge | A hard cut. No blur, no ring, no displacement, no shadow |
+| End state | The new theme, the reveal torn down. No filter or overlay survives it |
+
+The circle runs only for a user choice that changes the resolved theme. It does not run for the first paint, for a choice that resolves to the theme already showing, for an OS change while the preference is System, under `prefers-reduced-motion: reduce`, or in a browser without `startViewTransition`; in those cases the theme changes in the same turn. A second choice waits for the running circle rather than starting a second one.
 
 Mount a confirm dialog, a lightbox, or any other viewport layer on `document.body`. `.view-in` uses a transform, and a `position: fixed` child inside it centers on the view instead of the screen.
 

@@ -6,6 +6,8 @@
 
 Record the rim decision before any page code. The look stays in the brand book.
 
+Superseded: the rim this task accepted is withdrawn by [ADR-0012](../../../auth-gateway/adrs/12-theme-reveal-without-rim.md). What follows records what was decided at the time.
+
 ## Goals
 
 - Reject a refraction filter on the disk interior.

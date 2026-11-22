@@ -6,6 +6,8 @@
 
 The circle’s edge refracts on the band [ADR-0011](../../../auth-gateway/adrs/11-theme-reveal-rim.md) accepts. The look is the brand book.
 
+Superseded: [ADR-0012](../../../auth-gateway/adrs/12-theme-reveal-without-rim.md) withdraws the rim and deletes this effect from the page. The task stands as what was built at the time.
+
 ## Goals
 
 - One SVG `feDisplacementMap` on a 36px band. Displacement is at most 12px.
