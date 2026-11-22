@@ -12,7 +12,7 @@
 # cookie prints SKIP rows and never fails the run; a failed row always does.
 #
 # Contracts that own the numbers below:
-#   docs/auth-gateway/gateway/API/Message-contract.md (§Hosts, §Policies, /auth)
+#   docs/auth-gateway/gateway/API/api-contract.md (§Startup rules, §`/auth`, §Probes and metrics)
 #   docs/auth-gateway/external-contracts/identity-v1.md (§Errors from the edge)
 
 set -euo pipefail

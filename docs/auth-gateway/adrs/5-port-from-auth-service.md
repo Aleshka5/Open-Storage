@@ -1,5 +1,3 @@
-# ADR-0005 Port the edge from Auth-Service
-
 ## Status
 
 Accepted

@@ -1,5 +1,3 @@
-# ADR-0004 Config is applied by restart
-
 ## Status
 
 Accepted

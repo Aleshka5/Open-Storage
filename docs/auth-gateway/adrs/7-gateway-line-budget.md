@@ -1,5 +1,3 @@
-# ADR-0007 The gateway line budget is 4200
-
 ## Status
 
 Accepted

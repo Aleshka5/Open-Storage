@@ -1,5 +1,3 @@
-# ADR-0002 BFF inside the gateway
-
 ## Status
 
 Accepted

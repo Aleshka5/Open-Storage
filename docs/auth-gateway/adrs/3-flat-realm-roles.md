@@ -1,5 +1,3 @@
-# ADR-0003 Flat realm roles
-
 ## Status
 
 Accepted

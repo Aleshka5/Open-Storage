@@ -1,8 +1,46 @@
 # auth-gateway
 
-Identity and edge. The services share `open_network`, `deploy/auth-gateway/.env`, and `deploy/auth-gateway/docker-compose.yaml`.
+Identity and edge. The services share `open_network`, [auth-gateway/.env](deploy/auth-gateway/.env), and [auth-gateway/docker-compose.yaml](deploy/auth-gateway/docker-compose.yaml).
 
 This page is how the services interact. Contracts for each service are linked, not copied.
+
+## Schema
+
+```mermaid
+flowchart LR
+  B["Browser"]
+  GO["Google"]
+
+  subgraph NS["auth-gateway namespace — open_network"]
+    direction LR
+    P["proxy<br/>Caddy, host systemd<br/>:80 :443"]
+    G["gateway<br/>Go, :8080<br/>:9000 metrics"]
+    I["idp<br/>Keycloak 26.8.2"]
+    D[("idp_db<br/>Postgres 17")]
+    R["resume-page<br/>nginx :80"]
+  end
+
+  PR["product resources<br/>storage image rag audio llm<br/>observer meet switch litellm<br/>not in this repository"]
+
+  B -->|"TLS 80/443"| P
+  P -->|"http :8083, one upstream per host"| G
+  G -->|"strip + inject, then proxy"| R
+  G -->|"inject heders + Bearer JWT"| PR
+  G -->|"discovery / JWKS / token / revoke, :8080"| I
+  I -->|"RS256 tokens, JWKS by kid"| G
+  I -->|"jdbc :5432"| D
+  I -->|"client_secret + PKCE S256"| GO
+  GO -->|"redirect_uri"| I
+```
+
+## What auth-gateway requests
+
+| Link | Kind | Resource or action |
+|---|---|---|
+| Google | action | Sign the user in. Redirect URI: `https://id.filenkov.store/realms/filenkov/broker/google/endpoint` |
+
+
+`hermes` (`127.0.0.1:9119`) and `lite-llm` (`127.0.0.1:4000`) are not part of this SSO contract. The proxy forwards them and auth-gateway does not authenticate them.
 
 ## Services
 
@@ -14,35 +52,9 @@ This page is how the services interact. Contracts for each service are linked, n
 | idp_db | Postgres state for idp | Anything else |
 | resume-page | Static showcase and the `/admin` UI. Documented under [frontend/](frontend/). | Hold tokens, authorize, know secrets |
 
-## Request path
-
-```
-Browser
-  → proxy          TLS, HSTS. One upstream: gateway
-  → gateway        Host + path + method → policy
-       no token    → 302 to login, or 401 JSON for API
-       bad role    → 403 JSON
-       allowed     → strip inbound identity headers, inject identity, proxy
-  → upstream       product resource, idp, or resume-page
-```
-
-Login and logout go through gateway only:
-
-```
-/auth/login     → idp authorization endpoint, kc_idp_hint=google
-/auth/callback  → code exchange → cookies → return_to
-/auth/logout    → revoke refresh at idp → clear cookies
-```
-
 ## Ports
 
-| Container | Port | Published | Networks |
-|---|---|---|---|
-| proxy | 80, 443 | host, including WireGuard | `open_network` |
-| gateway | 8080 | `127.0.0.1:8080` | `open_network` plus the product networks named by its upstreams |
-| idp | 8080 | no | `open_network` |
-| idp_db | 5432 | no | `open_network` |
-| resume | 80 | no | `open_network` |
+[Compose](deploy/auth-gateway/docker-compose.yaml)
 
 Gateway stores nothing. The session cookie holds the Keycloak refresh token. idp remembers users, roles, and sessions.
 

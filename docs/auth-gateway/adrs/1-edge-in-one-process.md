@@ -1,5 +1,3 @@
-# ADR-0001 Edge in one process
-
 ## Status
 
 Accepted

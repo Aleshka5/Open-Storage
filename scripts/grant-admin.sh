@@ -3,7 +3,7 @@
 #
 #   scripts/grant-admin.sh <email>
 #
-# Contract: docs/auth-gateway/idp/API/Message-contract.md — §Roles, §Bootstrap.
+# Contract: docs/auth-gateway/idp/init.md — §Roles, §Bootstrap.
 # Keycloak has no "first user is admin" rule, so an operator grants `admin` to
 # the first Google account by hand, with this script, after its first login.
 #

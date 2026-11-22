@@ -1,30 +1,28 @@
 # AGENTS.md
 
-High-level routing. The rules themselves live in the documents below.
+Ground truth rules. The rules themselves live in the documents below.
 
-Read first
- - constitution.md — development rules that do not depend on a stack.
- - docs/init.md — namespaces and the system map.
- - docs/<namespace>/init.md — how the services inside one namespace interact.
- - docs/<namespace>/<service>/init.md — what that service offers.
- - docs/<namespace>/frontend/ — page design, and the security and backend contracts for that UI.
- - docs/<namespace>/external-contracts/ — contracts with systems outside the namespace.
- - docs/<namespace>/adrs/ — decisions that bind one namespace.
- - adrs/ — decisions that bind the whole system.
- - deploy/<namespace>/ — env example, Makefile, and compose for that namespace.
- - src/<namespace>/<service>/ — service code. tests/ inside the service.
- - scripts/ — checks and setup scripts. Not written yet.
+Spec Driven Development - Sepecs First approach. You have to separate development on at least four different turns:
+ 1) Examine [docs](/docs/)
+ 2) Prepare [User Story](/docs/user_stories/) (If changes are clear and are approved, else - ask questions)
+ 3) Develop
+ 4) Update docs
+Except in cases where you are acting as a specialized sub-agent. In such a situation, clear boundaries must be established for you regarding permissible changes and files.
+
+Documents
+ - Docs says AS IS not TO BE.
+ - Avoid WIP comments, only technical info.
+ - Highlight mismatches docs and fact code every time you catch it. 
 
 While editing
- - Write in English.
- - Keep the document short. Add another short document instead of extending a long one.
- - Link to the document that owns a fact. Do not copy the fact.
- - Record a decision in an ADR before implementing it.
+ - Write every document in this repository in English.
+ - Keep the document short. Add another short document instead of extending a long one. Avoid "Master Documetnts".
+ - Link to the document that owns a fact. Do not copy the fact. For docs use [name](relative/path) for references instead of `relative/path`.
+ - Record a decision in an ([ADR](adrs/init.md)) before implementing it.
  - Update the contract in the same change as the behavior it describes.
  - Do not add application code in a documentation-only change.
-
-Current map
- - Namespace auth-gateway is the identity and edge layer. Docs: docs/auth-gateway/. Deploy: deploy/auth-gateway/. Code will live in src/auth-gateway/.
- - auth-gateway is one block. It asks Google for login, asks Keycloak (inside the namespace) for identity, and calls product upstreams as resources: storage, image, rag, audio, llm, observer, meet, switch, litellm.
- - hermes and lite-llm are outside this SSO contract. The proxy forwards them to local ports; hermes keeps a LAN and WireGuard gate.
- - Application code lives in src/auth-gateway/: gateway (Go), idp (realm as code), proxy (Caddyfile), resume-page (SPA). Deploy is deploy/auth-gateway/.
+ - A credential does not go in JavaScript, a URL, or a log.
+ - Read [constitution.md](constitution.md) first.
+ - Read [repository-layout.md](/docs/repository-layout.md) if you want to add a new file/service/namespace into a repository.
+ - Read [User Story Example](/docs/user_stories/us-00-example/init.md) if you want to add a new US or feature.
+ - Add architecture schemas as Mermaid description, use subgraphs to union some nodes into one namespace (docker network)

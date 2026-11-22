@@ -1,5 +1,3 @@
-# ADR-0008 The idp host is frameable by itself
-
 ## Status
 
 Accepted

@@ -1,5 +1,3 @@
-# ADR-0006 Owl chat is not in this release
-
 ## Status
 
 Superseded by [ADR-0009](0009-owl-chat-in-the-gateway.md).

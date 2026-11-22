@@ -1,6 +1,6 @@
 # resume-page — backend contract
 
-The only identity call is gateway `GET /auth/session`. Shape and errors: [gateway message contract](../gateway/API/Message-contract.md).
+The only identity call is gateway `GET /auth/session`. Shape and errors: [gateway message contract](../gateway/API/api-contract.md).
 
 ```ts
 type Session = {

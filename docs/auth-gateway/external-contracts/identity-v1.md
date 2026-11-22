@@ -42,6 +42,6 @@ Otherwise verify the bearer JWT: RS256 against the realm JWKS, `iss` equals the 
 | 502 | `{"error":"bad_gateway"}` | Upstream did not answer |
 | 504 | `{"error":"gateway_timeout"}` | Upstream sent no response header within the route timeout |
 
-`/admin` answers in the same envelope, with its own values ([gateway message contract](../gateway/API/Message-contract.md)).
+`/admin` answers in the same envelope, with its own values ([gateway message contract](../gateway/API/api-contract.md)).
 
 Names `X-User-Id` and `X-Storage-Role` are not accepted.

@@ -1,0 +1,3 @@
+- ([1-one-contract-version.md](1-one-contract-version.md)) - Identity speaks one contract, v1, with no compatibility flag or legacy header set.
+- ([2-roles-in-the-token.md](2-roles-in-the-token.md)) - Realm roles travel in the access token, so the edge reads claims and no catalog service sits on the request path.
+- ([3-one-session-store.md](3-one-session-store.md)) - Sessions, logout-all and not-before live in the identity provider; the edge keeps no Redis or DB and hands the browser a sealed cookie.

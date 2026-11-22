@@ -1,5 +1,5 @@
 # Gateway configuration. Read once at start; a change is a restart (ADR-0004).
-# Shape and rules are owned by docs/auth-gateway/gateway/API/Message-contract.md.
+# Shape and rules are owned by docs/auth-gateway/gateway/API/api-contract.md.
 # Secrets are env:NAME only. A literal secret here fails startup.
 
 listen: ":8080"

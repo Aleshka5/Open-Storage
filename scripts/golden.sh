@@ -9,7 +9,7 @@
 #   3. GET /readyz  on the gateway — idp discovery and JWKS loaded.
 #   4. `caddy validate` on deploy/auth-gateway/Caddyfile.
 #
-# Steps 2 and 3 follow docs/auth-gateway/gateway/API/Message-contract.md §Probes.
+# Steps 2 and 3 follow docs/auth-gateway/gateway/API/api-contract.md §Probes and metrics.
 # /readyz does not check product upstreams, so a green /readyz with a red edge
 # row means an upstream, not the identity layer.
 #
