@@ -15,12 +15,12 @@ Namespace `auth-gateway`: proxy, gateway, idp, idp_db, resume-page. One release,
 ## Acceptance
 
 - `make up` from empty volumes is ready within 90 seconds. `/readyz` is 200.
-- `make verify` passes for nine hosts × anonymous, signed-in, and admin.
+- `make verify` passes for each host in `config.yaml` × anonymous, signed-in, and admin. `meet.` is not one of those hosts.
 - Google login is one login for every SSO host. Logout ends the idp session and data bound to `sid`.
 - A role granted or removed in `/admin` takes effect within 5 minutes.
 - The last admin cannot be removed (`409`). A service admin cannot edit another service (`403`).
 - `go test ./...`, `npm test`, and `caddy validate` pass.
-- Gateway stays within 4200 lines of Go ([ADR-0007](../../auth-gateway/adrs/7-gateway-line-budget.md)). No Redis, no catalog service, no `X-User-Id`. The tree is past the cap; see [docs/init.md](../../init.md).
+- Gateway stays within 5500 lines of Go ([ADR-0010](../../auth-gateway/adrs/10-gateway-line-budget.md)). No Redis, no catalog service, no `X-User-Id`.
 - The contracts in `docs/auth-gateway/` match the code.
 
 ## Out of scope

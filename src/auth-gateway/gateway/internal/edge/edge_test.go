@@ -42,7 +42,6 @@ upstreams:
   audio: "audio-api:8000"
   audio_web: "frontend:80"
   idp: "idp:8080"
-  jitsi: "jitsi-web:8000"
 hosts:
   - host: filenkov.store
     upstream: resume
@@ -80,11 +79,6 @@ hosts:
     frame: self
     routes:
       - { path: /**, policy: public }
-  - host: meet.filenkov.store
-    upstream: jitsi
-    frame: self
-    routes:
-      - { path: /**, policy: session }
 `
 
 type fakeVerifier struct {

@@ -7,7 +7,7 @@ const meta: NodeMeta = {
   seo: {
     title: 'Site stack · Alexey Filenkov',
     description:
-      'What this site is built from: React 19 and Vite behind a Go 1.25 gateway, an internal OAuth API, nginx, Caddy and Redis.',
+      'What this site is built from: React 19 and Vite behind a Go 1.26 gateway, Keycloak, nginx, and Caddy.',
   },
 }
 

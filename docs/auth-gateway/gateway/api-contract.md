@@ -189,9 +189,9 @@ Proxied to the `switch` upstream. The gateway injects `X-Service-Token: <SWITCH_
 
 ### Product hosts
 
-`storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `meet.`, `id.`: everything not listed above is proxied to the host's upstream with the identity headers and the access token, `X-Forwarded-*` rewritten, `FlushInterval: -1` so SSE and token streams are not buffered, and no `WriteTimeout` so a WebSocket is not cut. The upstream's `101` is passed through untouched.
+`storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `id.`: everything not listed above is proxied to the host's upstream with the identity headers and the access token, `X-Forwarded-*` rewritten, `FlushInterval: -1` so SSE and token streams are not buffered, and no `WriteTimeout` so a WebSocket is not cut. The upstream's `101` is passed through untouched.
 
-`id.` is `identity: passthrough`: the gateway forwards the client's `Authorization` and adds no identity header. It exists so the Keycloak console stays reachable when gateway policy is wrong.
+`id.` is `identity: passthrough`: the gateway forwards the client's `Authorization` and adds no identity header. Caddy admits that name only from the LAN and WireGuard list. `meet.filenkov.store` is not a gateway host.
 
 ## Startup rules
 

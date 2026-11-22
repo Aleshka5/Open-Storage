@@ -8,9 +8,9 @@
 #
 #   filenkov.store, storage. image. rag. audio. llm. observer.
 #                        -> 127.0.0.1:8083  gateway
-#   id.filenkov.store, mvp.filenkov.store
-#                        -> 127.0.0.1:18080 gateway (MVP stand)
-#   meet.filenkov.store  -> 127.0.0.1:8000  Jitsi web (LAN / WireGuard only)
+#   id.filenkov.store    -> 127.0.0.1:8083  gateway (LAN / WireGuard only)
+#   mvp.filenkov.store   -> 127.0.0.1:18080 gateway (MVP stand)
+#   meet.filenkov.store  -> 127.0.0.1:8000  Jitsi web, no SSO (LAN / WireGuard only)
 #   hermes.filenkov.store -> 127.0.0.1:9119  Hermes (LAN / WireGuard only)
 #   lite-llm.filenkov.store -> 127.0.0.1:4000  LiteLLM (dev)
 #
@@ -72,15 +72,31 @@ https://observer.filenkov.store {
 	import secure
 }
 
-# New MVP stack
-https://mvp.filenkov.store,
-https://id.filenkov.store {
+# MVP stand only. The live gateway is :8083.
+https://mvp.filenkov.store {
 	reverse_proxy 127.0.0.1:18080
 
 	import secure
 }
 
-# Jitsi Meet through the gateway. No A record: the name lives in /etc/hosts and
+# Keycloak. The certificate stays public because this name is the issuer URL.
+# The lan gate is what keeps the console and the broker off the internet:
+# a browser that is not on the LAN or the WireGuard tunnel gets 403, so
+# Google sign-in only finishes from those sources.
+https://id.filenkov.store {
+	import lan
+	handle @lan {
+		reverse_proxy 127.0.0.1:8083
+	}
+	handle {
+		respond "Access is limited to the LAN and the WireGuard tunnel" 403
+	}
+
+	import secure
+}
+
+# Jitsi Meet. Not an SSO host and not a gateway upstream: Caddy proxies the
+# name itself. No A record: the name lives in /etc/hosts and
 # dnsmasq, so the certificate comes from Caddy's local CA (`tls internal`) and
 # clients must trust that CA root. The failure looks like a certificate error,
 # not a 404. Media does not pass through this edge: WebRTC is UDP 10000

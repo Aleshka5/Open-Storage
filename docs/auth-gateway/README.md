@@ -11,7 +11,7 @@ One login for the `filenkov.store` hosts. TLS at the edge, identity in Keycloak,
 | Piece | Stack |
 |---|---|
 | proxy | Caddy 2.11, run by systemd on the host |
-| gateway | Go 1.26. stdlib, `gopkg.in/yaml.v3`, `github.com/coreos/go-oidc/v3`, `github.com/go-jose/go-jose/v4`, `go.opentelemetry.io/otel`. Budget: 4200 lines of Go, tests excluded ([ADR-0007](adrs/7-gateway-line-budget.md)). The tree is past that cap; the count is in [docs/init.md](../init.md). |
+| gateway | Go 1.26. stdlib, `gopkg.in/yaml.v3`, `github.com/coreos/go-oidc/v3`, `github.com/go-jose/go-jose/v4`, `go.opentelemetry.io/otel`. Budget: 5500 lines of Go, tests excluded ([ADR-0010](adrs/10-gateway-line-budget.md)). |
 | idp | Keycloak 26.8.2, realm imported from `realm.json` |
 | idp_db | Postgres 17 |
 | resume-page | Vite 8, React 19, TypeScript 6, react-router 7, nginx 1.27 |

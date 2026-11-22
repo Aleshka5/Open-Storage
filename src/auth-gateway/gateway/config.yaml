@@ -45,7 +45,6 @@ upstreams:
   audio: "audio-api:8000"
   audio_web: "frontend:80"
   grafana: "grafana:3000"
-  jitsi: "jitsi-web:8000"
   # The control plane runs on the host and needs nvidia-smi, so it is reached on
   # the LAN address. host.docker.internal resolves to 169.254.1.2 under rootless
   # podman 5.7 and that address does not answer from inside a container.
@@ -142,13 +141,4 @@ hosts:
     timeouts: { response_header: 5m }
     routes:
       - { path: /api/health, policy: public }
-      - { path: /**, policy: session }
-
-  - host: meet.filenkov.store
-    upstream: jitsi
-    # Jitsi Meet frames itself (the conference UI is an iframe).
-    frame: self
-    permissions_policy: "camera=(self), microphone=(self), display-capture=(self), geolocation=()"
-    timeouts: { response_header: 5m }
-    routes:
       - { path: /**, policy: session }

@@ -1,6 +1,6 @@
 ## Status
 
-Accepted
+Superseded by [ADR-0010](10-gateway-line-budget.md). The measurement below is the one this decision was accepted on.
 
 ## Decision
 

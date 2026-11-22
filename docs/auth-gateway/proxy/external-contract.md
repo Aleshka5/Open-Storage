@@ -17,19 +17,22 @@ The proxy is the host's systemd Caddy, not a compose service ([ADR-0005](../adrs
 
 ## Gateway
 
-One upstream for every SSO host: `127.0.0.1:8083`, a host loopback port. Two consequences:
+One upstream for every SSO host and for `id.`: `127.0.0.1:8083`, a host loopback port. Two consequences:
 
 - The proxy must run on the host. A container cannot reach the host's loopback ([ADR-0005](../adrs/5-port-from-auth-service.md)).
-- Nothing else may publish 8083. The name `gateway` is a compose container, but that container publishes `18080` (and `19000` for metrics), so the live listener is whatever holds `8083`. Check that before reading a `404` or `502` as a gateway bug.
+- Nothing else may publish 8083. [`.env.example`](../../../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`. `make up-mvp` publishes `18080` for `mvp.` only. Compose falls back to `8080` when `GATEWAY_PORT` is unset, and this file does not use `8080`.
 
-The gateway is not on a shared network with the proxy and does not need to be: the only link is that port. The proxy does not know route names, policies, or hosts' header settings; it forwards to the same address for all of them and lets `Host` decide.
+The gateway is not on a shared network with the proxy and does not need to be: the only link is that port. The proxy does not know route names, policies, or hosts' header settings; it forwards to the same address for the SSO hosts and for `id.`, and lets `Host` decide.
 
-The MVP stand and `id.filenkov.store` go to `127.0.0.1:18080`. `make up-mvp` publishes the gateway there. A default `make up` publishes `127.0.0.1:8080`, which this file does not use. `meet.filenkov.store` goes to `127.0.0.1:8000`, not to either gateway port.
+`id.filenkov.store` uses that same port and the `lan` gate. A source outside the list gets `403` and never reaches Keycloak. The certificate stays a public ACME certificate because the name is the issuer URL. Google sign-in finishes only from an allowed source, because the broker redirect lands on this name.
+
+`meet.filenkov.store` goes to `127.0.0.1:8000`. It is not an SSO host and not a gateway upstream.
 
 ## Hosts outside the gateway
 
 | Host | Upstream | Certificate | Auth |
 |---|---|---|---|
+| `meet.filenkov.store` | `127.0.0.1:8000` | `tls internal` | LAN / WireGuard gate. No SSO. The gateway has no `meet` host. |
 | `hermes.filenkov.store` | `127.0.0.1:9119` | `tls internal` | LAN / WireGuard `remote_ip` gate in Caddy. No SSO. Keeps its own login. |
 | `lite-llm.filenkov.store` | `127.0.0.1:4000` | ACME HTTP-01 | None at the edge. |
 
@@ -37,7 +40,7 @@ The MVP stand and `id.filenkov.store` go to `127.0.0.1:18080`. `make up-mvp` pub
 
 ## The `lan` gate
 
-One snippet, imported by `meet` and by `hermes`. It is an allow-list of source addresses:
+One snippet, imported by `id.`, `meet`, and `hermes`. It is an allow-list of source addresses:
 
 ```text
 @lan remote_ip 10.10.0.1 10.10.0.2 10.10.0.4 192.168.1.0/24 127.0.0.1
