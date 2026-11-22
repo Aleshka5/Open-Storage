@@ -1,24 +1,34 @@
-# task-02 Square chrome
+> **ID:** task-02
+> **Status:** TODO
+> **Specs:** [US-03](../init.md), [brand book](../../../brand-book/init.md)
 
-Story: [US-03](../init.md)
+## Overview
 
-## Outcome
+Panels, fields, and focus rings on the resume page are square and have no drop shadow. The art lightbox and the owl chat sit on `document.body`. Files: `shell.css`, `chat.css`, `art.css`, `forms.css`, `base.css`, `Art.tsx`, and `OwlChat.tsx` under `src/auth-gateway/resume-page`.
 
-Panels, fields, and focus rings on the resume page are square and have no drop shadow. Viewport layers sit on `document.body`.
+## Goals
 
-## Paths
+- Remove radius and drop shadow from the chat panel, the greeting bubble, art frames, code blocks, the account switch, and focus rings.
+- Make `.btn-ghost` border match its fill. Set both faces on the chat field. Use `--accent-text` for a 2px focus ring.
+- Mount the art lightbox and the owl chat on `document.body`.
 
-- `src/auth-gateway/resume-page/src/styles/shell.css`
-- `src/auth-gateway/resume-page/src/styles/chat.css`
-- `src/auth-gateway/resume-page/src/styles/art.css`
-- `src/auth-gateway/resume-page/src/styles/forms.css`
-- `src/auth-gateway/resume-page/src/styles/base.css`
-- `src/auth-gateway/resume-page/src/components/art/Art.tsx`
-- `src/auth-gateway/resume-page/src/components/owl/OwlChat.tsx`
+## Non-goals
 
-## Done when
+- The theme control and `theme.css`. Those are [task-01](task-01-theme.md).
+- Rounding the owl hit target, the spine dots, or the owl progress ring.
+- Changing chat behavior or the owl art.
 
-- The chat panel, greeting bubble, art frames, code blocks, account switch, and focus rings have square corners. The two drop shadows are gone.
-- `.btn-ghost` border matches its fill. The chat field sets both faces. A 2px focus ring uses `--accent-text`.
-- The owl hit target, the spine dots, and the owl progress ring stay round.
-- The art lightbox and the owl chat are mounted on `document.body`.
+## Definition of Done
+
+- [ ] The listed boxes have square corners, and the two drop shadows are gone.
+- [ ] `.btn-ghost` border matches its transparent fill. The chat field sets `color: var(--ink)`.
+- [ ] A 2px focus ring uses `--accent-text`. `--accent` is not used as text.
+- [ ] The art lightbox and the owl chat are mounted on `document.body`.
+
+```
+When done and reviewed:
+- [ ] The listed boxes have square corners, and the two drop shadows are gone.
+- [ ] .btn-ghost border matches its transparent fill. The chat field sets color: var(--ink).
+- [ ] A 2px focus ring uses --accent-text. --accent is not used as text.
+- [ ] The art lightbox and the owl chat are mounted on document.body.
+```

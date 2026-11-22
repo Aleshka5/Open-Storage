@@ -1,18 +1,30 @@
-# task-03 Checks and the design note
+> **ID:** task-03
+> **Status:** TODO
+> **Specs:** [US-03](../init.md), [brand book](../../../brand-book/init.md), [resume-page design](../../../auth-gateway/frontend/design.md)
 
-Story: [US-03](../init.md)
+## Overview
 
-## Outcome
+The brand-book checks this page can lock are locked by tests. The design note points at the brand book and does not copy the palette.
 
-The brand book’s check list that this page can lock is locked by tests, and the design note points at the brand book for the facts this story uses.
+## Goals
 
-## Paths
+- Test the preference fallback, `system` following `prefers-color-scheme`, both faces on the button and banner classes, `--accent` unused as a text color, and the theme control’s name and three labels.
+- State in the design note that this page is the hub, and that theme and chrome follow the brand book.
 
-- `src/auth-gateway/resume-page/src/`
-- `docs/auth-gateway/frontend/design.md`
+## Non-goals
 
-## Done when
+- A visual restatement of the palette in `design.md`.
+- New product behavior beyond [task-01](task-01-theme.md) and [task-02](task-02-square-chrome.md).
 
-- Tests lock: the preference fallback, `system` following `prefers-color-scheme`, both faces on the button and banner classes, `--accent` unused as text color, and the theme control’s name and three labels.
-- `npm test` and `npm run build` pass, inside the 95 KB initial JS budget.
-- [design.md](../../../auth-gateway/frontend/design.md) states that this page is the hub (owl tab icon, diamond header mark) and that theme and chrome follow the [brand book](../../../brand-book/init.md). It does not copy the palette.
+## Definition of Done
+
+- [ ] The tests above pass under `npm test`.
+- [ ] `npm run build` passes inside the 95 KB initial JS budget.
+- [ ] `docs/auth-gateway/frontend/design.md` names the hub exception and links the brand book for theme and chrome.
+
+```
+When done and reviewed:
+- [ ] The tests above pass under npm test.
+- [ ] npm run build passes inside the 95 KB initial JS budget.
+- [ ] docs/auth-gateway/frontend/design.md names the hub exception and links the brand book for theme and chrome.
+```

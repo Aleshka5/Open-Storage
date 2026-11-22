@@ -1,21 +1,35 @@
-# task-01 Theme
+> **ID:** task-01
+> **Status:** TODO
+> **Specs:** [US-03](../init.md), [brand book](../../../brand-book/init.md)
 
-Story: [US-03](../init.md)
+## Overview
 
-## Outcome
+The resume page resolves `light`, `Dark`, and `System` before first paint, and the header changes that choice without a reload. Files: `index.html`, `src/styles/theme.css`, `src/styles/tokens.css`, `src/components/Layout.tsx` under `src/auth-gateway/resume-page`.
 
-The resume page resolves `light`, `Dark`, and `System` before first paint, and the header can change that choice without a reload.
+## Goals
 
-## Paths
+- Run the brand book’s `readPreference`, `resolve`, and `apply` from a blocking script in `<head>`.
+- Put both palettes, the button faces, the banner faces, and the motion tokens in `theme.css`. `:root` is the dark palette.
+- Put the `Theme` radiogroup in the header’s right slot, beside the session control.
+- Point the wordmark at `https://filenkov.store`, as an in-app navigation to `/` on that origin.
 
-- `src/auth-gateway/resume-page/index.html`
-- `src/auth-gateway/resume-page/src/styles/theme.css`
-- `src/auth-gateway/resume-page/src/styles/tokens.css`
-- `src/auth-gateway/resume-page/src/components/Layout.tsx`
+## Non-goals
 
-## Done when
+- Square corners, drop shadows, and viewport layers. Those are [task-02](task-02-square-chrome.md).
+- Tests and the design note. Those are [task-03](task-03-checks.md).
+- A toast.
 
-- A blocking script in `<head>` runs the brand book’s `readPreference` / `resolve` / `apply` before first paint. The stored value is the preference, under `theme.preference`.
-- `theme.css` holds both palettes, the button faces, the banner faces, and the motion tokens. `:root` is the dark palette. `[data-theme="light"]` replaces every color token. `--surface-raised` and `--danger-wash` exist. The error banner uses `--danger-wash`.
-- The header right slot has the `Theme` radiogroup from the story. Session controls stay beside it.
-- The wordmark destination is `https://filenkov.store`, as an in-app navigation to `/` on that origin.
+## Definition of Done
+
+- [ ] `data-theme` and `color-scheme` are set before first paint.
+- [ ] `theme.preference` stores the preference. An unknown value behaves as `dark`. `system` follows `prefers-color-scheme`.
+- [ ] `[data-theme="light"]` replaces every color token. `--surface-raised` and `--danger-wash` exist. The error banner uses `--danger-wash`.
+- [ ] The radiogroup name is `Theme`, and its labels are `light`, `Dark`, and `System`.
+
+```
+When done and reviewed:
+- [ ] data-theme and color-scheme are set before first paint.
+- [ ] theme.preference stores the preference. An unknown value behaves as dark. system follows prefers-color-scheme.
+- [ ] [data-theme="light"] replaces every color token. --surface-raised and --danger-wash exist. The error banner uses --danger-wash.
+- [ ] The radiogroup name is Theme, and its labels are light, Dark, and System.
+```
