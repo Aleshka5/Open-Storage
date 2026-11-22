@@ -51,7 +51,7 @@ func New(client *llm.Client, logger *slog.Logger) *Handler {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.client == nil {
 		h.log.Warn("chat_not_configured")
-		writeError(w, http.StatusServiceUnavailable, "chat is not configured")
+		writeError(w, http.StatusServiceUnavailable, "chat_unavailable")
 		return
 	}
 

@@ -6,7 +6,7 @@ As a reader of the resume, I want `POST /api/chat` to answer `chat_unavailable` 
 
 ## Status
 
-TODO
+Done
 
 ## Scope
 

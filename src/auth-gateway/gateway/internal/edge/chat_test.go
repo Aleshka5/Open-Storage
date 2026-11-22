@@ -136,8 +136,17 @@ func TestChatRouteWithoutAHandlerIsA503(t *testing.T) {
 
 	rec := h.do(http.MethodPost, "/api/chat", `{"question":"hi"}`, nil)
 
-	if rec.Code != http.StatusServiceUnavailable || !strings.Contains(rec.Body.String(), "chat_unavailable") {
-		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status %d", rec.Code)
+	}
+	if rec.Body.String() != `{"error":"chat_unavailable"}` {
+		t.Fatalf("body %q", rec.Body.String())
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("content type %q", ct)
+	}
+	if strings.Contains(rec.Body.String(), "data:") {
+		t.Fatalf("stream started: %q", rec.Body.String())
 	}
 }
 
