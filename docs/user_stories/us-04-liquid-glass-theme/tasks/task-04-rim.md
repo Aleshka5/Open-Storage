@@ -1,5 +1,5 @@
 > **ID:** task-04
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-04](../init.md), [ADR-0011](../../../auth-gateway/adrs/11-theme-reveal-rim.md), [brand book §3](../../../brand-book/init.md)
 
 ## Overview
@@ -20,5 +20,5 @@ The circle’s edge refracts on the band [ADR-0011](../../../auth-gateway/adrs/1
 
 ## Definition of Done
 
-- [ ] The band matches the ADR.
-- [ ] Brand book §3 lists the refractive rim.
+- [x] The band matches the ADR.
+- [x] Brand book §3 lists the refractive rim.

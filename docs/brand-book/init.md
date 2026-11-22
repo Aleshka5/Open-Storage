@@ -143,7 +143,7 @@ A field’s fill is `--paper`, its text is `--ink`, and its border is `1px solid
 | `--dur-theme` | `700ms` | The theme circle |
 | `--ease` | `cubic-bezier(0.2, 0, 0, 1)` | Every duration |
 
-`prefers-reduced-motion: reduce` sets `--dur-fast`, `--dur`, and `--dur-theme` to `1ms`, disables the view entrance, skips the theme circle, and makes `scrollTo` use `behavior: 'auto'`.
+`prefers-reduced-motion: reduce` sets `--dur-fast`, `--dur`, and `--dur-theme` to `1ms`, disables the view entrance, skips the theme circle, draws no rim, and makes `scrollTo` use `behavior: 'auto'`.
 
 | What moves | How |
 |---|---|
@@ -153,6 +153,7 @@ A field’s fill is `--paper`, its text is `--ink`, and its border is `1px solid
 | A choice row | A 2px `--accent` bar on the left, `scaleY(0 → 1)` from the top, over `--dur-fast` |
 | A button | Background color over `--dur-fast` |
 | A flipped theme | One circle from the control’s border box. `clip-path: circle()` on `::view-transition-new(root)` over `--dur-theme` with `--ease`. The new theme is inside. The old theme stays outside until the circle covers the viewport. No circle when the choice does not change the resolved theme, when the OS changes under System, under reduced motion, or without `startViewTransition` |
+| The circle’s edge | A 36px band. Displacement is radial, at most 12px, from one SVG `feDisplacementMap` on that band only. Saturate 1.7 and a 1px specular hairline. The disk interior is not filtered. The filter is removed when the circle ends |
 | Anything else | Still |
 
 Mount a confirm dialog, a lightbox, or any other viewport layer on `document.body`. `.view-in` uses a transform, and a `position: fixed` child inside it centers on the view instead of the screen.
