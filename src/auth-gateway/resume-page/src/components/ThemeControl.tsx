@@ -13,7 +13,7 @@ export function ThemeControl({
   onChange,
 }: {
   preference: Preference
-  onChange: (next: Preference, origin: DOMRect) => void
+  onChange: (next: Preference, origin: DOMRect, group: HTMLElement) => void
 }) {
   const groupRef = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState<{ x: number; w: number } | null>(null)
@@ -72,8 +72,9 @@ export function ThemeControl({
             checked={preference === option.value}
             onChange={() => {
               const origin = groupRef.current?.getBoundingClientRect()
-              if (!origin) return
-              onChange(option.value, origin)
+              const group = groupRef.current
+              if (!origin || !group) return
+              onChange(option.value, origin, group)
             }}
           />
           {option.label}

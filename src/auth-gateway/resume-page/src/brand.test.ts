@@ -228,8 +228,11 @@ describe('theme faces', () => {
     expect(light).toContain('#8f4128')
     expect(root).toContain('--dur-fast: 140ms')
     expect(root).toContain('--dur: 240ms')
+    expect(root).toContain('--dur-theme: 700ms')
     expect(root).toContain('--ease: cubic-bezier(0.2, 0, 0, 1)')
-    expect(theme).toMatch(/prefers-reduced-motion:\s*reduce[\s\S]*--dur-fast:\s*1ms[\s\S]*--dur:\s*1ms/)
+    expect(theme).toMatch(
+      /prefers-reduced-motion:\s*reduce[\s\S]*--dur-fast:\s*1ms[\s\S]*--dur:\s*1ms[\s\S]*--dur-theme:\s*1ms/,
+    )
 
     for (const selector of ['.btn', '.btn:hover', '.btn-ghost', '.btn-ghost:hover', '.btn-danger', '.btn-danger:hover', '.banner', '.banner.error']) {
       expectBothFaces(ruleset(theme, selector), selector)

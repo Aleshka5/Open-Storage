@@ -140,9 +140,10 @@ A field’s fill is `--paper`, its text is `--ink`, and its border is `1px solid
 |---|---|---|
 | `--dur-fast` | `140ms` | Hover, small fades, the choice bar |
 | `--dur` | `240ms` | Header, a view entering |
-| `--ease` | `cubic-bezier(0.2, 0, 0, 1)` | Both |
+| `--dur-theme` | `700ms` | The theme circle |
+| `--ease` | `cubic-bezier(0.2, 0, 0, 1)` | Every duration |
 
-`prefers-reduced-motion: reduce` sets both durations to `1ms`, disables the view entrance, and makes `scrollTo` use `behavior: 'auto'`.
+`prefers-reduced-motion: reduce` sets `--dur-fast`, `--dur`, and `--dur-theme` to `1ms`, disables the view entrance, skips the theme circle, and makes `scrollTo` use `behavior: 'auto'`.
 
 | What moves | How |
 |---|---|
@@ -151,6 +152,7 @@ A field’s fill is `--paper`, its text is `--ink`, and its border is `1px solid
 | Wordmark and service list in the condensed header | Opacity over `--dur-fast` |
 | A choice row | A 2px `--accent` bar on the left, `scaleY(0 → 1)` from the top, over `--dur-fast` |
 | A button | Background color over `--dur-fast` |
+| A flipped theme | One circle from the control’s border box. `clip-path: circle()` on `::view-transition-new(root)` over `--dur-theme` with `--ease`. The new theme is inside. The old theme stays outside until the circle covers the viewport. No circle when the choice does not change the resolved theme, when the OS changes under System, under reduced motion, or without `startViewTransition` |
 | Anything else | Still |
 
 Mount a confirm dialog, a lightbox, or any other viewport layer on `document.body`. `.view-in` uses a transform, and a `position: fixed` child inside it centers on the view instead of the screen.
@@ -220,5 +222,5 @@ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 2. `theme.preference` is `light`, `dark`, or `system`. Anything else behaves as `dark`.
 3. Buttons, fields, banners, and toasts use the tokens above and set both faces.
 4. `--accent` is never text. Copper text is `--accent-text` from the active palette.
-5. Motion uses `--dur-fast`, `--dur`, and `--ease`. Reduced motion collapses both durations.
+5. Motion uses `--dur-fast`, `--dur`, `--dur-theme`, and `--ease`. Reduced motion collapses the durations.
 6. The tab icon and the header mark are the diamond in this file. Fonts are the self-hosted files.

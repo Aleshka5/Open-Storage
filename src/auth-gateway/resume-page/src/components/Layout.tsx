@@ -1,4 +1,5 @@
 import { useEffect, useState, type MouseEvent } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { loginPath } from '../api'
 import { useAuth } from '../auth'
@@ -10,11 +11,11 @@ import {
   HUB_ORIGIN,
   apply,
   brandStaysInApp,
-  persist,
   readPreference,
   watchSystem,
   type Preference,
 } from '../theme'
+import { chooseTheme } from '../themeReveal'
 
 function Mark() {
   return (
@@ -72,9 +73,10 @@ export function Layout() {
     navigate('/')
   }
 
-  function onTheme(next: Preference) {
-    setPreference(next)
-    persist(next)
+  function onTheme(next: Preference, origin: DOMRect, group: HTMLElement) {
+    chooseTheme(next, origin, group, () => {
+      flushSync(() => setPreference(next))
+    })
   }
 
   async function onSignOut(event: MouseEvent<HTMLButtonElement>) {

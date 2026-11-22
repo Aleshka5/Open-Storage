@@ -1,5 +1,5 @@
 > **ID:** task-03
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-04](../init.md), [brand book §3](../../../brand-book/init.md)
 
 ## Overview
@@ -19,5 +19,5 @@ A user choice that flips the resolved theme plays one circle from the control. N
 
 ## Definition of Done
 
-- [ ] `--dur-theme` is `700ms` with `--ease`, and `1ms` under reduced motion.
-- [ ] Brand book §3 lists the radial reveal and `--dur-theme`.
+- [x] `--dur-theme` is `700ms` with `--ease`, and `1ms` under reduced motion.
+- [x] Brand book §3 lists the radial reveal and `--dur-theme`.
