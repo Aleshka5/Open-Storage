@@ -1,6 +1,6 @@
 # idp — API contract
 
-The endpoints Keycloak serves that this namespace depends on, and the shape of each request and answer. Realm facts (roles, lifetimes, clients, bootstrap) are in [init.md](../init.md); the Keycloak process itself is in the [external contract](external-contract.md).
+The endpoints Keycloak serves that this namespace depends on, and the shape of each request and answer. Realm facts (roles, lifetimes, clients, bootstrap) are in [init.md](init.md); the Keycloak process itself is in the [external contract](external-contract.md).
 
 Base: `https://id.filenkov.store`, a real realm `filenkov`. Server-side callers can use `http://idp:8080` on `open_network` instead; the issuer in the answers stays the public URL, because `KC_HOSTNAME` is fixed.
 

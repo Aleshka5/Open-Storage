@@ -20,7 +20,7 @@ Namespace `auth-gateway`: proxy, gateway, idp, idp_db, resume-page. One release,
 - A role granted or removed in `/admin` takes effect within 5 minutes.
 - The last admin cannot be removed (`409`). A service admin cannot edit another service (`403`).
 - `go test ./...`, `npm test`, and `caddy validate` pass.
-- Gateway stays within 4200 lines of Go ([ADR-0005](../../adrs/0007-gateway-line-budget.md)). No Redis, no catalog service, no `X-User-Id`.
+- Gateway stays within 4200 lines of Go ([ADR-0007](../../auth-gateway/adrs/7-gateway-line-budget.md)). No Redis, no catalog service, no `X-User-Id`. The tree is past the cap; see [docs/init.md](../../init.md).
 - The contracts in `docs/auth-gateway/` match the code.
 
 ## Out of scope

@@ -1,6 +1,6 @@
 ## Status
 
-Superseded by [ADR-0009](0009-owl-chat-in-the-gateway.md).
+Superseded by [ADR-0009](9-owl-chat-in-the-gateway.md).
 
 ## Decision
 
@@ -10,7 +10,7 @@ The old stack's chat pipeline — a hand-written prompt, `nodes.json` generated 
 
 ## Rejected
 
-A chat handler inside the gateway. The behaviour is about 350 lines plus a prompt asset, against a 2,000-line budget that is already at its limit ([ADR-0005](0005-port-from-auth-service.md)).
+A chat handler inside the gateway. The behaviour is about 350 lines plus a prompt asset, against a 2,000-line budget that is already at its limit ([ADR-0001](1-edge-in-one-process.md)).
 
 Rewriting the SPA client against LiteLLM's OpenAI stream shape now. That changes `chat.ts`, the answer renderer and the node-link resolver in the same release that changes the whole identity layer.
 

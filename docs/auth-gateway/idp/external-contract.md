@@ -12,7 +12,7 @@ Variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 
 ## Postgres
 
-`idp_db`, Postgres 17, database `keycloak`, user `keycloak`, password `IDP_DB_PASSWORD`. Volume `idp_pgdata`. No published port. Code folder: `src/auth-gateway/postgres`. Schema migrations belong to the Keycloak image.
+`idp_db`, Postgres 17, database `keycloak`, user `keycloak`, password `IDP_DB_PASSWORD`. Volume `idp_pgdata`. No published port. There is no Postgres source tree. Schema migrations belong to the Keycloak image.
 
 Backup: `pg_dump` daily to `backups/` on disk. Signing keys live in this database, so the dump is mandatory. Realm schema rollback is not supported. The rollback is restoring the dump.
 

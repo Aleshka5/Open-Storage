@@ -4,7 +4,7 @@ Story: [US-01](../init.md)
 
 ## Outcome
 
-The showcase matches [frontend/design.md](../../../frontend/design.md), [security.md](../../../frontend/security.md), and [backend-contract.md](../../../frontend/backend-contract.md). Nodes come from `import.meta.glob`. `useSession` calls `/auth/session` once. `/admin` is a table with no pagination. Bundle budget is 95 KB. nginx uses `try_files`.
+The showcase matches [frontend/design.md](../../../auth-gateway/frontend/design.md), [security.md](../../../auth-gateway/frontend/security.md), and [backend-contract.md](../../../auth-gateway/frontend/backend-contract.md). Nodes come from `import.meta.glob`. `useSession` calls `/auth/session` once. `/admin` is a table with no pagination. Bundle budget is 95 KB. nginx uses `try_files`.
 
 ## Paths
 

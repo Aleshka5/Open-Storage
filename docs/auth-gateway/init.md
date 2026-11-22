@@ -1,6 +1,6 @@
 # auth-gateway
 
-Identity and edge. The services share `open_network`, [auth-gateway/.env](deploy/auth-gateway/.env), and [auth-gateway/docker-compose.yaml](deploy/auth-gateway/docker-compose.yaml).
+Identity and edge. The services share `open_network`, [auth-gateway/.env.example](../../deploy/auth-gateway/.env.example), and [auth-gateway/docker-compose.yaml](../../deploy/auth-gateway/docker-compose.yaml).
 
 This page is how the services interact. Contracts for each service are linked, not copied.
 
@@ -14,7 +14,7 @@ flowchart LR
   subgraph NS["auth-gateway namespace — open_network"]
     direction LR
     P["proxy<br/>Caddy, host systemd<br/>:80 :443"]
-    G["gateway<br/>Go, :8080<br/>:9000 metrics"]
+    G["gateway<br/>Go, container :8080<br/>metrics :9000"]
     I["idp<br/>Keycloak 26.8.2"]
     D[("idp_db<br/>Postgres 17")]
     R["resume-page<br/>nginx :80"]
@@ -23,9 +23,9 @@ flowchart LR
   PR["product resources<br/>storage image rag audio llm<br/>observer meet switch litellm<br/>not in this repository"]
 
   B -->|"TLS 80/443"| P
-  P -->|"http :8083, one upstream per host"| G
+  P -->|"seven hosts → 127.0.0.1:8083<br/>id. and mvp. → 127.0.0.1:18080"| G
   G -->|"strip + inject, then proxy"| R
-  G -->|"inject heders + Bearer JWT"| PR
+  G -->|"inject headers + Bearer JWT"| PR
   G -->|"discovery / JWKS / token / revoke, :8080"| I
   I -->|"RS256 tokens, JWKS by kid"| G
   I -->|"jdbc :5432"| D
@@ -54,7 +54,7 @@ flowchart LR
 
 ## Ports
 
-[Compose](deploy/auth-gateway/docker-compose.yaml)
+[Compose](../../deploy/auth-gateway/docker-compose.yaml) publishes gateway `127.0.0.1:${GATEWAY_PORT:-8080}:8080` and metrics `127.0.0.1:${METRICS_PORT:-19000}:9000`. The container listens on `:8080` and `:9000`. The [Caddyfile](../../deploy/auth-gateway/Caddyfile) does not use host port `8080`: seven SSO hosts go to `8083`, `id.` and `mvp.` go to `18080`. `meet.` goes to `127.0.0.1:8000` and never enters this diagram. `make up-mvp` sets `GATEWAY_PORT=18080`.
 
 Gateway stores nothing. The session cookie holds the Keycloak refresh token. idp remembers users, roles, and sessions.
 

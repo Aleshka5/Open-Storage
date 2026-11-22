@@ -2,7 +2,7 @@
 
 Ground truth rules. The rules themselves live in the documents below.
 
-Spec Driven Development - Sepecs First approach. You have to separate development on at least four different turns:
+Spec Driven Development - Specs First approach. You have to separate development on at least four different turns:
  1) Examine [docs](/docs/)
  2) Prepare [User Story](/docs/user_stories/) (If changes are clear and are approved, else - ask questions)
  3) Develop
@@ -16,7 +16,7 @@ Documents
 
 While editing
  - Write every document in this repository in English.
- - Keep the document short. Add another short document instead of extending a long one. Avoid "Master Documetnts".
+ - Keep the document short. Add another short document instead of extending a long one. Avoid "Master Documents".
  - Link to the document that owns a fact. Do not copy the fact. For docs use [name](relative/path) for references instead of `relative/path`.
  - Record a decision in an ([ADR](adrs/init.md)) before implementing it.
  - Update the contract in the same change as the behavior it describes.

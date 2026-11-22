@@ -14,4 +14,4 @@ Close the error-envelope conflict in [init.md](../../../init.md) in this task: o
 
 ## Done when
 
-Tests against a fake Keycloak Admin API cover `409 LAST_ADMIN`, a foreign service returning `403`, `svc=admin` on the service path returning `400`, and `level: null` removing the role.
+Tests against a fake Keycloak Admin API cover `409 {"error":"last_admin"}`, a foreign service returning `403`, `svc=admin` on the service path returning `400`, and `level: null` removing the role.

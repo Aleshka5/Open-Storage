@@ -9,12 +9,12 @@ Read first
  - adrs/init.md — decisions that bind the whole system.
  - deploy/namespace/ — env example, Makefile, and compose for that namespace. Extra Dockerfile for services keep: deploy/namespace/service/
  - src/namespace/service/ — service code. tests/ inside the service.
- - scripts/ — checks and setup scripts. Not written yet.
+ - scripts/ — checks and setup scripts. See [scripts/README.md](scripts/README.md).
 
 Documents
  - A document states the necessary facts and stops.
  - One fact has one owner. Other documents link to it.
- - README.md files are not for developing. They arre just for into new developers or customers.
+ - README.md files are not for developing. They are an introduction for new developers or customers.
  
 Decisions
  - A decision that binds the whole system goes in adrs/.

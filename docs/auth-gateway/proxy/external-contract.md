@@ -1,6 +1,6 @@
 # proxy — external contract
 
-What the edge requires, and the rules of talking to its neighbors. Message shapes are in [Message-contract](API/Message-contract.md) — that file still describes the pre-contract port and has not been rewritten yet.
+What the edge requires, and the rules of talking to its neighbors. Files and certificates are in [init](init.md).
 
 ## Environment
 
@@ -12,7 +12,7 @@ The proxy is the host's systemd Caddy, not a compose service ([ADR-0005](../adrs
 | `/var/lib/caddy` | yes | ACME account, issued certificates, the local CA root and key. |
 | `/usr/bin/caddy` | yes | 2.11. `make caddy-check` runs `caddy validate` against it. |
 | Ports 80, 443 | yes | Bound on exactly `192.168.1.102` and `10.10.0.1` (`default_bind`). |
-| `admin off` | yes | No admin API. A change is a file edit plus `caddy reload`, never a POST to `/config`. |
+| `admin off` | yes | No admin API. A change is a file edit plus `systemctl restart caddy`. `caddy reload` posts to that API, so it cannot run. |
 | Outbound 80 | for public names | ACME HTTP-01. Blocked, a name serves nothing and the failure is a TLS error on the client. |
 
 ## Gateway
@@ -24,7 +24,7 @@ One upstream for every SSO host: `127.0.0.1:8083`, a host loopback port. Two con
 
 The gateway is not on a shared network with the proxy and does not need to be: the only link is that port. The proxy does not know route names, policies, or hosts' header settings; it forwards to the same address for all of them and lets `Host` decide.
 
-The MVP stand and `id.filenkov.store` go to `127.0.0.1:18080` instead, which is the compose container's published port. That split is the reason a proxy change can be reloaded without touching a running gateway.
+The MVP stand and `id.filenkov.store` go to `127.0.0.1:18080`. `make up-mvp` publishes the gateway there. A default `make up` publishes `127.0.0.1:8080`, which this file does not use. `meet.filenkov.store` goes to `127.0.0.1:8000`, not to either gateway port.
 
 ## Hosts outside the gateway
 
@@ -84,4 +84,4 @@ Observed on the live edge, from a LAN client: every SSO host answers with exactl
 | A new host 404s through the proxy but works direct | The name is missing from the site block or the HTTP redirect list. With `default_bind` Caddy adds neither. |
 | Requests reach the wrong application | Two services on one name. Each site block has one upstream; a second `reverse_proxy` on the same name is a change to this contract. |
 
-Changing the file: `caddy validate --config /etc/caddy/Caddyfile` (`make caddy-check`), then `systemctl reload caddy`. A reload does not drop connections; a restart does. There is no compose step and no gateway restart in a proxy change.
+Changing the file: `caddy validate --config /etc/caddy/Caddyfile` (`make caddy-check`), then `systemctl restart caddy`. `admin off` leaves reload with nowhere to post. A restart drops connections. There is no compose step and no gateway restart in a proxy change.

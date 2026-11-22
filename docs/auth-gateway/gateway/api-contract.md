@@ -1,6 +1,6 @@
 # gateway — API contract
 
-What the gateway serves, to whom, with which headers and bodies. Identity headers handed to product apps are owned by [identity v1](../../external-contracts/identity-v1.md); this file owns every endpoint the gateway itself answers, plus the ones it proxies for a known upstream. Configuration is in [init](../init.md)../init.md); outbound calls are in [external-contracts.md](../external-contracts.md).
+What the gateway serves, to whom, with which headers and bodies. Identity headers handed to product apps are owned by [identity v1](../external-contracts/identity-v1.md); this file owns every endpoint the gateway itself answers, plus the ones it proxies for a known upstream. Configuration is in [init](init.md). Outbound calls are in [external-contracts.md](external-contracts.md).
 
 Listen `:8080`, path matching first-wins per host, exactly one `/**` per host and it is last. Every response carries the security headers of its host.
 
@@ -43,7 +43,7 @@ Anything under `/users/**` on the apex is `policy: deny`. The implementation ans
 | `validation` | 400 | Bad body, or `svc=admin` on the service-role path |
 | `last_admin` | 409 | The change would leave no realm `admin` |
 | `idp_unavailable` | 503 | The Admin API did not answer |
-| `auth_unavailable` | 503 | `/readyz` only: discovery or JWKS never loaded |
+| `auth_unavailable` | 503 | `/readyz` when discovery or JWKS never loaded; `GET /auth/session` when refresh fails with a 5xx; a proxied request whose refresh fails the same way |
 | `chat_unavailable` | 503 | `POST /api/chat` with no usable `llm` configuration |
 | `internal` | 500 | The gateway itself failed (sealing, config, decode) |
 
@@ -163,7 +163,7 @@ Body: `{ "value": true | false }`, the field is mandatory. `true` grants realm `
 
 ## `/api/chat`
 
-`POST /api/chat` on the apex, `policy: public`, answered in-process (`chat: true`, no upstream — [ADR-0009](../../adrs/9-owl-chat-in-the-gateway.md)).
+`POST /api/chat` on the apex, `policy: public`, answered in-process (`chat: true`, no upstream — [ADR-0009](../adrs/9-owl-chat-in-the-gateway.md)).
 
 Request: `Content-Type: application/json`, body `{"question": "<text>"}`, at most 4 KiB. The question is trimmed, must be non-empty and at most 255 runes; anything else is `400` with the reason in `{"error": "..."}` — note this one endpoint answers a sentence, not a snake_case code, because the text goes straight to the page.
 
@@ -195,7 +195,7 @@ Proxied to the `switch` upstream. The gateway injects `X-Service-Token: <SWITCH_
 
 ## Startup rules
 
-A config that breaks any of these fails the start; there is no warning-only mode ([ADR-0004](../../adrs/4-config-fails-at-start.md)).
+A config that breaks any of these fails the start; there is no warning-only mode ([ADR-0004](../adrs/4-config-fails-at-start.md)).
 
 1. A host lacks exactly one `/**`, or `/**` is not last.
 2. A route sits after that host's `/**`.

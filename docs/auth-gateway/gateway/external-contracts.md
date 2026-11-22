@@ -1,6 +1,6 @@
 # gateway — external contracts
 
-What the gateway needs from the outside, the endpoints of each neighbor it calls, and the invariants those calls depend on. The endpoints the gateway serves are in [API/api-contract.md](API/api-contract.md); its configuration and role are in [init.md](init.md).
+What the gateway needs from the outside, the endpoints of each neighbor it calls, and the invariants those calls depend on. The endpoints the gateway serves are in [api-contract.md](api-contract.md); its configuration and role are in [init.md](init.md).
 
 Three neighbors: the identity provider, the product upstreams, and the LLM host behind the owl. Everything else it talks to is the browser.
 

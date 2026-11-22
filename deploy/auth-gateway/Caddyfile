@@ -6,9 +6,11 @@
 # header and does not route by application — that is the gateway's job, and
 # a duplicated header is a defect (browsers intersect the policies).
 #
-#   filenkov.store, storage. image. rag. audio. llm. observer. id.
-#                        -> 127.0.0.1:8080  gateway (one upstream, eight hosts)
-#   meet.filenkov.store  -> 127.0.0.1:8080  gateway (LAN / WireGuard only)
+#   filenkov.store, storage. image. rag. audio. llm. observer.
+#                        -> 127.0.0.1:8083  gateway
+#   id.filenkov.store, mvp.filenkov.store
+#                        -> 127.0.0.1:18080 gateway (MVP stand)
+#   meet.filenkov.store  -> 127.0.0.1:8000  Jitsi web (LAN / WireGuard only)
 #   hermes.filenkov.store -> 127.0.0.1:9119  Hermes (LAN / WireGuard only)
 #   lite-llm.filenkov.store -> 127.0.0.1:4000  LiteLLM (dev)
 #
@@ -55,7 +57,7 @@
 
 # --------------------------------------------------------------------- sites
 
-# One backend (127.0.0.1:8083) behind eight hostnames. The size of this file
+# One backend (127.0.0.1:8083) behind the seven hostnames below. The size of this file
 # is the price of one certificate per name and one upstream per host
 # (ADR-0001).
 https://filenkov.store,
