@@ -8,12 +8,12 @@ Applications outside this namespace. Gateway reaches them by the upstream name. 
 | image | `qwen-image:8000` | `image.filenkov.store` | `service(image, family, admin)` except `/healthz` |
 | rag | `rag-edge:8080` | `rag.filenkov.store` | `service(rag, family, admin)` except `/health` |
 | audio API | `audio-api:8000` | `audio.filenkov.store` `/api/**` and `/health` | service role, health public |
-| audio UI | `frontend:80` | `audio.filenkov.store` other paths | policy not set — see [init.md](../init.md) |
+| audio UI | `frontend:80` | `audio.filenkov.store` other paths | `session` |
 | llm | `qwen38:4001` | `llm.filenkov.store` | `admin` |
 | observer | `grafana:3000` | `observer.filenkov.store` | `session`, plus Grafana's own login. `/api/health` public |
-| meet | `jitsi-web:8000` | `meet.filenkov.store` | `session`, and proxy allows LAN / WireGuard only |
+| meet | `jitsi-web:8000` in gateway config; the Caddyfile sends the name to `127.0.0.1:8000` | `meet.filenkov.store` | Gateway config says `session`. The proxy never sends the request there. LAN / WireGuard gate is in Caddy. |
 | switch | `192.168.1.102:8095` (LAN address; `host.docker.internal` does not answer under rootless podman) | `filenkov.store` `/api/services` | `GET` is `session`, the rest is `admin`. Gateway injects `X-Service-Token`. |
-| litellm | `litellm-proxy-server:4000` | `filenkov.store` `POST /api/chat` | `public`. Gateway injects `X-Api-Key`. |
+| litellm | `litellm-proxy-server:4000` | none | Declared in `upstreams`. No route names it. `POST /api/chat` is the in-process owl (`llm:` block), not this upstream. |
 
 `hermes.filenkov.store` and `lite-llm.filenkov.store` are not in this table. Proxy forwards them to local ports. They keep their own authentication.
 

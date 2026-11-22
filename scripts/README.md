@@ -1,6 +1,6 @@
 # scripts
 
-Checks and setup for the auth-gateway stand. Spec: [US-01 task 10](../docs/auth-gateway/user_stories/us-01-identity-edge/tasks/task-10-bootstrap-scripts.md).
+Checks and setup for the auth-gateway stand. Spec: [US-01 task 10](../docs/user_stories/us-01-identity-edge/tasks/task-10-bootstrap-scripts.md).
 
 | Script | What it does | Writes |
 |---|---|---|

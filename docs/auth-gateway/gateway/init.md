@@ -1,6 +1,6 @@
 # gateway — init
 
-What the gateway is, how it runs, and the configuration it refuses to start without. The endpoints it serves are in [API/api-contract.md](API/api-contract.md); the endpoints it calls and the invariants of those calls are in [external-contracts.md](external-contracts.md).
+What the gateway is, how it runs, and the configuration it refuses to start without. The endpoints it serves are in [api-contract.md](api-contract.md); the endpoints it calls and the invariants of those calls are in [external-contracts.md](external-contracts.md).
 
 ## Purpose
 
@@ -15,7 +15,7 @@ It stores nothing. Users, roles, sessions and tokens are Keycloak's; the session
 | Metrics listener | `METRICS_ADDR`, default `:9000`, published as `127.0.0.1:${METRICS_PORT:-19000}` |
 | Config | `GATEWAY_CONFIG`, a YAML file read once at start ([ADR-0004](../adrs/4-config-fails-at-start.md)) |
 | State | none on disk |
-| Limits | 128 MiB, 1 CPU, about 48 MiB used |
+| Limits | compose `mem_limit: 160m`. No CPU limit in compose. |
 | Budget | 4200 lines of Go, tests excluded ([ADR-0007](../adrs/7-gateway-line-budget.md)) |
 | Compose | `deploy/auth-gateway/docker-compose.yaml`, service `gateway`, network `open_network` plus product networks |
 
@@ -31,7 +31,7 @@ browser --TLS--> proxy --http--> gateway --http--> resume, idp, storage, image, 
                                     +-- chat       --> llm host (OpenAI-compatible, SSE)
 ```
 
-The proxy terminates TLS and forwards one upstream for all SSO hosts; the `Host` header picks the block. Product apps receive the [identity v1](../external-contracts/identity-v1.md) headers and their own `Bearer` access token, and never see a header the client sent.
+The proxy terminates TLS. Seven SSO hosts share `127.0.0.1:8083`; `id.` and `mvp.` go to `127.0.0.1:18080`; `meet.` does not reach the gateway. On the hosts that do, the `Host` header picks the block. Product apps receive the [identity v1](../external-contracts/identity-v1.md) headers and their own `Bearer` access token, and never see a header the client sent.
 
 ## Configuration
 
@@ -53,11 +53,11 @@ A route is `path`, `methods`, `policy`, and optionally `upstream`, `strip_prefix
 
 Routes are matched against the path the proxy forwarded, so a route's `policy` is the only authorization decision in the namespace. Policies: `public`, `session`, `admin`, `service(<svc>)`, `service(<svc>, admin)`, `deny`. `deny` answers `404`, not `403`: a hidden path and a missing one look identical.
 
-Eleven rules fail the start rather than degrade: no `/**`, `/**` not last, overlapping routes, unknown upstream, unknown service, a secret in the file, overlapping aliases, an empty `strip_prefix`, a bad `frame`, a bad `identity`, a relative `idp.internal_url`. The full list is in the [API contract](API/api-contract.md#startup-rules) beside the surface it protects.
+Eleven rules fail the start rather than degrade: no `/**`, `/**` not last, overlapping routes, unknown upstream, unknown service, a secret in the file, overlapping aliases, an empty `strip_prefix`, a bad `frame`, a bad `identity`, a relative `idp.internal_url`. The full list is in the [API contract](api-contract.md#startup-rules) beside the surface it protects.
 
 ## Product upstreams
 
-Named in `upstreams`, reached by container name on a shared Docker/podman network, or by LAN address when the service runs on the host. One upstream per host; a route may override it. Policies and the header set are in [identity v1](../external-contracts/identity-v1.md) and the [API contract](API/api-contract.md).
+Named in `upstreams`, reached by container name on a shared Docker/podman network, or by LAN address when the service runs on the host. One upstream per host; a route may override it. Policies and the header set are in [identity v1](../external-contracts/identity-v1.md) and the [API contract](api-contract.md).
 
 | Upstream | Address | Host | Needs |
 |---|---|---|---|
@@ -69,7 +69,7 @@ Named in `upstreams`, reached by container name on a shared Docker/podman networ
 | `audio` / `audio_web` | `audio-api:8000` / `frontend:80` | `audio.` | identity v1 on `/api/**`, session on the UI |
 | `llm` | `qwen38:4001` | `llm.` | `admin` policy, raw vLLM-style endpoint |
 | `grafana` | `grafana:3000` | `observer.` | session; Grafana's own login still applies |
-| `jitsi` | `jitsi-web:8000` | `meet.` | session; WebSocket and a 5m response-header budget |
+| `jitsi` | `jitsi-web:8000` | `meet.` | session in this file. The Caddyfile does not send `meet.` here; it proxies to `127.0.0.1:8000`. |
 | `switch` | `192.168.1.102:8095` | apex `/api/services` | `X-Service-Token` injected by the gateway |
 | `litellm` | `litellm-proxy-server:4000` | apex `POST /api/chat` | not used: the chat goes through the `llm` block, not this upstream ([ADR-0009](../adrs/9-owl-chat-in-the-gateway.md)) |
 
@@ -84,6 +84,6 @@ The session cookie is `__Secure-open_session`: AES-256-GCM of `{sub, refresh_tok
 
 ## Probes and observability
 
-`GET /healthz` answers `200` for any host, `GET /readyz` reports whether discovery and the JWKS loaded (it does not check product upstreams), and `/metrics` answers only on the second listener — the public port answers `404`. Metric names and the access-log fields are fixed in the [API contract](API/api-contract.md#probes-and-metrics).
+`GET /healthz` is the gateway probe, except on a host that routes a literal `/healthz` itself (`image.filenkov.store`). `GET /readyz` reports whether discovery and the JWKS loaded (it does not check product upstreams), and `/metrics` answers only on the second listener — the public port answers `404`. Metric names and the access-log fields are fixed in the [API contract](api-contract.md#probes-and-metrics).
 
 Readiness is the OIDC probe error cached from the last JWKS load, and the JWKS is reloaded on the TTL, so `/readyz` can lag a dead idp by up to `idp.jwks_ttl` (15m). It is a "did we ever load keys" answer, not a live reachability check.

@@ -35,13 +35,13 @@ Otherwise verify the bearer JWT: RS256 against the realm JWKS, `iss` equals the 
 | 302 | `Location` to `https://filenkov.store/auth/login?return_to=…` | Anonymous browser navigation. `return_to` is built from the request and limited to configured hosts. |
 | 401 | `{"error":"unauthorized"}` | Anonymous on `/api/*`, `/users*`, WebSocket |
 | 403 | `{"error":"forbidden"}` | Signed in, role does not allow |
-| 403 | `{"error":"blocked"}` | Account disabled in idp |
+| 403 | `{"error":"blocked"}` | `svc:<svc>:blocked` on a host that sets `service:`. A disabled account is not this code. |
 | 404 | `{"error":"not_found"}` | No route, including `deny` |
-| 503 | `{"error":"auth_unavailable"}` | idp or JWKS unavailable |
+| 503 | `{"error":"auth_unavailable"}` | discovery or JWKS never loaded, or a refresh failed with a 5xx |
 | 429 | `{"error":"rate_limited"}` | Above the per-IP budget of the host |
 | 502 | `{"error":"bad_gateway"}` | Upstream did not answer |
 | 504 | `{"error":"gateway_timeout"}` | Upstream sent no response header within the route timeout |
 
-`/admin` answers in the same envelope, with its own values ([gateway message contract](../gateway/API/api-contract.md)).
+`/admin` answers in the same envelope, with its own values ([gateway API contract](../gateway/api-contract.md)).
 
 Names `X-User-Id` and `X-Storage-Role` are not accepted.

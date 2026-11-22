@@ -11,11 +11,11 @@ One login for the `filenkov.store` hosts. TLS at the edge, identity in Keycloak,
 | Piece | Stack |
 |---|---|
 | proxy | Caddy 2.11, run by systemd on the host |
-| gateway | Go 1.26. stdlib, `gopkg.in/yaml.v3`, `github.com/coreos/go-oidc/v3`, `github.com/go-jose/go-jose/v4`. Budget: 4200 lines of Go, tests excluded ([ADR-0007](adrs/7-gateway-line-budget.md)). |
+| gateway | Go 1.26. stdlib, `gopkg.in/yaml.v3`, `github.com/coreos/go-oidc/v3`, `github.com/go-jose/go-jose/v4`, `go.opentelemetry.io/otel`. Budget: 4200 lines of Go, tests excluded ([ADR-0007](adrs/7-gateway-line-budget.md)). The tree is past that cap; the count is in [docs/init.md](../init.md). |
 | idp | Keycloak 26.8.2, realm imported from `realm.json` |
 | idp_db | Postgres 17 |
-| resume-page | Vite 7, React 19, TypeScript, nginx |
-| Run | podman-compose 5.7 |
+| resume-page | Vite 8, React 19, TypeScript 6, react-router 7, nginx 1.27 |
+| Run | `podman compose` (Makefile). The live host uses podman 5.7. |
 
 There is no Redis, no user-catalog service, and no second identity store.
 
@@ -37,7 +37,7 @@ make down
 
 `make doctor` checks compose, the env file, the Caddyfile, and that the gateway builds. `make verify` runs `scripts/golden.sh`: one request per SSO host through the proxy and directly against the gateway, both probes, and the Caddyfile.
 
-A config change is a restart of gateway, not a reload. A proxy change is `caddy validate` then reload. Restarting gateway does not sign people out.
+A config change is a restart of gateway, not a reload. A proxy change is `caddy validate`, then `systemctl restart caddy`. The Caddyfile sets `admin off`, so `caddy reload` has no admin API to post to. Restarting gateway does not sign people out.
 
 ## Backup
 

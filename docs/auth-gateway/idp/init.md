@@ -62,7 +62,7 @@ One mechanism: realm roles. No groups, no client roles, no attributes used for a
 
 | Role | Who | Effect |
 |---|---|---|
-| `admin` | Operator | `/admin`, hosts with `policy: admin`, Keycloak console |
+| `admin` | Operator | Gateway routes with `policy: admin`, including `/admin`. Keycloak's own console also checks this role. The gateway does not: `id.filenkov.store` is `policy: public` and `identity: passthrough`. |
 | `svc:<service>:admin` | Service owner | Full use of that service, and may edit its roles |
 | `svc:<service>:family` | Family | Ordinary use of that service |
 | `svc:<service>:blocked` | — | That service is closed. The account stays enabled. |
@@ -73,7 +73,7 @@ No role means stranger. There is no `stranger` role. There is no global `family`
 
 Role graph is not used. Policy treats `admin` of a service as including `family`.
 
-Who may change roles is enforced by gateway, not by Keycloak. See the gateway [API contract](../gateway/API/api-contract.md).
+Who may change roles is enforced by gateway, not by Keycloak. See the gateway [API contract](../gateway/api-contract.md).
 
 Adding a service with roles, in one change:
 

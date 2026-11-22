@@ -24,7 +24,7 @@ Docs Namespace
 
 Docs Service
  - docs/<namespace>/<service>/ — one microservice docs.
- - docs/<namespace>/<service>/<API/Message>-contract.md — the API or message contract that service offers.
+ - docs/<namespace>/<service>/api-contract.md — the API contract that service offers.
  - docs/<namespace>/<service>/external-contract.md — what that service requires outside itself.
 
 Rules Group deploy
