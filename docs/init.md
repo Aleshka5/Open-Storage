@@ -7,8 +7,11 @@ Every host on `filenkov.store` enters through the proxy. The gateway authenticat
 ## Namespaces
 
  - auth-gateway: IdP (Keycloak), Proxy (Caddy), Gateway (Go service)
-    - Description: The only namespace in the tree, and the only one on the request path of every host. Proxy terminates TLS. Gateway owns routing, policy, the sign-in flow and `/admin`. idp owns users, roles and sessions. The product applications it fronts are outside this repository and receive ([identity v1](auth-gateway/external-contracts/identity-v1.md)).
+    - Description: The gateway is on the request path of the hosts it receives. Proxy terminates TLS. Gateway owns routing, policy, the sign-in flow and `/admin`. idp owns users, roles and sessions. Callers receive ([identity v1](auth-gateway/external-contracts/identity-v1.md)).
     - Detail inside the block: [auth-gateway/init.md](auth-gateway/init.md).
+ - open-storage: App (FastAPI), Postgres, MinIO, Redis
+    - Description: The storage product. Its app, database, bucket and cache run from this repository and join `open_network`.
+    - Detail inside the block: [open-storage/init.md](open-storage/init.md).
 
 A namespace gets a directory when its first service exists. The shape is ([repository-layout.md](repository-layout.md)).
 
@@ -23,6 +26,7 @@ flowchart TB
   G["Google<br/>the only login"]
   DS["api.deepseek.com"]
   AG["auth-gateway:<br/>proxy, gateway, idp, idp_db, resume-page"]
+  OS["open-storage:<br/>app, postgres, minio, redis"]
   HM("hermes<br/>host 127.0.0.1:9119<br/>no SSO, LAN only")
 
   W -->|"TLS 443"| AG
@@ -30,6 +34,7 @@ flowchart TB
   AG -.->|"no SSO, LAN only"| HM
   AG -->|"discovery JWKS token revoke<br/>Admin API for /admin"| G
   AG -->|"chat: true, OpenAI-compatible"| DS
+  AG -->|"storage host, app:8000"| OS
   G -->|"redirect_uri"| AG
 ```
 
@@ -42,6 +47,7 @@ The internals of `auth-gateway` — proxy, gateway, idp, idp_db, resume-page, th
 | browser, VPN client | action | One sign-in on the hosts the gateway serves; the cookie domain is `.filenkov.store` |
 | Google | action | Sign the user in. Redirect URI `https://id.filenkov.store/realms/filenkov/broker/google/endpoint` |
 | product resources | resource | Reachable only from `open_network` plus the named product network; identity arrives in headers, never from the client |
+| storage | resource | `app:8000` on `open_network`. The namespace is [open-storage/init.md](open-storage/init.md) |
 | hermes, lite-llm | resource | Forwarded by proxy, never reach gateway, keep their own authentication |
 | deepseek | resource | `POST /api/chat` on the apex host, served by the gateway itself |
 
@@ -66,9 +72,9 @@ The full path with ports and host classes is ([auth-gateway/init.md](auth-gatewa
 
 ## What is not here
 
-- Product applications live outside this repository. Which names the gateway proxies, and which the proxy serves itself, are in [upstreams](auth-gateway/external-contracts/upstreams.md).
+- Storage runs in this repository: [open-storage/init.md](open-storage/init.md). Which names the gateway proxies, and which the proxy serves itself, are in [upstreams](auth-gateway/external-contracts/upstreams.md).
 - `docs/init.md` draws the map. A service's own behaviour is never restated here — it is linked.
 
 ## Decisions that bind the shape
 
-([adrs/init.md](../adrs/init.md)) owns system-wide decisions: one contract version, roles in the token, one session store. Namespace decisions, including the edge-in-one-process shape, are ([auth-gateway/adrs/init.md](auth-gateway/adrs/init.md)).
+([adrs/init.md](../adrs/init.md)) owns system-wide decisions: one contract version, roles in the token, one session store. Namespace decisions for the edge are ([auth-gateway/adrs/init.md](auth-gateway/adrs/init.md)). Namespace decisions for storage are ([open-storage/adrs/init.md](open-storage/adrs/init.md)).
