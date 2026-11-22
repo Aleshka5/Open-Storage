@@ -21,7 +21,6 @@ from config import (
     S3Settings,
     SpaSettings,
     StorageSettings,
-    UserServiceSettings,
 )
 
 _REPO = Path(__file__).resolve().parents[4]
@@ -44,7 +43,6 @@ _SETTINGS_MODELS = (
     StorageSettings,
     S3Settings,
     AuthSettings,
-    UserServiceSettings,
     BusinessLogicSettings,
     LoggingSettings,
     SpaSettings,

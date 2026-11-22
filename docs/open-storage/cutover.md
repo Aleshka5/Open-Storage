@@ -28,7 +28,7 @@ The admin route in code is `GET /api/admin/maintenance/run`. It calls `Maintenan
 
 A JSON object maps each current `users.id` to an idp subject. `apply_subject_switch` requires that map to be one-to-one with the current ids: a duplicate target, an unmapped id, or a key that is not a current id is refused. A second apply of the same file is refused because those ids are no longer `users.id`. The SQL rewrites `users.id` in place and the `user_id` columns of `file_records`, `user_quota_usage`, `file_index_links`, and `upload_sessions`. It does not `INSERT` a user and it does not change the column type. The statements are tested on SQLite with text ids. They are not run against PostgreSQL here, and a uuid column will not accept a non-uuid literal. After the rewrite every `users.id` is the mapped subject and the row count is the same.
 
-`get_current_user` still projects whatever id the request headers carry (`X-User-Id`, then `X-Auth-User-Id`) and `upsert_from_principal` inserts a `users` row when that id is new. The mapping has to be applied before that login, or the new subject becomes a second user. This page does not change that code.
+`get_current_user` reads `X-Auth-Subject`. A non-UUID subject is not inserted. `upsert_from_principal` inserts a `users` row when that subject is a UUID the table does not already hold. The subject map still has to be applied before a login that would create a second `users` row. This page does not change that code.
 
 ## RAG
 

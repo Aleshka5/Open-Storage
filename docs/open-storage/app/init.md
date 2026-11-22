@@ -29,8 +29,8 @@ The API groups by section, not by context: `/api/files` and `/api/shared` run th
 | Layer | Directory | Contents | May depend on |
 |---|---|---|---|
 | Domain | `domain/` | `FileRecord`, `User`, `AuthPrincipal`, `DiskVolume`, `FileSection`/`FileStatus`, `Role`, `StorageQuota`, `ErrorCode`, the index-target decision, domain exceptions | nothing |
-| Application | `application/` | Section services, `AdminService`, `MaintenanceService`, `BackupService`, `indexing/`, and ports (`ports/user_directory.py`, `ports/rag_index.py`, `ports/index_links.py`) | domain |
-| Infrastructure | `infrastructure/` | `S3StorageAdapter`, `EncryptedStorageAdapter`, `DiskRouter`, `ThumbnailService`, repositories, DB session, `SessionStore` (Redis), `RagIndexClient`, `UserServiceClient` | domain, application ports |
+| Application | `application/` | Section services, `AdminService`, `MaintenanceService`, `BackupService`, `indexing/`, and ports (`ports/rag_index.py`, `ports/index_links.py`) | domain |
+| Infrastructure | `infrastructure/` | `S3StorageAdapter`, `EncryptedStorageAdapter`, `DiskRouter`, `ThumbnailService`, repositories, DB session, `SessionStore` (Redis), `RagIndexClient`. No User-Service client | domain, application ports |
 | Presentation | `presentation/` | Routers, pydantic schemas, FastAPI dependencies, `check_role`, `AuthRateLimitMiddleware`, exception handlers, `indexing_notify` | application |
 
 Two rules the code keeps: the presentation layer wires HTTP to application services and never touches an adapter, and encryption exists only as a decorator of a `StorageAdapter`, so no plain-section code can see a private key. `application/` also imports two concrete clients it does not own — `infrastructure.rag.client` and `infrastructure.database.repositories.*` — so the arrow from application to infrastructure exists in the import graph, and only the direction infrastructure → application is absent.
@@ -51,7 +51,7 @@ One database, `db_storage`, owner role `storage`, PostgreSQL, SQLAlchemy 2 async
 
 Enums: `file_section` = `PHOTOS`, `FILES`, `PRIVATE`, `SHARED`, `RESUMES`, `GENERATED` (`006`, `007` add values with `ALTER TYPE … ADD VALUE` outside a transaction); `file_status` = `PENDING`, `COMMITTED`, `DELETED` (`009` rebuilds the type and refuses to run while an `ARCHIVED` row exists). The legacy field `users.role` no longer exists (`005`); the role is computed per request.
 
-`users.id` is the identity key (`identity v1` `X-Auth-Subject`). Every other table reaches a user through it, so a change of identity scheme is a data migration, not a code change.
+`get_current_user` reads the five v1 headers. The contract is [identity v1](../../auth-gateway/external-contracts/identity-v1.md). The User-Service client is gone. `users.id` is still a UUID column, so a non-UUID subject is not inserted. Every other table reaches a user through `users.id`, so a change of identity scheme is a data migration, not a code change.
 
 ## Storage layout in MinIO
 
@@ -101,12 +101,12 @@ All four run only when an admin calls `GET /api/admin/maintenance/run` (the firs
 
 ## Configuration
 
-`config.py`, one `Settings` object from `pydantic-settings` on `.env` / process env, cached with `lru_cache`. Env names and defaults are owned by `deploy/open-storage/.env.example`; the groups are `database`, `cache_db`, `storage`, `s3`, `auth` (vault cookie and TTL only), `user_service`, `business_logic`, `logging`, `spa`, `rag`.
+`config.py`, one `Settings` object from `pydantic-settings` on `.env` / process env, cached with `lru_cache`. Env names and defaults are owned by `deploy/open-storage/.env.example`; the groups are `database`, `cache_db`, `storage`, `s3`, `auth` (vault TTL only), `business_logic`, `logging`, `spa`, `rag`. There is no `user_service` group and no `AUTH_COOKIE_NAME`.
 
 ## Requiring an operator answer
 
 Recorded, not decided:
 
-1. Today `users.id` is the caller UUID from `X-User-Id` / `X-Auth-User-Id`. After the cutover it must be an idp subject. Which subjects map to the existing rows is a data question.
+1. `users.id` is still a UUID column. The reader uses `X-Auth-Subject` ([identity v1](../../auth-gateway/external-contracts/identity-v1.md)). A non-UUID subject is not inserted. Which existing rows map to idp subjects is [US-08](../../user_stories/us-08-data-cutover/init.md).
 2. The four unregistered jobs: are they meant to schedule, or is the hourly claim in every legacy doc the error? The code cannot answer.
 3. `.tmp` staging under `users/{user_id}/.tmp/` vs. the documented `…/files/.tmp/`: whether the current placement is intended or a path-join bug is not decidable from the code alone.

@@ -16,7 +16,7 @@ Contracts: [API](app/api-contract.md), [external calls](app/external-contract.md
 
 ## Schema
 
-`A -->|label| B` reads: A calls B; the label is the call. A dashed edge is a resource the block reaches by name, not a process in this namespace. Rounded boxes run from this namespace; the square box is the neighbour.
+`A -->|label| B` reads: A calls B; the label is the call. Rounded boxes run from this namespace; the square box is the neighbour. The app does not call User-Service.
 
 ```mermaid
 flowchart TB
@@ -33,14 +33,11 @@ flowchart TB
     G["Gateway"]
   end
 
-  US["User-Service<br/>legacy directory"]
-
   B -->|"TLS 443, one cookie on .filenkov.store"| G
   G -->|"proxy, port 8000, identity v1 headers"| A
   A -->|"lookup, :5432"| PG
   A -->|"S3 API, :9000"| MN
   A -->|"vault key, counters, limits, :6379"| RD
-  A -.->|"storage role, GET /users/**, legacy"| US
 ```
 
 ## Networks
@@ -56,19 +53,18 @@ flowchart TB
 - [US-05](../user_stories/us-05-storage-namespace/init.md) task-02 and its Definition of Done say the compose file names no external network. The file follows [ADR 1](adrs/1-own-data-on-open-network.md) and task-04: `open_network` is `external: true`, and `app` joins only that network.
 - [external calls](app/external-contract.md) still lists an own bridge and `rag_edge` for the app. The compose file joins only `open_network`.
 - [spa/init.md](spa/init.md) still names `frontend/` paths. The source tree is `src/open-storage/spa`.
-- `config.py` still reads `USER_SERVICE_URL`, `USER_SERVICE_TIMEOUT_MS`, `USER_SERVICE_CACHE_TTL_SECONDS` and `AUTH_COOKIE_NAME`. `.env.example` does not set them, and this compose file does not join a network where `user_service` resolves. Removal belongs to [US-06](../user_stories/us-06-identity-v1/init.md).
 
 ## Identity this block consumes
 
-The gateway authenticates `storage.filenkov.store` and forwards the request with the caller attached. The app receives `X-Auth-Subject`, `X-Auth-Email`, `X-Auth-Name`, `X-Auth-Roles`, `X-Auth-Session` and an injected `Bearer`, and trusts them because it has no other inbound path.
+The gateway authenticates `storage.filenkov.store` and forwards the request with the caller attached. The app reads the five v1 headers `X-Auth-Subject`, `X-Auth-Email`, `X-Auth-Name`, `X-Auth-Roles` and `X-Auth-Session`, plus an injected `Bearer`, and trusts them because it has no other inbound path. The User-Service client is gone. `users.id` is still a UUID column, so a non-UUID subject is not inserted.
 
-`X-Auth-Subject` is the user key (every `users.id` is a subject), and `X-Auth-Roles` is projected onto the app's four-value storage role `STRANGER` / `FAMILY` / `ADMIN` / `BLOCKED`. The header set, the strip list and the header-trust condition are owned by [identity v1](../auth-gateway/external-contracts/identity-v1.md); the realm roles `admin` and `svc:storage:{admin,family,blocked}` by [idp roles](../auth-gateway/idp/init.md); the host, upstream and policy by [upstreams](../auth-gateway/external-contracts/upstreams.md) and [gateway config](../../src/auth-gateway/gateway/config.yaml).
+`X-Auth-Roles` is projected onto the app's four-value storage role `STRANGER` / `FAMILY` / `ADMIN` / `BLOCKED`. The header set, the strip list and the header-trust condition are owned by [identity v1](../auth-gateway/external-contracts/identity-v1.md); the realm roles `admin` and `svc:storage:{admin,family,blocked}` by [idp roles](../auth-gateway/idp/init.md); the host, upstream and policy by [upstreams](../auth-gateway/external-contracts/upstreams.md) and [gateway config](../../src/auth-gateway/gateway/config.yaml). The decision is [ADR 2](adrs/2-trust-v1-headers.md).
 
 Edge refusals are the edge's, in its own envelope `{"error":"<code>"}`; this block answers the app's envelope `{"detail":{"error_code","message"}}` for its own errors. A request refused at the edge never reaches `app`.
 
 ## Mismatches with the legacy project
 
-The legacy product is WebStorage `~/projects/WebStorage`. Below, **legacy doc** is what its own documentation says, **code** is what its code does today, **target** is what [identity v1](../auth-gateway/external-contracts/identity-v1.md), [idp](../auth-gateway/idp/init.md) or the gateway config require. Source: read of the legacy tree on 2026-11-22; every row names the file that says it.
+The legacy product is WebStorage `~/projects/WebStorage`. The rows below are that tree, not this app. This app does not call User-Service and does not read `X-User-Id` or `X-Storage-Role`. Below, **legacy doc** is what the legacy documentation says, **code** is what the legacy tree does, **target** is what [identity v1](../auth-gateway/external-contracts/identity-v1.md), [idp](../auth-gateway/idp/init.md) or the gateway config require. Source: read of the legacy tree on 2026-11-22; every row names the file that says it.
 
 ### Identity and session
 
