@@ -15,6 +15,7 @@ Documents
  - A document states the necessary facts and stops.
  - One fact has one owner. Other documents link to it.
  - README.md files are not for developing. They arre just for into new developers or customers.
+ - User Stories and Tasks are not documents and do not contain ground of truth.
  
 Decisions
  - A decision that binds the whole system goes in adrs/.
