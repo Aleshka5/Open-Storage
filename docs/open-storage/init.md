@@ -1,12 +1,15 @@
 # open-storage
 
-Storage product: files, photos, an encrypted private vault, uploaded resumes, generated-image history, quotas and admin. Two services share `open_network` and the namespace env file: `app` (FastAPI, serves the API and the built SPA) and `spa` (the Vite source that is built into the app image, never a running service). This page is service-level only. What a service does is linked.
+Storage product: files, photos, an encrypted private vault, uploaded resumes, generated-image history, quotas and admin. `app`, `postgres`, `minio` and `redis` share `open_network` and one env file. The SPA source is built into the app image and is not a running service. The namespace decision is [ADR 1](adrs/1-own-data-on-open-network.md). The story that brought the tree here is [US-05](../user_stories/us-05-storage-namespace/init.md). This page is service-level only. What a service does is linked.
 
 ## Services
 
 | Service | Code | Role in the block | Does not |
 |---|---|---|---|
 | `app` | [app/init.md](app/init.md) | Owns every byte and every row of this namespace. Answers `/api/**`, `/health`, and the SPA shell. | Issue, verify or revoke identity; route hosts; terminate TLS |
+| `postgres` | [docker-compose.yaml](../../deploy/open-storage/docker-compose.yaml) | Database `db_storage` for the app | Serve objects or sessions |
+| `minio` | [docker-compose.yaml](../../deploy/open-storage/docker-compose.yaml) | Bucket `storage` on `MINIO_DATA_PATH` | Serve SQL or sessions |
+| `redis` | [docker-compose.yaml](../../deploy/open-storage/docker-compose.yaml) | Vault key, counters and limits | Serve SQL or objects |
 | SPA | [spa/init.md](spa/init.md) | The React front end, built into the `app` image and served from `/opt/spa` | Keep a session, hold a secret, or call anything but `app` on its own origin |
 
 Contracts: [API](app/api-contract.md), [external calls](app/external-contract.md).
@@ -21,22 +24,16 @@ flowchart TB
 
   subgraph NS["open-storage namespace - open_network"]
     A(["app FastAPI :8000<br/>API + /opt/spa"])
+    PG[("postgres")]
+    MN[("minio")]
+    RD[("redis")]
   end
 
   subgraph NE["auth-gateway owns - open_network"]
     G["Gateway"]
   end
 
-  subgraph RT["RAG-Chat namespace - rag_edge"]
-    R["rag-edge :8080"]
-  end
-
-  subgraph OW["open-storage namespace - owns its data"]
-    PG[("postgres")]
-    MN[("minio")]
-    RD[("redis")]
-    US["User-Service<br/>legacy directory"]
-  end
+  US["User-Service<br/>legacy directory"]
 
   B -->|"TLS 443, one cookie on .filenkov.store"| G
   G -->|"proxy, port 8000, identity v1 headers"| A
@@ -44,16 +41,22 @@ flowchart TB
   A -->|"S3 API, :9000"| MN
   A -->|"vault key, counters, limits, :6379"| RD
   A -.->|"storage role, GET /users/**, legacy"| US
-  A -->|"index and search, :8080"| R
 ```
 
 ## Networks
 
 | Network | Why | Source |
 |---|---|---|
-| `open_network` (external) | The gateway reaches `app:8000` by name; it is the only inbound path. The same network is the condition under which the app may trust identity v1 headers. | [identity v1](../auth-gateway/external-contracts/identity-v1.md), [upstreams](../auth-gateway/external-contracts/upstreams.md) |
-| `rag_edge` (external) | The app is both a client of `rag-edge` and a copier of the same bucket: RAG reads the keys the app writes. Joining nothing on the RAG side keeps `rag_internal` out of reach. | [external calls](app/external-contract.md) |
-| Own bridge (internal) | `postgres`, `minio`, `redis` and `user_service` are reachable by the app and by nothing else. | [app/init.md](app/init.md) |
+| `open_network` (external) | The only network in the compose file. The gateway reaches `app:8000` by name; it is the only inbound path. Postgres, MinIO and Redis are on this network too. The same network is the condition under which the app may trust identity v1 headers. | [ADR 1](adrs/1-own-data-on-open-network.md), [identity v1](../auth-gateway/external-contracts/identity-v1.md), [upstreams](../auth-gateway/external-contracts/upstreams.md) |
+
+`RAG_ENABLED=false`. The compose file does not join `rag_edge`, `common_network`, `user_network` or `auth_network`.
+
+## Mismatches
+
+- [US-05](../user_stories/us-05-storage-namespace/init.md) task-02 and its Definition of Done say the compose file names no external network. The file follows [ADR 1](adrs/1-own-data-on-open-network.md) and task-04: `open_network` is `external: true`, and `app` joins only that network.
+- [external calls](app/external-contract.md) still lists an own bridge and `rag_edge` for the app. The compose file joins only `open_network`.
+- [spa/init.md](spa/init.md) still names `frontend/` paths. The source tree is `src/open-storage/spa`.
+- `config.py` still reads `USER_SERVICE_URL`, `USER_SERVICE_TIMEOUT_MS`, `USER_SERVICE_CACHE_TTL_SECONDS` and `AUTH_COOKIE_NAME`. `.env.example` does not set them, and this compose file does not join a network where `user_service` resolves. Removal belongs to [US-06](../user_stories/us-06-identity-v1/init.md).
 
 ## Identity this block consumes
 
