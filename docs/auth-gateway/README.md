@@ -10,8 +10,8 @@ One login for the `filenkov.store` hosts. TLS at the edge, identity in Keycloak,
 
 | Piece | Stack |
 |---|---|
-| proxy | Caddy 2.11 |
-| gateway | Go 1.26. stdlib, `gopkg.in/yaml.v3`, `github.com/coreos/go-oidc/v3`. Budget: 2000 lines of Go, tests excluded. |
+| proxy | Caddy 2.11, run by systemd on the host |
+| gateway | Go 1.26. stdlib, `gopkg.in/yaml.v3`, `github.com/coreos/go-oidc/v3`, `github.com/go-jose/go-jose/v4`. Budget: 4200 lines of Go, tests excluded ([ADR-0007](adrs/7-gateway-line-budget.md)). |
 | idp | Keycloak 26.8.2, realm imported from `realm.json` |
 | idp_db | Postgres 17 |
 | resume-page | Vite 7, React 19, TypeScript, nginx |
@@ -21,7 +21,7 @@ There is no Redis, no user-catalog service, and no second identity store.
 
 ## Run
 
-From `deploy/auth-gateway/`. Code is not in the tree yet, so `up` has no services until that changes.
+From `deploy/auth-gateway/`. The proxy is the host's Caddy; `deploy/auth-gateway/Caddyfile` is the source and `/etc/caddy/Caddyfile` is a symlink to it.
 
 ```bash
 cp ../../.env.example .env
@@ -35,7 +35,7 @@ make down
 
 `.env` is not committed. Names are in [.env.example](../../deploy/auth-gateway/.env.example). Shared names are in the repository `.env.example`.
 
-`make doctor` checks compose, the env example, and that the gateway is ready. `make verify` checks each SSO host through the proxy and directly against the gateway.
+`make doctor` checks compose, the env file, the Caddyfile, and that the gateway builds. `make verify` runs `scripts/golden.sh`: one request per SSO host through the proxy and directly against the gateway, both probes, and the Caddyfile.
 
 A config change is a restart of gateway, not a reload. A proxy change is `caddy validate` then reload. Restarting gateway does not sign people out.
 

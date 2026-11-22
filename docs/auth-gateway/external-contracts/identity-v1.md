@@ -16,9 +16,11 @@ Owned here because product applications live outside the namespace. Gateway is t
 | `X-Auth-Session` | `sid`. Session id, not a user id. Two logins of one person are two `sid` values. Data tied to `sid` dies when idp kills the session. No callback. |
 | `X-Forwarded-Host`, `X-Forwarded-Proto`, `X-Forwarded-For` | Set by proxy, rewritten by gateway |
 
-Before injection, these are removed with no exception: any `X-Auth-*` (any case), `X-User-Id`, `X-Storage-Role`, `X-Original-User`.
+Before injection, these are removed with no exception: any `X-Auth-*` (any case), `X-User-Id`, `X-Storage-Role`, `X-Original-User`, and `Authorization`.
 
-An application never receives an identity header that the client sent.
+An application never receives an identity header that the client sent. `Authorization` is on that list because it is an identity header: the value an application sees is the one the gateway injected, or nothing at all on a `public` route.
+
+`X-Forwarded-For` is the caller as the proxy in front of the gateway saw it: the last hop of the header, not the first, because the part a client can write comes before it.
 
 ## How an application checks
 
@@ -36,8 +38,10 @@ Otherwise verify the bearer JWT: RS256 against the realm JWKS, `iss` equals the 
 | 403 | `{"error":"blocked"}` | Account disabled in idp |
 | 404 | `{"error":"not_found"}` | No route, including `deny` |
 | 503 | `{"error":"auth_unavailable"}` | idp or JWKS unavailable |
+| 429 | `{"error":"rate_limited"}` | Above the per-IP budget of the host |
 | 502 | `{"error":"bad_gateway"}` | Upstream did not answer |
+| 504 | `{"error":"gateway_timeout"}` | Upstream sent no response header within the route timeout |
 
-`/admin` currently specifies a different error object. That conflict is open in [init.md](../init.md).
+`/admin` answers in the same envelope, with its own values ([gateway message contract](../gateway/API/api-contract.md)).
 
 Names `X-User-Id` and `X-Storage-Role` are not accepted.

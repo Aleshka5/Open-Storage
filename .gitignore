@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Hermes
+.hermes/
+
+# Generated MVP host set (see deploy/auth-gateway/Makefile)
+deploy/auth-gateway/config.mvp.yaml

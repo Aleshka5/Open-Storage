@@ -1,0 +1,107 @@
+/* --- the art page --------------------------------------------------------- */
+
+/* A wide drawing (the kind clip) would otherwise be stretched to the square of the
+button, so the clip keeps its own aspect and the button stays square: */
+.art {
+  display: grid;
+  gap: var(--s6);
+}
+
+.art-section {
+  display: grid;
+  gap: var(--s3);
+}
+
+.art-heading {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--rule);
+}
+
+.art-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s4);
+}
+
+.art-cell {
+  margin: 0;
+  display: grid;
+  gap: var(--s2);
+  align-content: start;
+}
+
+.art-open {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  cursor: zoom-in;
+}
+
+.art-open:hover,
+.art-open:focus-visible {
+  border-color: var(--accent-text);
+  outline: none;
+}
+
+.art-still,
+.art-clip {
+  width: 100%;
+  height: auto;
+  max-width: 128px;
+}
+
+.art-name {
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.art-note {
+  display: block;
+  font-size: var(--step--1);
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
+
+.art-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  gap: var(--s4);
+  padding: var(--s5);
+  background: rgb(26 22 18 / 82%);
+  cursor: zoom-out;
+}
+
+.art-overlay img {
+  max-width: min(720px, 92vw);
+  max-height: 76vh;
+  background: var(--paper-raised);
+  border-radius: 12px;
+}
+
+.art-overlay .btn {
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .art-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

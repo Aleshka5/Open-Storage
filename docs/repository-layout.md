@@ -2,42 +2,38 @@
 
 Where files go. Behavior of a service is not described here.
 
-Rules Group Root
- - AGENTS.md — the important comments and the routes to other documents.
- - constitution.md — development rules that do not depend on a stack.
- - .env.example — values shared by every namespace.
+Root
  - adrs/ — decisions for the whole system.
  - scripts/ — scripts for checks and setup.
 
-Rules Group docs
+Docs
  - docs/ holds documentation.
  - docs/init.md — namespaces and the architecture of all applications. A namespace is one block. A link is a requested action or a resource.
- - docs/brand-book/ — design rules that apply to any web page.
- - docs/<namespace>/ — one namespace. The services in it share one Docker network, one env file, and one compose file.
- - docs/<namespace>/init.md — that namespace, and how its services interact. No implementation detail of a single service.
- - docs/<namespace>/<service>/ — one microservice.
- - docs/<namespace>/<service>/API/Message-contract.md — the API or message contract that service offers.
- - docs/<namespace>/<service>/External-contract.md — what that service requires outside itself.
+ - docs/brand-book/ — general design rules that apply to any web page.
+ - docs/user_stories/ — backlog of features.
+ - docs/user_stories/us-XX-title/init.md — one user story.
+ - docs/user_stories/us-XX-title/tasks/task-XX-title.md — one task of that story.
+
+Docs Namespace
+ - docs/<namespace>/ — main folder of namespace. The services in it share one Docker network, one env file, and one compose file.
+ - docs/<namespace>/init.md — namespace entry description, service level architecture and how its services interact. No implementation detail of a single service.
  - docs/<namespace>/frontend/ — design, and the security and backend-interaction contracts for the UI.
  - docs/<namespace>/external-contracts/ — contracts with systems outside the namespace.
  - docs/<namespace>/adrs/ — decisions accepted for that namespace.
- - docs/<namespace>/user_stories/ — backlog of finished and in-progress work.
- - docs/<namespace>/user_stories/us-XX-title/init.md — one user story.
- - docs/<namespace>/user_stories/us-XX-title/tasks/task-XX-title.md — one task of that story.
  - docs/<namespace>/README.md — the services in the namespace for a reader who is not changing code: stack, purpose, how to run.
+
+Docs Service
+ - docs/<namespace>/<service>/ — one microservice docs.
+ - docs/<namespace>/<service>/<API/Message>-contract.md — the API or message contract that service offers.
+ - docs/<namespace>/<service>/external-contract.md — what that service requires outside itself.
 
 Rules Group deploy
  - deploy/<namespace>/.env.example — environment variables for that namespace.
  - deploy/<namespace>/Makefile — up, down, doctor, and the other lifecycle targets.
  - deploy/<namespace>/docker-compose.yaml — the services of that namespace.
+ - deploy/<namespace>/<service>/Dockerfile - service dockerfile if needed
 
 Rules Group src
  - src/<namespace>/ — code of the microservices in that namespace.
  - src/<namespace>/<service>/ — code of one microservice.
  - src/<namespace>/<service>/tests/ — tests of that microservice.
-
-Rules Group Shape
- - Namespaces in use: auth-gateway. Further namespaces get the same shape (for example common, web-storage).
- - Services inside auth-gateway: proxy, gateway, idp. The UI is documented under frontend and will be coded as src/auth-gateway/resume-page. Postgres is the idp database: src/auth-gateway/postgres.
- - Application code is not in the tree yet. The src/ and scripts/ entries are places, not implementations.
- - Do not put a second copy of a contract at the old docs/services/ path.

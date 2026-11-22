@@ -1,13 +1,13 @@
 # scripts
 
-Checks and setup for the whole repository. Nothing is implemented yet.
+Checks and setup for the auth-gateway stand. Spec: [US-01 task 10](../docs/auth-gateway/user_stories/us-01-identity-edge/tasks/task-10-bootstrap-scripts.md).
 
-Planned for auth-gateway:
+| Script | What it does | Writes |
+|---|---|---|
+| `grant-admin.sh <email>` | Grants realm role `admin` through the Keycloak Admin API. Exit `2` when no user has that email, `0` when the role is already there. | Keycloak only |
+| `verify-edge.sh` | One anonymous request per SSO host, through the proxy and straight to the gateway. `AUTH_COOKIE_SIGNED_IN` / `AUTH_COOKIE_ADMIN` add signed-in and admin rows; without them those rows say `SKIP`. | Nothing, GET only |
+| `golden.sh` | `verify-edge.sh`, plus `/healthz`, `/readyz`, and `caddy validate`. This is the stand check for `make verify`. | Nothing, GET only |
 
-| Script | Purpose |
-|---|---|
-| `grant-admin.sh` | Grant realm role `admin` to an email. Password stays in the env file. |
-| `verify-edge.sh` | One request per SSO host, through the proxy and directly to the gateway. |
-| `golden.sh` | Stand check used by `make verify`. |
+Requirements: `bash` 4+, `curl`, `jq`; `caddy` only for the last step of `golden.sh`. `grant-admin.sh` takes `IDP_ADMIN_SECRET` from the environment first, then `deploy/auth-gateway/.env`; it never prints it.
 
-Spec: [US-01 task 10](../docs/auth-gateway/user_stories/us-01-identity-edge/tasks/task-10-bootstrap-scripts.md).
+Variables the scripts read: `KEYCLOAK_URL`, `REALM`, `IDP_ADMIN_CLIENT_ID`, `IDP_ADMIN_SECRET`, `ENV_FILE` (grant-admin); `GATEWAY_ADDR`, `PROXY_SCHEME`, `AUTH_COOKIE_*`, `TLS_VERIFY`, `GATEWAY_CONFIG` (verify-edge, golden); `CADDYFILE` (golden).

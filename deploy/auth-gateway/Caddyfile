@@ -1,0 +1,140 @@
+# ============================================================================
+# Caddyfile — filenkov.store edge (auth-gateway namespace)
+#
+# The proxy does three things and nothing else (ADR-0001): terminate TLS,
+# redirect http:// to https://, and set HSTS. It sets no other security
+# header and does not route by application — that is the gateway's job, and
+# a duplicated header is a defect (browsers intersect the policies).
+#
+#   filenkov.store, storage. image. rag. audio. llm. observer. id.
+#                        -> 127.0.0.1:8080  gateway (one upstream, eight hosts)
+#   meet.filenkov.store  -> 127.0.0.1:8080  gateway (LAN / WireGuard only)
+#   hermes.filenkov.store -> 127.0.0.1:9119  Hermes (LAN / WireGuard only)
+#   lite-llm.filenkov.store -> 127.0.0.1:4000  LiteLLM (dev)
+#
+# The MVP stand generates the same file with the apex renamed to
+# mvp.filenkov.store (deploy/auth-gateway/Makefile: mvp-config).
+#
+# Edit: shared behaviour lives in the snippets below; each host class is a
+# short, readable block that imports them.
+# ============================================================================
+{
+	# No admin API: the proxy is headless, so the /config surface stays closed.
+	admin off
+
+	# ACME account for the public names. The internal names use tls internal.
+	email admin@filenkov.store
+
+	# Only serve on the addresses this box actually answers on: the LAN IP and
+	# the WireGuard IP. With an explicit default_bind, Caddy does not create the
+	# http:// -> https:// redirect by itself, so it is listed per name below.
+	default_bind 192.168.1.102 10.10.0.1
+
+	# HTTP/3 alt-svc breaks the browser WebSocket (PTY upgrade) to the products
+	# behind this edge.
+	servers {
+		protocols h1 h2
+	}
+}
+
+# ------------------------------------------------------------------ snippets
+
+# HSTS only, plus a stripped Server header. No X-Frame-Options, no
+# Permissions-Policy: the gateway sets those per host (ADR-0001).
+(secure) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}
+
+# LAN and WireGuard only: the two tunnel/LAN ranges plus host loopback.
+(lan) {
+	@lan remote_ip 10.10.0.1 10.10.0.2 10.10.0.4 192.168.1.0/24 127.0.0.1
+}
+
+# --------------------------------------------------------------------- sites
+
+# One backend (127.0.0.1:8083) behind eight hostnames. The size of this file
+# is the price of one certificate per name and one upstream per host
+# (ADR-0001).
+https://filenkov.store,
+https://storage.filenkov.store,
+https://image.filenkov.store,
+https://rag.filenkov.store,
+https://audio.filenkov.store,
+https://llm.filenkov.store,
+https://observer.filenkov.store {
+	reverse_proxy 127.0.0.1:8083
+
+	import secure
+}
+
+# New MVP stack
+https://mvp.filenkov.store,
+https://id.filenkov.store {
+	reverse_proxy 127.0.0.1:18080
+
+	import secure
+}
+
+# Jitsi Meet through the gateway. No A record: the name lives in /etc/hosts and
+# dnsmasq, so the certificate comes from Caddy's local CA (`tls internal`) and
+# clients must trust that CA root. The failure looks like a certificate error,
+# not a 404. Media does not pass through this edge: WebRTC is UDP 10000
+# directly to the JVB.
+https://meet.filenkov.store {
+	tls internal
+
+	import lan
+	handle @lan {
+		reverse_proxy 127.0.0.1:8000
+	}
+	handle {
+		respond "Access is limited to the LAN and the WireGuard tunnel" 403
+	}
+
+	import secure
+}
+
+# Outside the SSO contract: the gateway does not authenticate it. It keeps a
+# LAN and WireGuard gate (ADR-0005), so the dashboard is not reachable from
+# the internet even though it has no SSO.
+https://hermes.filenkov.store {
+	tls internal	
+
+	import lan
+	handle @lan {
+		reverse_proxy 127.0.0.1:9119
+	}
+	handle {
+		respond "Access is limited to the LAN and the WireGuard tunnel" 403
+	}
+
+	import secure
+}
+
+# LiteLLM dev instance.
+https://lite-llm.filenkov.store {
+	reverse_proxy 127.0.0.1:4000
+
+	import secure
+}
+
+# ------------------------------------------------------ HTTP -> HTTPS redirect
+
+# With an explicit default_bind, Caddy does not add these automatically.
+http://filenkov.store,
+http://storage.filenkov.store,
+http://image.filenkov.store,
+http://rag.filenkov.store,
+http://audio.filenkov.store,
+http://llm.filenkov.store,
+http://observer.filenkov.store,
+http://id.filenkov.store,
+http://meet.filenkov.store,
+http://hermes.filenkov.store,
+http://lite-llm.filenkov.store,
+http://mvp.filenkov.store {
+	redir https://{host}{uri} permanent
+}

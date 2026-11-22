@@ -1,0 +1,154 @@
+# Gateway configuration. Read once at start; a change is a restart (ADR-0004).
+# Shape and rules are owned by docs/auth-gateway/gateway/API/api-contract.md.
+# Secrets are env:NAME only. A literal secret here fails startup.
+
+listen: ":8080"
+public_origin: "https://filenkov.store"
+
+idp:
+  issuer: "https://id.filenkov.store/realms/filenkov"
+  # Where this process reaches the idp. Server-side calls (discovery, JWKS,
+  # token, logout, the Admin API) use it; the browser still follows the public
+  # endpoints and `iss` stays the public issuer. Without it, a start depends on
+  # the LAN resolver answering for the public host, which it does not always do.
+  internal_url: "http://idp:8080/realms/filenkov"
+  client_id: gateway
+  client_secret: "env:IDP_CLIENT_SECRET"
+  scopes: [openid, profile, email]
+  audience: account
+  authorized_party: gateway
+  jwks_ttl: 15m
+
+session:
+  cookie_domain: ".filenkov.store"
+  access_ttl: 5m
+  idle_ttl: 168h
+  key: "env:GATEWAY_SESSION_KEY"
+
+admin:
+  client_id: gateway-admin
+  client_secret: "env:IDP_ADMIN_SECRET"
+
+services: [storage, image, rag, audio]
+
+defaults:
+  timeouts: { connect: 5s, read_header: 15s, response_header: 60s, idle: 120s }
+  rate_limit: { requests: 600, per: 1m }
+
+upstreams:
+  resume: "resume:80"
+  idp: "idp:8080"
+  storage: "app:8000"
+  image: "qwen-image:8000"
+  llm: "qwen38:4001"
+  rag: "rag-edge:8080"
+  audio: "audio-api:8000"
+  audio_web: "frontend:80"
+  grafana: "grafana:3000"
+  jitsi: "jitsi-web:8000"
+  # The control plane runs on the host and needs nvidia-smi, so it is reached on
+  # the LAN address. host.docker.internal resolves to 169.254.1.2 under rootless
+  # podman 5.7 and that address does not answer from inside a container.
+  switch: "192.168.1.102:8095"
+  litellm: "litellm-proxy-server:4000"
+
+# The owl's model, OpenAI-compatible. Optional as a whole: an incomplete block
+# leaves POST /api/chat answering 503 and everything else running. The key is
+# env:LLM_API_KEY (set in .env), never a literal in this file.
+llm:
+  host: "https://api.deepseek.com/v1"
+  api_key: "env:LLM_API_KEY"
+  model: "deepseek-flash"
+  # "none" keeps a reasoning model from thinking before a two-sentence answer.
+  reasoning_effort: "none"
+  timeout: 5m
+
+hosts:
+  - host: filenkov.store
+    upstream: resume
+    routes:
+      - { path: /auth/**, bff: true }
+      - { path: /admin/**, admin: true, policy: admin }
+      # The owl chat is served by the gateway itself: `chat: true` compiles the
+      # route into the in-process handler, because the prompt and the node map
+      # travel with the binary, not with a YAML file. ADR-0009 supersedes
+      # ADR-0006, which kept this route proxied to the model with no caller.
+      - { path: /api/chat, methods: [POST], chat: true, policy: public }
+      - { path: /api/services, methods: [GET], upstream: switch, policy: session,
+          inject_headers: { X-Service-Token: "env:SWITCH_TOKEN" } }
+      - { path: /api/services/**, upstream: switch, policy: admin,
+          inject_headers: { X-Service-Token: "env:SWITCH_TOKEN" } }
+      - { path: /users/**, policy: deny }
+      - { path: /**, upstream: resume, policy: public }
+
+  - host: id.filenkov.store
+    upstream: idp
+    # Keycloak's own console authenticates with a bearer the browser holds, and
+    # it is not an app under identity v1: headers pass through untouched.
+    identity: passthrough
+    # Keycloak serves check_session_iframe, which a page on this origin frames as
+    # part of OIDC session polling. DENY there fails the login with a 3rd-party
+    # check iframe timeout (ADR-0008).
+    frame: self
+    routes:
+      # The Keycloak console stays reachable for break-glass when gateway policy
+      # is wrong, as long as idp_db is alive.
+      - { path: /**, policy: public }
+
+  - host: storage.filenkov.store
+    upstream: storage
+    service: storage
+    timeouts: { response_header: 30m }
+    routes:
+      - { path: /health, policy: public }
+      - { path: /**, policy: "service(storage, family, admin)" }
+
+  - host: image.filenkov.store
+    upstream: image
+    service: image
+    timeouts: { response_header: 30m }
+    routes:
+      - { path: /healthz, policy: public }
+      - { path: /**, policy: "service(image, family, admin)" }
+
+  - host: rag.filenkov.store
+    upstream: rag
+    service: rag
+    timeouts: { response_header: 5m }
+    routes:
+      - { path: /health, policy: public }
+      - { path: /**, policy: "service(rag, family, admin)" }
+
+  - host: audio.filenkov.store
+    upstream: audio_web
+    service: audio
+    # The ASR UI frames its own pages; X-Frame-Options: DENY would blank it.
+    frame: self
+    permissions_policy: "camera=(), microphone=(self), geolocation=()"
+    timeouts: { response_header: 30m }
+    routes:
+      - { path: /health, upstream: audio, policy: public }
+      - { path: /api/**, upstream: audio, policy: "service(audio, family, admin)" }
+      - { path: /**, policy: session }
+
+  - host: llm.filenkov.store
+    upstream: llm
+    timeouts: { response_header: 10m }
+    routes:
+      - { path: /**, policy: admin }
+
+  - host: observer.filenkov.store
+    upstream: grafana
+    timeouts: { response_header: 5m }
+    routes:
+      - { path: /api/health, policy: public }
+      - { path: /**, policy: session }
+
+  - host: meet.filenkov.store
+    upstream: jitsi
+    # Jitsi Meet frames itself (the conference UI is an iframe).
+    frame: self
+    permissions_policy: "camera=(self), microphone=(self), display-capture=(self), geolocation=()"
+    timeouts: { response_header: 5m }
+    routes:
+      - { path: /**, policy: session }

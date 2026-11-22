@@ -1,0 +1,232 @@
+/* --- the owl chat panel --------------------------------------------------- */
+
+/* The panel and its stream carry their own type scale: everything here is the
+   small end of the page's steps. Widths are bounded by the viewport, so a phone
+   gets the same panel with margins instead of a clipped one. */
+
+.owl-chat {
+  position: fixed;
+  right: 24px;
+  bottom: max(88px, calc(env(safe-area-inset-bottom) + 72px));
+  z-index: 20;
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+  overflow: hidden;
+}
+
+.owl-chat-loading {
+  padding: var(--s4);
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+.owl-chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--rule);
+}
+
+.owl-chat-title {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.owl-chat-close {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font-size: var(--step-1);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.owl-chat-body {
+  padding: var(--s4);
+  max-height: min(46vh, 340px);
+  overflow-y: auto;
+  font-size: var(--step--1);
+  line-height: 1.55;
+}
+
+.owl-chat-hint,
+.owl-chat-question {
+  color: var(--ink-muted);
+}
+
+.owl-chat-question {
+  margin: 0 0 var(--s3);
+  padding-left: var(--s3);
+  border-left: 2px solid var(--accent);
+}
+
+/* The answer is rendered markdown now, so it is a block container rather than
+   one paragraph. Its children carry the spacing. */
+.owl-chat-answer > *:first-child {
+  margin-top: 0;
+}
+
+.owl-chat-answer > *:last-child {
+  margin-bottom: 0;
+}
+
+.owl-chat-para {
+  margin: 0 0 var(--s3);
+  /* Soft line breaks inside a paragraph are meaningful in a chat answer. */
+  white-space: pre-wrap;
+}
+
+.owl-chat-heading {
+  margin: var(--s3) 0 var(--s2);
+  font-size: var(--step-0);
+  line-height: 1.3;
+}
+
+.owl-chat-list {
+  margin: 0 0 var(--s3);
+  padding-left: var(--s5);
+}
+
+.owl-chat-list li {
+  margin-bottom: var(--s1);
+}
+
+.owl-chat-list .owl-chat-list {
+  margin: var(--s1) 0 0;
+}
+
+.owl-chat-quote {
+  margin: 0 0 var(--s3);
+  padding-left: var(--s3);
+  border-left: 2px solid var(--rule);
+  color: var(--ink-muted);
+}
+
+.owl-chat-code {
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+.owl-chat-pre {
+  margin: 0 0 var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper);
+  /* Code sets its own width; the panel must not grow with it. */
+  overflow-x: auto;
+}
+
+.owl-chat-pre code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+  white-space: pre;
+}
+
+.owl-chat-rule {
+  margin: var(--s3) 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.owl-chat-table-wrap {
+  margin: 0 0 var(--s3);
+  overflow-x: auto;
+}
+
+.owl-chat-table {
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+.owl-chat-table th,
+.owl-chat-table td {
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+.owl-chat-table th {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.owl-chat-ref {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.owl-chat-wait {
+  color: var(--ink-muted);
+}
+
+.owl-chat-error {
+  margin: var(--s3) 0 0;
+  color: var(--danger);
+}
+
+.owl-chat-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4) var(--s4);
+  border-top: 1px solid var(--rule);
+}
+
+.owl-chat-input {
+  width: 100%;
+  resize: none;
+  padding: var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper);
+  color: inherit;
+  font: inherit;
+  font-size: var(--step--1);
+}
+
+.owl-chat-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.owl-chat-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.owl-chat-count {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
+.owl-chat-count.is-low {
+  color: var(--danger);
+}
+
+@media (max-width: 760px) {
+  .owl-chat {
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}

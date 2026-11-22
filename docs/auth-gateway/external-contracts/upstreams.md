@@ -12,7 +12,7 @@ Applications outside this namespace. Gateway reaches them by the upstream name. 
 | llm | `qwen38:4001` | `llm.filenkov.store` | `admin` |
 | observer | `grafana:3000` | `observer.filenkov.store` | `session`, plus Grafana's own login. `/api/health` public |
 | meet | `jitsi-web:8000` | `meet.filenkov.store` | `session`, and proxy allows LAN / WireGuard only |
-| switch | `host.docker.internal:8095` | `filenkov.store` `/api/services` | `GET` is `session`, the rest is `admin`. Gateway injects `X-Service-Token`. |
+| switch | `192.168.1.102:8095` (LAN address; `host.docker.internal` does not answer under rootless podman) | `filenkov.store` `/api/services` | `GET` is `session`, the rest is `admin`. Gateway injects `X-Service-Token`. |
 | litellm | `litellm-proxy-server:4000` | `filenkov.store` `POST /api/chat` | `public`. Gateway injects `X-Api-Key`. |
 
 `hermes.filenkov.store` and `lite-llm.filenkov.store` are not in this table. Proxy forwards them to local ports. They keep their own authentication.
