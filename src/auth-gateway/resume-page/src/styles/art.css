@@ -47,7 +47,6 @@ button, so the clip keeps its own aspect and the button stays square: */
   aspect-ratio: 1;
   padding: var(--s3);
   border: 1px solid var(--rule);
-  border-radius: 12px;
   background: var(--paper-raised);
   cursor: zoom-in;
 }
@@ -93,7 +92,6 @@ button, so the clip keeps its own aspect and the button stays square: */
   max-width: min(720px, 92vw);
   max-height: 76vh;
   background: var(--paper-raised);
-  border-radius: 12px;
 }
 
 .art-overlay .btn {

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '../auth'
 import { admin, errorResponse, jsonResponse, stranger } from '../test/fixtures'
 import type { Session } from '../types'
+import * as theme from '../theme'
 import { Layout } from './Layout'
 
 const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -196,5 +197,43 @@ describe('Layout', () => {
     expect(button).toHaveAttribute('aria-hidden', 'false')
     await userEvent.click(button)
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+  })
+
+  it('names the theme control and keeps the three labels', async () => {
+    stubSession(null)
+    renderLayout()
+    const group = await screen.findByRole('radiogroup', { name: 'Theme' })
+    const light = screen.getByRole('radio', { name: 'light' })
+    const dark = screen.getByRole('radio', { name: 'Dark' })
+    const system = screen.getByRole('radio', { name: 'System' })
+    expect(group).toContainElement(light)
+    expect(group).toContainElement(dark)
+    expect(group).toContainElement(system)
+    expect(dark).toBeChecked()
+
+    await userEvent.click(light)
+    expect(light).toBeChecked()
+    expect(localStorage.getItem('theme.preference')).toBe('light')
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(document.documentElement.style.colorScheme).toBe('light')
+
+    light.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(dark).toBeChecked()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(system).toBeChecked()
+    expect(localStorage.getItem('theme.preference')).toBe('system')
+    expect(document.documentElement.dataset.theme).not.toBe('system')
+  })
+
+  it('points the wordmark at the hub and stays in the app on that origin', async () => {
+    stubSession(null)
+    const stays = vi.spyOn(theme, 'brandStaysInApp').mockReturnValue(true)
+    renderLayout('/experience/sber')
+    const brand = await screen.findByRole('link', { name: 'Filenkov' })
+    expect(brand).toHaveAttribute('href', 'https://filenkov.store')
+    await userEvent.click(brand)
+    expect(stays).toHaveBeenCalled()
+    expect(screen.getByText('outlet')).toBeInTheDocument()
   })
 })

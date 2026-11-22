@@ -1,5 +1,5 @@
 > **ID:** task-02
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-03](../init.md), [brand book](../../../brand-book/init.md)
 
 ## Overview
@@ -20,7 +20,7 @@ Panels, fields, and focus rings on the resume page are square and have no drop s
 
 ## Definition of Done
 
-- [ ] The listed boxes have square corners, and the two drop shadows are gone.
-- [ ] `.btn-ghost` border matches its transparent fill. The chat field sets `color: var(--ink)`.
-- [ ] A 2px focus ring uses `--accent-text`. `--accent` is not used as text.
-- [ ] The art lightbox and the owl chat are mounted on `document.body`.
+- [x] The listed boxes have square corners, and the two drop shadows are gone.
+- [x] `.btn-ghost` border matches its transparent fill. The chat field sets `color: var(--ink)`.
+- [x] A 2px focus ring uses `--accent-text`. `--accent` is not used as text.
+- [x] The art lightbox and the owl chat are mounted on `document.body`.

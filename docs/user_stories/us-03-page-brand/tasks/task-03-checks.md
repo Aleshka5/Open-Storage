@@ -1,5 +1,5 @@
 > **ID:** task-03
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-03](../init.md), [brand book](../../../brand-book/init.md), [resume-page design](../../../auth-gateway/frontend/design.md)
 
 ## Overview
@@ -18,6 +18,6 @@ The brand-book checks this page can lock are locked by tests. The design note po
 
 ## Definition of Done
 
-- [ ] The tests above pass under `npm test`.
-- [ ] `npm run build` passes inside the 95 KB initial JS budget.
-- [ ] `docs/auth-gateway/frontend/design.md` names the hub exception and links the brand book for theme and chrome.
+- [x] The tests above pass under `npm test`.
+- [x] `npm run build` passes inside the 95 KB initial JS budget.
+- [x] `docs/auth-gateway/frontend/design.md` names the hub exception and links the brand book for theme and chrome.

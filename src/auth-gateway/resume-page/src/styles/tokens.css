@@ -1,18 +1,5 @@
 :root {
-  /* ink */
-  --paper: #f4efe6;
-  --paper-raised: #fffdf8;
-  --ink: #1a1612;
-  --ink-muted: #5c5348;
-  --rule: #d9d1c3;
-  --rule-strong: #b9ae9c;
-
-  /* accent — graphical vs. readable, so accent text passes AA */
-  --accent: #b85c38;
-  --accent-text: #8f4128;
-
-  --chip: #e6ddd0;
-  --danger: #8c2f24;
+  /* Color and motion live in theme.css. */
 
   /* type */
   --serif: 'Fraunces', 'Fraunces Fallback', 'Iowan Old Style', 'Palatino Linotype', serif;
@@ -37,20 +24,8 @@
   --s7: 3rem;
   --s8: 4.5rem;
 
-  /* motion — two durations, one curve */
-  --dur-fast: 140ms;
-  --dur: 240ms;
-  --ease: cubic-bezier(0.2, 0, 0, 1);
-
   --header-h: 4.5rem;
   --header-h-c: 3.5rem;
 
   --read: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --dur-fast: 1ms;
-    --dur: 1ms;
-  }
 }

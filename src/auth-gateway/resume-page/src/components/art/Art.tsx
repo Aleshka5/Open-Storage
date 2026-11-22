@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import calm from '../../assets/My_icon_calm.svg'
 import angry from '../../assets/My_icon_angry.svg'
 import kind from '../../assets/My_icon_kind.svg'
@@ -81,20 +82,23 @@ export function Art() {
         </div>
       </section>
 
-      {big ? (
-        <div
-          className="art-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Full-size art"
-          onClick={() => setBig(null)}
-        >
-          <img src={big} alt="" />
-          <button className="btn btn-small" type="button" onClick={() => setBig(null)}>
-            Close
-          </button>
-        </div>
-      ) : null}
+      {big
+        ? createPortal(
+            <div
+              className="art-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Full-size art"
+              onClick={() => setBig(null)}
+            >
+              <img src={big} alt="" />
+              <button className="btn btn-small" type="button" onClick={() => setBig(null)}>
+                Close
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }

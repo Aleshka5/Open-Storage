@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { askOwl, ChatError, MAX_QUESTION_LENGTH } from '../../chat'
 import type { User } from '../../types'
 import { renderMarkdown } from './markdown'
@@ -71,7 +72,7 @@ export function OwlChat({ onClose, user = null }: OwlChatProps) {
 
   const remaining = MAX_QUESTION_LENGTH - question.length
 
-  return (
+  return createPortal(
     <div className="owl-chat" role="dialog" aria-modal="false" aria-label="Chat with the AI owl">
       <div className="owl-chat-head">
         <span className="owl-chat-title">AI owl</span>
@@ -139,7 +140,8 @@ export function OwlChat({ onClose, user = null }: OwlChatProps) {
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

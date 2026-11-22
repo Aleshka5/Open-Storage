@@ -35,6 +35,8 @@ describe('OwlChat', () => {
     mockFetch(() => sse('data: {"delta":"He builds "}\n\n', 'data: {"delta":"agents."}\n\n', 'data: [DONE]\n\n'))
     renderChat()
 
+    expect(screen.getByRole('dialog', { name: 'Chat with the AI owl' }).parentElement).toBe(document.body)
+
     const input = screen.getByPlaceholderText('Ask me something')
     await userEvent.type(input, 'What does he do?')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))

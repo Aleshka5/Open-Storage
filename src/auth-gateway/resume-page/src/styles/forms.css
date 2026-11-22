@@ -17,49 +17,6 @@
   gap: var(--s4);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s3);
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-  padding: 0.7rem 1.1rem;
-  min-height: 2.75rem;
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  transition: background var(--dur-fast) var(--ease);
-}
-
-.btn:hover {
-  background: var(--accent-text);
-  border-color: var(--accent-text);
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--ink);
-}
-
-.btn-ghost:hover {
-  background: var(--chip);
-  color: var(--ink);
-}
-
-.btn-danger {
-  background: transparent;
-  color: var(--danger);
-  border-color: var(--danger);
-}
-
-.btn-danger:hover {
-  background: var(--danger);
-  color: var(--paper);
-}
-
 .btn-small {
   padding: var(--s2) var(--s3);
   min-height: 2.25rem;
@@ -69,20 +26,6 @@
 .google-icon {
   width: 18px;
   height: 18px;
-}
-
-.banner {
-  padding: var(--s3) var(--s4);
-  border: 1px solid var(--rule);
-  background: var(--chip);
-  color: var(--ink);
-  margin-bottom: var(--s4);
-}
-
-.banner.error {
-  border-color: var(--danger);
-  background: #f4e4dc;
-  color: var(--danger);
 }
 
 .table-wrap {
@@ -207,7 +150,6 @@ button:disabled {
   height: 1.4rem;
   margin: 0;
   border: 1px solid var(--rule);
-  border-radius: 999px;
   background: var(--chip);
   cursor: pointer;
   position: relative;
@@ -221,7 +163,6 @@ button:disabled {
   left: 2px;
   width: calc(1.4rem - 6px);
   height: calc(1.4rem - 6px);
-  border-radius: 50%;
   background: var(--paper-raised);
   border: 1px solid var(--rule);
   transition: transform var(--dur-fast) var(--ease);

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
 import calmToAngry from '../../assets/animations/calm-to-angry.svg?raw'
 import angryToCalm from '../../assets/animations/angry-to-calm.svg?raw'
@@ -137,11 +138,14 @@ export function Owl() {
         </button>
         {greeting && greets(pathname) ? <OwlBubble onDismiss={() => setGreeting(false)} /> : null}
       </div>
-      {chatOpen ? (
-        <Suspense fallback={<div className="owl-chat owl-chat-loading">Waking the owl…</div>}>
-          <OwlChat onClose={closeChat} user={user} />
-        </Suspense>
-      ) : null}
+      {chatOpen
+        ? createPortal(
+            <Suspense fallback={<div className="owl-chat owl-chat-loading">Waking the owl…</div>}>
+              <OwlChat onClose={closeChat} user={user} />
+            </Suspense>,
+            document.body,
+          )
+        : null}
       <button className="owl" type="button" aria-label="Back to top" onClick={onClick}>
         <div ref={hostRef} className="owl-art" aria-hidden="true" />
         <svg className="owl-ring" viewBox="0 0 56 56" aria-hidden="true">

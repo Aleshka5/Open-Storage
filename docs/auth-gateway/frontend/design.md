@@ -2,7 +2,11 @@
 
 Static showcase for `filenkov.store` and the `/admin` catalog UI. Served by nginx in `open_network`, reached only through gateway.
 
-Stack: Vite 8, React 19, TypeScript 6, react-router 7, CSS variables. See [brand-book](../../brand-book/init.md).
+Stack: Vite 8, React 19, TypeScript 6, react-router 7, CSS variables. See [brand book](../../brand-book/init.md).
+
+## Theme and chrome
+
+This page is the hub. It keeps the owl tab icon. Theme, palettes, and chrome follow the [brand book](../../brand-book/init.md).
 
 ## Tree
 

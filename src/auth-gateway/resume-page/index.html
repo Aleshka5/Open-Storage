@@ -1,10 +1,44 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark" style="color-scheme: dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="dark" />
+    <script>
+      var KEY = 'theme.preference'
+
+      function readPreference() {
+        try {
+          var stored = localStorage.getItem(KEY)
+          if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+        } catch (e) {}
+        return 'dark'
+      }
+
+      function resolve(preference) {
+        if (preference === 'light' || preference === 'dark') return preference
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+      }
+
+      function apply(preference) {
+        var theme = resolve(preference)
+        var root = document.documentElement
+        root.dataset.theme = theme
+        root.style.colorScheme = theme === 'light' ? 'light' : 'dark'
+        var meta = document.querySelector('meta[name="color-scheme"]')
+        if (meta) meta.content = root.style.colorScheme
+      }
+
+      apply(readPreference())
+
+      var schemeMedia = window.matchMedia('(prefers-color-scheme: light)')
+      function onSchemeChange() {
+        if (readPreference() === 'system') apply(readPreference())
+      }
+      if (schemeMedia.addEventListener) schemeMedia.addEventListener('change', onSchemeChange)
+      else if (schemeMedia.addListener) schemeMedia.addListener(onSchemeChange)
+    </script>
     <title>Alexey Filenkov · Senior AI Agents</title>
     <meta
       name="description"
