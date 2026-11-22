@@ -25,7 +25,7 @@ The resolved theme is `light` or `dark` only. Set it on the document element bef
 
 Changing the theme does not reload the page. The key is a UI preference. It is not a credential. The page never stores a session in `localStorage`.
 
-The control sits in the header’s right slot. It is a segmented group of three radios, `role="radiogroup"`, accessible name `Theme`. Labels are `light`, `Dark`, and `System`. Each segment is at least `2.25rem` tall, square, with no shadow. The selected segment’s fill is `--ink` and its label is `--paper`. An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`. Arrow keys move inside the group. At 620px the wordmark hides and this control stays.
+The control sits in the header’s right slot. It is a segmented group of three radios, `role="radiogroup"`, accessible name `Theme`. Labels are `light`, `Dark`, and `System`. Each segment is at least `2.25rem` tall, square, with no shadow. Selection is one thumb. It translates with `transform` over `--dur`. Its fill is `--paper-raised` at 55% opacity, with `backdrop-filter: blur(14px) saturate(1.7)`, a 1px translucent edge, and a 1px inset top hairline. `will-change: transform` applies only while that thumb moves. An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`. Without `backdrop-filter`, the thumb’s fill is `--ink` and its label is `--paper`. Arrow keys move inside the group. At 620px the wordmark hides and this control stays.
 
 Both palettes use the same token names. light copper text is `#8f4128`. Dark copper text is `#e0a181`. Do not mix them.
 
@@ -140,9 +140,10 @@ A field’s fill is `--paper`, its text is `--ink`, and its border is `1px solid
 |---|---|---|
 | `--dur-fast` | `140ms` | Hover, small fades, the choice bar |
 | `--dur` | `240ms` | Header, a view entering |
-| `--ease` | `cubic-bezier(0.2, 0, 0, 1)` | Both |
+| `--dur-theme` | `700ms` | The theme circle |
+| `--ease` | `cubic-bezier(0.2, 0, 0, 1)` | Every duration |
 
-`prefers-reduced-motion: reduce` sets both durations to `1ms`, disables the view entrance, and makes `scrollTo` use `behavior: 'auto'`.
+`prefers-reduced-motion: reduce` sets `--dur-fast`, `--dur`, and `--dur-theme` to `1ms`, disables the view entrance, skips the theme circle, draws no rim, and makes `scrollTo` use `behavior: 'auto'`.
 
 | What moves | How |
 |---|---|
@@ -151,6 +152,8 @@ A field’s fill is `--paper`, its text is `--ink`, and its border is `1px solid
 | Wordmark and service list in the condensed header | Opacity over `--dur-fast` |
 | A choice row | A 2px `--accent` bar on the left, `scaleY(0 → 1)` from the top, over `--dur-fast` |
 | A button | Background color over `--dur-fast` |
+| A flipped theme | One circle from the control’s border box. `clip-path: circle()` on `::view-transition-new(root)` over `--dur-theme` with `--ease`. The new theme is inside. The old theme stays outside until the circle covers the viewport. No circle when the choice does not change the resolved theme, when the OS changes under System, under reduced motion, or without `startViewTransition` |
+| The circle’s edge | A 36px band. Displacement is radial, at most 12px, from one SVG `feDisplacementMap` on that band only. Saturate 1.7 and a 1px specular hairline. The disk interior is not filtered. The filter is removed when the circle ends |
 | Anything else | Still |
 
 Mount a confirm dialog, a lightbox, or any other viewport layer on `document.body`. `.view-in` uses a transform, and a `position: fixed` child inside it centers on the view instead of the screen.
@@ -220,5 +223,5 @@ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 2. `theme.preference` is `light`, `dark`, or `system`. Anything else behaves as `dark`.
 3. Buttons, fields, banners, and toasts use the tokens above and set both faces.
 4. `--accent` is never text. Copper text is `--accent-text` from the active palette.
-5. Motion uses `--dur-fast`, `--dur`, and `--ease`. Reduced motion collapses both durations.
+5. Motion uses `--dur-fast`, `--dur`, `--dur-theme`, and `--ease`. Reduced motion collapses the durations.
 6. The tab icon and the header mark are the diamond in this file. Fonts are the self-hosted files.

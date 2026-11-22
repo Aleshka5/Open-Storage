@@ -1,0 +1,24 @@
+/* The old snapshot stays put. The new snapshot is the mask. */
+
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  animation-duration: var(--dur-theme);
+  animation-timing-function: var(--ease);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+  overflow: clip;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+  opacity: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}

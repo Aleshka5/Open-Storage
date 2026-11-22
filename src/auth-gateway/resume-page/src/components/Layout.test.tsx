@@ -209,6 +209,7 @@ describe('Layout', () => {
     expect(group).toContainElement(light)
     expect(group).toContainElement(dark)
     expect(group).toContainElement(system)
+    expect(group.querySelector('.theme-thumb')).not.toBeNull()
     expect(dark).toBeChecked()
 
     await userEvent.click(light)

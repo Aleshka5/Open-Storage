@@ -16,6 +16,7 @@
 
   --dur-fast: 140ms;
   --dur: 240ms;
+  --dur-theme: 700ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -38,6 +39,7 @@
   :root {
     --dur-fast: 1ms;
     --dur: 1ms;
+    --dur-theme: 1ms;
   }
 }
 

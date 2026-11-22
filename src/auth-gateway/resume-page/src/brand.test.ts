@@ -228,8 +228,11 @@ describe('theme faces', () => {
     expect(light).toContain('#8f4128')
     expect(root).toContain('--dur-fast: 140ms')
     expect(root).toContain('--dur: 240ms')
+    expect(root).toContain('--dur-theme: 700ms')
     expect(root).toContain('--ease: cubic-bezier(0.2, 0, 0, 1)')
-    expect(theme).toMatch(/prefers-reduced-motion:\s*reduce[\s\S]*--dur-fast:\s*1ms[\s\S]*--dur:\s*1ms/)
+    expect(theme).toMatch(
+      /prefers-reduced-motion:\s*reduce[\s\S]*--dur-fast:\s*1ms[\s\S]*--dur:\s*1ms[\s\S]*--dur-theme:\s*1ms/,
+    )
 
     for (const selector of ['.btn', '.btn:hover', '.btn-ghost', '.btn-ghost:hover', '.btn-danger', '.btn-danger:hover', '.banner', '.banner.error']) {
       expectBothFaces(ruleset(theme, selector), selector)
@@ -289,8 +292,22 @@ describe('theme faces', () => {
     expect(segment).toContain('background: transparent')
     expect(segment).toContain('color: var(--ink)')
     expect(ruleset(shell, '.theme-segment:hover')).toContain('background: var(--chip)')
-    expect(ruleset(shell, '.theme-segment:has(:checked)')).toContain('background: var(--ink)')
-    expect(ruleset(shell, '.theme-segment:has(:checked)')).toContain('color: var(--paper)')
+    expect(ruleset(shell, '.theme-segment:has(:checked)')).toContain('background: transparent')
+    expect(ruleset(shell, '.theme-segment:has(:checked)')).toContain('color: var(--ink)')
+
+    const thumbCss = readPage('src/components/ThemeControl.css')
+    const thumb = ruleset(thumbCss, '.theme-thumb')
+    expect(thumb).toMatch(/border-radius:\s*0/)
+    expect(thumb).toContain('background: color-mix(in srgb, var(--paper-raised) 55%, transparent)')
+    expect(thumb).toContain('backdrop-filter: blur(14px) saturate(1.7)')
+    expect(thumb).toContain('transform var(--dur)')
+    expect(thumb).not.toMatch(/box-shadow|will-change/)
+    expect(ruleset(thumbCss, '.theme-thumb.is-moving')).toContain('will-change: transform')
+    expect(ruleset(thumbCss, '.theme-thumb::after')).toMatch(/height:\s*1px/)
+    const fallback = thumbCss.slice(thumbCss.indexOf('@supports not'))
+    expect(fallback).toContain('background: var(--ink)')
+    expect(fallback).toContain('color: var(--paper)')
+    expect(thumbCss).not.toMatch(/box-shadow/)
 
     const narrow = shell.slice(shell.indexOf('@media (max-width: 620px)'))
     expect(narrow).toContain('.brand-name')
