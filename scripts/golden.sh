@@ -20,7 +20,7 @@ set -euo pipefail
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(dirname -- "$script_dir")
 
-GATEWAY_ADDR=${GATEWAY_ADDR:-127.0.0.1:8080}
+GATEWAY_ADDR=${GATEWAY_ADDR:-127.0.0.1:8083}
 CADDYFILE=${CADDYFILE:-$repo_root/deploy/auth-gateway/Caddyfile}
 CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-3}
 HTTP_TIMEOUT=${HTTP_TIMEOUT:-10}

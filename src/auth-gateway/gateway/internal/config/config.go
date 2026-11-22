@@ -1,6 +1,6 @@
 // Package config owns the gateway configuration file. It is read once at start,
 // validated, and never re-read: a change is a restart (ADR-0004). The shape and
-// the eight startup rules are owned by the gateway message contract.
+// the eleven startup rules are owned by the gateway message contract.
 package config
 
 import (

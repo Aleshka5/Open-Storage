@@ -11,12 +11,12 @@ It stores nothing. Users, roles, sessions and tokens are Keycloak's; the session
 | Fact | Value |
 |---|---|
 | Stack | Go 1.26, stdlib, `gopkg.in/yaml.v3`, `coreos/go-oidc/v3`, `go-jose/v4` |
-| Public listener | `:8080` inside the container, published as `127.0.0.1:${GATEWAY_PORT:-8080}`; `8083` on the live stand, `18080` on the MVP stand |
+| Public listener | `:8080` inside the container. [`.env.example`](../../../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`. `make up-mvp` publishes `18080`. Compose falls back to `8080` only when the variable is unset. |
 | Metrics listener | `METRICS_ADDR`, default `:9000`, published as `127.0.0.1:${METRICS_PORT:-19000}` |
 | Config | `GATEWAY_CONFIG`, a YAML file read once at start ([ADR-0004](../adrs/4-config-fails-at-start.md)) |
 | State | none on disk |
 | Limits | compose `mem_limit: 160m`. No CPU limit in compose. |
-| Budget | 4200 lines of Go, tests excluded ([ADR-0007](../adrs/7-gateway-line-budget.md)) |
+| Budget | 5500 lines of Go, tests excluded ([ADR-0010](../adrs/10-gateway-line-budget.md)) |
 | Compose | `deploy/auth-gateway/docker-compose.yaml`, service `gateway`, network `open_network` plus product networks |
 
 One replica. The rate limit is in-process, and a second replica would double it and race the single refresh per subject.
@@ -24,14 +24,14 @@ One replica. The rate limit is in-process, and a second replica would double it 
 ## Role in the namespace
 
 ```text
-browser --TLS--> proxy --http--> gateway --http--> resume, idp, storage, image, rag, audio, llm, grafana, jitsi, switch
+browser --TLS--> proxy --http--> gateway --http--> resume, idp, storage, image, rag, audio, llm, grafana, switch
                                     |
                                     +-- OIDC client --> idp (discovery, JWKS, token, logout)
                                     +-- Admin API  --> idp (users, role mappings, sessions)
                                     +-- chat       --> llm host (OpenAI-compatible, SSE)
 ```
 
-The proxy terminates TLS. Seven SSO hosts share `127.0.0.1:8083`; `id.` and `mvp.` go to `127.0.0.1:18080`; `meet.` does not reach the gateway. On the hosts that do, the `Host` header picks the block. Product apps receive the [identity v1](../external-contracts/identity-v1.md) headers and their own `Bearer` access token, and never see a header the client sent.
+The proxy terminates TLS. Seven SSO hosts and `id.` share `127.0.0.1:8083`. `id.` is admitted only from the LAN and WireGuard list. `mvp.` goes to `127.0.0.1:18080`. `meet.` does not reach the gateway. On the hosts that do, the `Host` header picks the block. Product apps receive the [identity v1](../external-contracts/identity-v1.md) headers and their own `Bearer` access token, and never see a header the client sent.
 
 ## Configuration
 
@@ -69,7 +69,6 @@ Named in `upstreams`, reached by container name on a shared Docker/podman networ
 | `audio` / `audio_web` | `audio-api:8000` / `frontend:80` | `audio.` | identity v1 on `/api/**`, session on the UI |
 | `llm` | `qwen38:4001` | `llm.` | `admin` policy, raw vLLM-style endpoint |
 | `grafana` | `grafana:3000` | `observer.` | session; Grafana's own login still applies |
-| `jitsi` | `jitsi-web:8000` | `meet.` | session in this file. The Caddyfile does not send `meet.` here; it proxies to `127.0.0.1:8000`. |
 | `switch` | `192.168.1.102:8095` | apex `/api/services` | `X-Service-Token` injected by the gateway |
 | `litellm` | `litellm-proxy-server:4000` | apex `POST /api/chat` | not used: the chat goes through the `llm` block, not this upstream ([ADR-0009](../adrs/9-owl-chat-in-the-gateway.md)) |
 

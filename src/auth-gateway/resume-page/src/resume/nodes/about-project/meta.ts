@@ -8,7 +8,7 @@ const meta: NodeMeta = {
   seo: {
     title: 'About this project · Alexey Filenkov',
     description:
-      'The resume site is itself one of the services on the map: React 19 and Vite behind a Go gateway, nginx, Caddy and Redis.',
+      'The resume site is one of the services on the map: React 19 and Vite behind a Go gateway, nginx, and Caddy.',
   },
 }
 

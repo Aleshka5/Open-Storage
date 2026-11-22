@@ -4,8 +4,8 @@ export default function SiteStackNode() {
   return (
     <>
       <p className="lede">
-        Two binaries, two containers of somebody else’s software, and a directory service. The front end is
-        static files; every decision that matters happens before those files are served.
+        One Go process, Keycloak, and a static page. The front end is files. The decisions happen before
+        those files are served.
       </p>
 
       <Chips
@@ -14,11 +14,11 @@ export default function SiteStackNode() {
           'react-router 7',
           'Vite 8',
           'TypeScript 6',
-          'Go 1.25',
+          'Go 1.26',
           'nginx 1.27',
           'Caddy',
-          'Redis 7',
-          'Docker Compose',
+          'Keycloak',
+          'podman compose',
         ]}
       />
 
@@ -26,8 +26,8 @@ export default function SiteStackNode() {
         The site you are reading is a React 19 application built by Vite and routed by react-router. It is
         compiled once — <code>tsc -b &amp;&amp; vite build</code> inside a <code>node:22-alpine</code> stage —
         and the resulting <code>dist</code> is copied into an <code>nginx:1.27-alpine</code> image that
-        listens on port 80 and is never published to the internet. nginx here is a file server and nothing
-        else: no PHP, no proxy pass, no auth module.
+        listens on port 80 and is never published to the internet. nginx here is a file server: no proxy
+        pass, no auth module.
       </p>
 
       <Section title="Who decides what">
@@ -36,51 +36,32 @@ export default function SiteStackNode() {
             {
               term: 'Caddy',
               detail:
-                'Terminates TLS with Let’s Encrypt and redirects HTTP to HTTPS. It does not choose between the SPA, the OAuth API and the other hosts — it hands everything to the gateway.',
+                'Terminates TLS and redirects HTTP to HTTPS. It does not choose the application. SSO hosts and id.filenkov.store go to the gateway on :8083. id. is limited to the LAN and WireGuard. meet. goes to Jitsi and skips the gateway.',
             },
             {
-              term: 'Gateway (cmd/gateway)',
+              term: 'Gateway',
               detail:
-                'The only public HTTP edge, on :8083. Matches host and path against deploy/gateway.yaml, verifies the access JWT for non-public routes, strips inbound X-Auth-* headers and injects X-Auth-User-Id, X-Auth-Email, X-Auth-Name and X-Auth-Role, enforces an IP rate limit of 180 requests a minute, and writes JSON access logs.',
+                'The Go process on :8083. It matches host and path against config.yaml, verifies the access cookie, strips inbound identity headers, and injects X-Auth-Subject, X-Auth-Email, X-Auth-Name, X-Auth-Roles, and X-Auth-Session. The rate limit is 600 requests a minute per IP. /auth, /admin, and POST /api/chat are answered here.',
             },
             {
-              term: 'API (cmd/api)',
+              term: 'Keycloak',
               detail:
-                'Internal only, on :8000, unpublished. Google OAuth2, /auth/session, /auth/logout, /health. It issues the two httpOnly cookies, open_access and open_session, and shares the signing key with the gateway alone.',
+                'Users, roles, and sessions. Google is the only login. The session cookie holds an encrypted refresh token. There is no second user directory.',
             },
             {
-              term: 'User-Service',
+              term: 'nginx',
               detail:
-                'The directory of people — UUID, google_sub, email, username, roles. It is the source of truth for who exists, and it never receives a JWT.',
-            },
-            {
-              term: 'Redis 7',
-              detail:
-                'Rejected tokens (by jti and by user), OAuth CSRF state, and the IP rate-limit counters. It is deliberately not the edge session store.',
+                'The resume files. An unknown path falls back to the app shell, and react-router takes it from there. The host catch-all in the gateway is public.',
             },
           ]}
         />
       </Section>
 
-      <Section title="Why every URL in this tree just works">
+      <Callout title="What the Go side is made of">
         <p>
-          A tree of nodes means a tree of real URLs, and a reader may land on any of them cold. That would
-          normally be a routing change in two places. It was a change in neither, because{' '}
-          <code>web/nginx.conf</code> already ends its location block with{' '}
-          <code>try_files $uri $uri/ /index.html</code> — an unknown path falls back to the app shell and
-          react-router takes it from there — and <code>deploy/gateway.yaml</code> already ends the hub’s route
-          list with <code>match: /*</code>, <code>upstream: web</code>, <code>auth: public</code>. Every node
-          added since is served by rules that were written before the tree existed.
-        </p>
-      </Section>
-
-      <Callout title="What the Go side is actually made of">
-        <p>
-          Both binaries live in one module on Go 1.25, and the dependency list is short on purpose:{' '}
-          <code>golang-jwt/jwt/v5</code> for the tokens, <code>redis/go-redis/v9</code> for the cache,{' '}
-          <code>golang.org/x/oauth2</code> for the Google flow, <code>gopkg.in/yaml.v3</code> for the routing
-          file, and <code>google/uuid</code>. No web framework, no ORM. The gateway is a router and a policy,
-          and it is easier to keep it honest when it has nothing else in it.
+          One module on Go 1.26. The direct dependencies that matter are <code>coreos/go-oidc</code> and{' '}
+          <code>go-jose</code> for tokens, <code>yaml.v3</code> for the routing file, and OpenTelemetry for
+          the owl's traces. No web framework. No Redis.
         </p>
       </Callout>
     </>

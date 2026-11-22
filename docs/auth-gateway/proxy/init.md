@@ -2,7 +2,7 @@
 
 | Path | What |
 |---|---|
-| [Caddyfile](../../../deploy/auth-gateway/Caddyfile) | Site config, in git. The live edge reads it via the `/etc/caddy/Caddyfile` symlink. `make mvp-config` rewrites the gateway YAML for the MVP apex. It does not write a second Caddyfile: `mvp.` and `id.` are already in this one, on `127.0.0.1:18080`. |
+| [Caddyfile](../../../deploy/auth-gateway/Caddyfile) | Site config, in git. The live edge reads it via the `/etc/caddy/Caddyfile` symlink. `make mvp-config` rewrites the gateway YAML for the MVP apex. It does not write a second Caddyfile: `mvp.` is already in this one, on `127.0.0.1:18080`. `id.` is on `127.0.0.1:8083` behind the LAN / WireGuard gate. |
 | [Caddyfile symlink](/etc/caddy/Caddyfile) | Symlink to that file |
 | [Service](/var/lib/caddy/.local/share/caddy/) | ACME certs and the local CA. Not backed up. Reissued, except the CA root clients already trust. |
 

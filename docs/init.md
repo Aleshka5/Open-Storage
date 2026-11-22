@@ -51,15 +51,16 @@ Upstream names, hosts and per-host policy rows are owned by ([upstreams](auth-ga
 
 1. Proxy terminates TLS and sets HSTS. It does not use one backend. The classes are in [deploy/auth-gateway/Caddyfile](../deploy/auth-gateway/Caddyfile):
    - `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.` → `127.0.0.1:8083`
-   - `id.filenkov.store` and `mvp.filenkov.store` → `127.0.0.1:18080`
-   - `meet.filenkov.store` → `127.0.0.1:8000` (not the gateway)
+   - `id.filenkov.store` → `127.0.0.1:8083`, and only from the LAN / WireGuard list
+   - `mvp.filenkov.store` → `127.0.0.1:18080`
+   - `meet.filenkov.store` → `127.0.0.1:8000`, no SSO and not the gateway, LAN / WireGuard only
    - `hermes.` → `127.0.0.1:9119`, `lite-llm.` → `127.0.0.1:4000`
 2. When the request reaches the gateway, it matches host, then path, then method. First match wins. Each host has exactly one `/**`, last.
 3. Anonymous browser navigation becomes `302 /auth/login?return_to=…`. Anonymous `/api/*` becomes `401`. A wrong role becomes `403`. `deny` answers `404`.
 4. Gateway strips every inbound identity header, verifies the access token, and injects `X-Auth-*` plus a `Bearer` the client cannot have written.
 5. Gateway proxies to the upstream, or answers itself: `/auth/*`, `/admin/*`, `POST /api/chat`, `/healthz`, `/readyz`, `/metrics` on a second listener.
 
-Compose publishes the gateway as `127.0.0.1:${GATEWAY_PORT:-8080}:8080`. Nothing in the committed Caddyfile points at `8080`. `make up-mvp` sets `GATEWAY_PORT=18080`.
+[`.env.example`](../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`, which is the port the live sites use. `make up-mvp` sets `18080`. Compose falls back to `8080` only when `GATEWAY_PORT` is unset.
 
 The full path with ports and host classes is ([auth-gateway/init.md](auth-gateway/init.md)). Route syntax, startup rules, `/auth` and `/admin` belong to ([gateway API contract](auth-gateway/gateway/api-contract.md)).
 
@@ -78,7 +79,4 @@ Found while drawing this map. Each is left for its owner document to settle.
 
 | Fact | Docs say | Code says |
 |---|---|---|
-| Gateway Go budget | 4200 lines, tests excluded ([ADR-0007](auth-gateway/adrs/7-gateway-line-budget.md)) | `find src/auth-gateway/gateway -name '*.go' ! -name '*_test.go' \| xargs cat \| wc -l` = 4953 |
-| Unconfigured `POST /api/chat` | `503 {"error":"chat_unavailable"}` ([ADR-0009](auth-gateway/adrs/9-owl-chat-in-the-gateway.md), [gateway API contract](auth-gateway/gateway/api-contract.md)) | the handler is always installed and a nil client answers `{"error":"chat is not configured"}` |
-| `meet.filenkov.store` | gateway host, `policy: session` (`config.yaml`); `verify-edge.sh` expects anonymous `302` | [Caddyfile](../deploy/auth-gateway/Caddyfile) sends the name to `127.0.0.1:8000` |
-| `make verify` host list | the script's hosts match `config.yaml` | the default list includes `mvp.filenkov.store`, which the committed config does not |
+| Unconfigured `POST /api/chat` | `503 {"error":"chat_unavailable"}` ([ADR-0009](auth-gateway/adrs/9-owl-chat-in-the-gateway.md), [gateway API contract](auth-gateway/gateway/api-contract.md)) | the handler is always installed and a nil client answers `{"error":"chat is not configured"}` ([US-02](user_stories/us-02-chat-unavailable/init.md)) |

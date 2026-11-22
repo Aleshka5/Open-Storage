@@ -48,7 +48,7 @@ func wantError(t *testing.T, hosts, contains string) {
 	}
 }
 
-// The eight startup rules, one failing fixture each.
+// The eleven startup rules, one failing fixture each.
 
 func TestRule1CatchAllRequired(t *testing.T) {
 	wantError(t, `  - host: a.example
@@ -304,5 +304,34 @@ func TestLLMKeyIsOptional(t *testing.T) {
 	}
 	if f.Secrets().LLMAPIKey != "sk-1" {
 		t.Fatalf("key %q", f.Secrets().LLMAPIKey)
+	}
+}
+
+func TestRule9Frame(t *testing.T) {
+	wantError(t, `  - host: a.example
+    upstream: resume
+    frame: both
+    routes:
+      - { path: /**, policy: public }
+`, "must be deny or self")
+}
+
+func TestRule10Identity(t *testing.T) {
+	wantError(t, `  - host: a.example
+    upstream: resume
+    identity: forward
+    routes:
+      - { path: /**, policy: public }
+`, "must be inject or passthrough")
+}
+
+func TestRule11RelativeInternalURL(t *testing.T) {
+	bad := strings.Replace(header,
+		`issuer: "https://id.filenkov.store/realms/filenkov"`,
+		"issuer: \"https://id.filenkov.store/realms/filenkov\"\n  internal_url: \"idp:8080\"",
+		1)
+	_, err := Parse([]byte(bad + "hosts:\n  - host: a.example\n    upstream: resume\n    routes:\n      - { path: /**, policy: public }\n"))
+	if err == nil || !strings.Contains(err.Error(), "must be an absolute http or https URL") {
+		t.Fatalf("relative internal_url: %v", err)
 	}
 }

@@ -15,7 +15,8 @@ rebuild:
 # The MVP stand differs from the live one in the gateway config only: the apex
 # host becomes mvp.filenkov.store (the live apex belongs to the live stack) and
 # public_origin follows it. There is one Caddyfile for both stacks — it already
-# routes mvp.filenkov.store and id.filenkov.store to the MVP gateway on :18080.
+# routes mvp.filenkov.store to the MVP gateway on :18080. id.filenkov.store
+# stays on the live gateway (:8083) behind the LAN / WireGuard gate.
 # Generated, not committed.
 mvp-config:
 	sed -e 's|^public_origin: .*|public_origin: "https://mvp.filenkov.store"|' \
@@ -26,8 +27,8 @@ mvp-config:
 	@echo "mvp-config: config.mvp.yaml written; the shared Caddyfile already carries the mvp. host"
 
 # The MVP stand: gateway on 18080 (8080 is held by jitsi-jvb) with the MVP
-# config. The edge is the live one and is not touched: mvp.filenkov.store and
-# id.filenkov.store are already reverse-proxied to 127.0.0.1:18080 there.
+# config. The edge is the live one and is not touched: mvp.filenkov.store is
+# already reverse-proxied to 127.0.0.1:18080 there. id. stays on :8083.
 up-mvp: mvp-config
 	GATEWAY_PORT=18080 GATEWAY_CONFIG_FILE=$$PWD/config.mvp.yaml $(COMPOSE) up -d --build
 	@echo "up-mvp: gateway on 127.0.0.1:18080; reach it at https://mvp.filenkov.store"
@@ -60,14 +61,14 @@ verify:
 	../../scripts/golden.sh
 
 # The MVP stand: the same check against :18080, with the generated config. The
-# apex is renamed there, so the host-list drift comparison is off by design; the
-# Caddyfile is the shared one.
+# apex is renamed, so filenkov.store is skipped and mvp.filenkov.store is added.
+# The Caddyfile is the shared one.
 verify-mvp: mvp-config
 	GATEWAY_ADDR=$${GATEWAY_ADDR:-127.0.0.1:18080} \
 	GATEWAY_CONFIG=$$PWD/config.mvp.yaml \
 	CADDYFILE=$(CADDYFILE) \
-	DRIFT_CHECK=0 \
-	SKIP_HOSTS="filenkov.store meet.filenkov.store" \
+	EXTRA_HOSTS=mvp.filenkov.store \
+	SKIP_HOSTS=filenkov.store \
 	../../scripts/golden.sh
 
 logs:

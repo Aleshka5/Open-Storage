@@ -175,9 +175,9 @@ func TestOwnAnswersFollowHostFrame(t *testing.T) {
 	if rec := h.do(t, "storage.filenkov.store", "GET", "/no-such-path-here", "", nil); rec.Header().Get("X-Frame-Options") != "DENY" {
 		t.Fatalf("storage 404 X-Frame-Options = %q, want DENY", rec.Header().Get("X-Frame-Options"))
 	}
-	// meet frames itself and answers an anonymous caller with a 302 to login.
-	if rec := h.do(t, "meet.filenkov.store", "GET", "/", "", nil); rec.Header().Get("X-Frame-Options") != "" {
-		t.Fatalf("meet 302 X-Frame-Options = %q, want empty", rec.Header().Get("X-Frame-Options"))
+	// audio frames itself and answers an anonymous caller with a 302 to login.
+	if rec := h.do(t, "audio.filenkov.store", "GET", "/", "", nil); rec.Header().Get("X-Frame-Options") != "" {
+		t.Fatalf("audio 302 X-Frame-Options = %q, want empty", rec.Header().Get("X-Frame-Options"))
 	}
 }
 

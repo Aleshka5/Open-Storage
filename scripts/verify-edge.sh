@@ -20,11 +20,11 @@ set -euo pipefail
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(dirname -- "$script_dir")
 
-GATEWAY_ADDR=${GATEWAY_ADDR:-127.0.0.1:8080} # gateway listen address, contract §Hosts
+GATEWAY_ADDR=${GATEWAY_ADDR:-127.0.0.1:8083} # live gateway, deploy/auth-gateway/.env.example
 PROXY_SCHEME=${PROXY_SCHEME:-https}          # Caddy terminates TLS, proxy contract
 CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-5}
 HTTP_TIMEOUT=${HTTP_TIMEOUT:-20}
-TLS_VERIFY=${TLS_VERIFY:-1}                  # 0 adds --insecure; meet. uses `tls internal`
+TLS_VERIFY=${TLS_VERIFY:-1}                  # 0 adds --insecure; meet. and hermes. use `tls internal`
 
 umask 077
 work=$(mktemp -d "${TMPDIR:-/tmp}/verify-edge.XXXXXX")
@@ -46,15 +46,13 @@ fi
 
 HOSTS=(
     filenkov.store
-    mvp.filenkov.store
+    id.filenkov.store
     storage.filenkov.store
     image.filenkov.store
     rag.filenkov.store
     audio.filenkov.store
     llm.filenkov.store
     observer.filenkov.store
-    meet.filenkov.store
-    id.filenkov.store
 )
 
 # Expected status codes, owned by the same contract (§Hosts, §Policies) and by
@@ -68,20 +66,18 @@ HOSTS=(
 #   a signed-in non-admin 403 — all three are contract answers.
 declare -A EXPECT_ANON=(
     [filenkov.store]="200"   # public, resume page
-    [mvp.filenkov.store]="200" # public, resume page (MVP stand)
+    [mvp.filenkov.store]="200" # public, resume page (MVP stand, EXTRA_HOSTS)
     [storage.filenkov.store]="302"
     [image.filenkov.store]="302"
     [rag.filenkov.store]="302"
     [audio.filenkov.store]="302"
     [llm.filenkov.store]="302 401 403"
     [observer.filenkov.store]="302"
-    [meet.filenkov.store]="302"
-    [id.filenkov.store]="302 200" # public: Keycloak's welcome page redirects
+    [id.filenkov.store]="302 200" # Keycloak welcome; Caddy also 403s sources outside the lan gate
 )
 
 # A signed-in account with no realm roles. storage, image, rag and llm need a
-# role it does not have (403); audio, observer and meet guard /** with
-# `session` (200).
+# role it does not have (403); audio and observer guard /** with `session` (200).
 declare -A EXPECT_SIGNED_IN=(
     [filenkov.store]="200"
     [mvp.filenkov.store]="200"
@@ -91,7 +87,6 @@ declare -A EXPECT_SIGNED_IN=(
     [audio.filenkov.store]="200"
     [llm.filenkov.store]="403"
     [observer.filenkov.store]="200"
-    [meet.filenkov.store]="200"
     [id.filenkov.store]="302 200"
 )
 
@@ -105,7 +100,6 @@ declare -A EXPECT_ADMIN=(
     [audio.filenkov.store]="200"
     [llm.filenkov.store]="200"
     [observer.filenkov.store]="200"
-    [meet.filenkov.store]="200"
     [id.filenkov.store]="302 200"
 )
 
@@ -196,9 +190,8 @@ cookie_conf() { # name cookie-value -> writes a 0600 curl config, prints path
     printf '%s' "$path"
 }
 
-# Hosts to leave out of this run. A stand that does not own a name (the MVP stand
-# renames the apex, meet. is served by Jitsi's own Caddy block) says so here
-# rather than carrying an expectation it cannot meet.
+# Hosts to leave out of this run. The MVP stand renames the apex, so it skips
+# filenkov.store and adds mvp.filenkov.store through EXTRA_HOSTS.
 if [ -n "${SKIP_HOSTS:-}" ]; then
     filtered=()
     for host in "${HOSTS[@]}"; do
@@ -209,6 +202,14 @@ if [ -n "${SKIP_HOSTS:-}" ]; then
         [ "$drop" = "0" ] && filtered+=("$host")
     done
     HOSTS=("${filtered[@]}")
+fi
+
+# Names added for a stand whose config renames a host. They are not part of
+# the committed config.yaml, so the default run does not list them.
+if [ -n "${EXTRA_HOSTS:-}" ]; then
+    for extra in $EXTRA_HOSTS; do
+        HOSTS+=("$extra")
+    done
 fi
 
 # Every host needs an expectation before anything is requested.
@@ -228,7 +229,7 @@ done
 printf '# proxy   %s://<host>/\n' "$PROXY_SCHEME"
 printf '# gateway http://%s/ with Host: <host>\n' "$GATEWAY_ADDR"
 if [ "$TLS_VERIFY" != "1" ]; then
-    printf '# TLS_VERIFY=0: certificates are not checked; meet. uses tls internal\n'
+    printf '# TLS_VERIFY=0: certificates are not checked; meet. and hermes. use tls internal\n'
 fi
 printf '\n'
 emit HOST SURFACE KIND CODE EXPECT RESULT

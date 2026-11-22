@@ -9,15 +9,15 @@ export default function AboutProjectNode() {
       </p>
 
       <p>
-        When you opened this URL, a Caddy container terminated TLS and handed the request to a Go binary I wrote
+        When you opened this URL, Caddy on the host terminated TLS and handed the request to a Go binary I wrote
         (<code>cmd/gateway</code>). That gateway read a YAML file, matched the path against the route list for
         <strong> filenkov.store</strong>, decided the route was public, and proxied it to an nginx container holding the
         built SPA. Had you asked for <strong>/admin</strong> instead, the same code would have checked the access JWT in
-        your cookie, found no <code>ADMIN</code> role, and sent you to the sign-in page before nginx ever saw the
+        your cookie, found no <code>admin</code> role, and sent you to the sign-in page before nginx ever saw the
         request. Nothing on this site is a mock-up of a system; the resume is a tenant of the system.
       </p>
 
-      <Chips items={['React 19', 'Vite', 'TypeScript', 'Go', 'nginx', 'Caddy', 'Redis', 'Docker Compose']} />
+      <Chips items={['React 19', 'Vite', 'TypeScript', 'Go', 'nginx', 'Caddy', 'Keycloak', 'podman compose']} />
 
       <Section title="Why it gets a branch">
         <p>
@@ -36,7 +36,7 @@ export default function AboutProjectNode() {
       <Callout title="Everything here is checkable">
         <p>
           Versions, ports and routes quoted in these nodes are read out of <code>package.json</code>, <code>go.mod</code>
-          {' '}and <code>deploy/gateway.yaml</code> in the repository, not from memory. If a number here is wrong, the
+          {' '}and the gateway <code>config.yaml</code> in the repository, not from memory. If a number here is wrong, the
           repository is where it is wrong.
         </p>
       </Callout>
