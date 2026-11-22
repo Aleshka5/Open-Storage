@@ -1,1 +1,2 @@
 - ([1-own-data-on-open-network.md](1-own-data-on-open-network.md)) - Own Postgres, MinIO and Redis; join the existing `open_network`; containers `open-storage-*`; SPA built into the app image.
+- ([2-trust-v1-headers.md](2-trust-v1-headers.md)) - Trust the five identity v1 headers; the User-Service client is gone; `users.id` stays a UUID column.
