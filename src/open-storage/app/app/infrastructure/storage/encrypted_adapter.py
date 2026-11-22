@@ -1,0 +1,379 @@
+from __future__ import annotations
+
+import base64
+import hashlib
+import os
+import struct
+from collections.abc import AsyncIterator
+from pathlib import Path
+from uuid import UUID
+
+import aiofiles
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from loguru import logger
+
+from app.domain.exceptions import FileNotFoundError
+from app.infrastructure.storage.base_adapter import FileNode, StorageAdapter
+
+IV_SIZE = 12
+CHUNK_SIZE_FIELD = 4
+PLAIN_TMP_PREFIX = ".tmp"
+MARKER_FILENAME = ".marker"
+MARKER_PLAINTEXT = "HOMECLOUD_MARKER_V1"
+
+
+def derive_encryption_key(passphrase: str, user_id: UUID) -> bytes:
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=user_id.bytes,
+        iterations=100_000,
+    )
+    return kdf.derive(passphrase.encode())
+
+
+def encrypt_blob(key: bytes, plaintext: bytes) -> bytes:
+    iv = os.urandom(IV_SIZE)
+    ciphertext = AESGCM(key).encrypt(iv, plaintext, None)
+    return iv + ciphertext
+
+
+def decrypt_blob(key: bytes, payload: bytes) -> bytes:
+    iv = payload[:IV_SIZE]
+    ciphertext = payload[IV_SIZE:]
+    return AESGCM(key).decrypt(iv, ciphertext, None)
+
+
+class _AsyncByteStream:
+    """Buffer an ``AsyncIterator[bytes]`` to support exact-sized reads."""
+
+    def __init__(self, source: AsyncIterator[bytes]) -> None:
+        self._source = source
+        self._buffer = bytearray()
+        self._exhausted = False
+
+    async def read(self, size: int) -> bytes:
+        while len(self._buffer) < size and not self._exhausted:
+            try:
+                chunk = await anext(self._source)
+            except StopAsyncIteration:
+                self._exhausted = True
+                break
+            if chunk:
+                self._buffer.extend(chunk)
+
+        if size <= 0:
+            return b""
+
+        result = bytes(self._buffer[:size])
+        del self._buffer[:size]
+        return result
+
+
+class EncryptedStorageAdapter(StorageAdapter):
+    def __init__(self, inner: StorageAdapter, key: bytes) -> None:
+        self._inner = inner
+        self._key = key
+        logger.info(
+            "EncryptedStorageAdapter initialized for disk {} at root_prefix={}",
+            inner.disk_id,
+            inner.root_prefix,
+        )
+
+    @property
+    def root_prefix(self) -> str:
+        return self._inner.root_prefix
+
+    @property
+    def disk_id(self) -> str:
+        return self._inner.disk_id
+
+    @property
+    def disk_relative_prefix(self) -> str:
+        return self._inner.disk_relative_prefix
+
+    async def encrypt_path(self, path: str) -> str:
+        """Encrypt a section path for storage."""
+        return await self._to_encrypted_path(path)
+
+    def encrypt_name(self, name: str) -> str:
+        iv = os.urandom(IV_SIZE)
+        ciphertext = AESGCM(self._key).encrypt(iv, name.encode(), None)
+        encoded = base64.urlsafe_b64encode(iv + ciphertext).decode("ascii")
+        return encoded.rstrip("=")
+
+    def decrypt_name(self, enc_name: str) -> str:
+        padding = "=" * (-len(enc_name) % 4)
+        payload = base64.urlsafe_b64decode(enc_name + padding)
+        iv = payload[:IV_SIZE]
+        ciphertext = payload[IV_SIZE:]
+        plaintext = AESGCM(self._key).decrypt(iv, ciphertext, None)
+        return plaintext.decode()
+
+    async def marker_exists(self) -> bool:
+        """Return whether the passphrase marker exists on the inner adapter."""
+        return await self._inner.exists(MARKER_FILENAME)
+
+    async def validate_marker(self) -> bool:
+        """Decrypt the marker via the inner adapter; return False on key mismatch."""
+        if not await self.marker_exists():
+            logger.warning(
+                "Marker missing for disk {} at root_prefix={}",
+                self.disk_id,
+                self.root_prefix,
+            )
+            return False
+
+        try:
+            payload = bytearray()
+            async for chunk in self._inner.read(MARKER_FILENAME):
+                payload.extend(chunk)
+            decrypted = decrypt_blob(self._key, bytes(payload)).decode()
+        except Exception:
+            logger.warning(
+                "Marker validation failed for disk {} (invalid key or corrupt marker)",
+                self.disk_id,
+            )
+            return False
+
+        if decrypted != MARKER_PLAINTEXT:
+            logger.warning(
+                "Marker plaintext mismatch for disk {}",
+                self.disk_id,
+            )
+            return False
+
+        logger.info("Marker validated for disk {}", self.disk_id)
+        return True
+
+    async def write_marker(self) -> None:
+        """Create/overwrite the passphrase marker through the inner adapter API."""
+        encrypted_marker = encrypt_blob(self._key, MARKER_PLAINTEXT.encode())
+
+        async def marker_stream() -> AsyncIterator[bytes]:
+            yield encrypted_marker
+
+        await self._inner.write(MARKER_FILENAME, marker_stream(), len(encrypted_marker))
+        logger.info("Wrote marker for disk {} via inner adapter", self.disk_id)
+
+    async def list(self, path: str) -> list[FileNode]:
+        encrypted_path = await self._resolve_encrypted_path(path)
+        encrypted_nodes = await self._inner.list(encrypted_path)
+        nodes: list[FileNode] = []
+
+        for node in encrypted_nodes:
+            try:
+                decrypted_name = self.decrypt_name(node.name)
+            except Exception:
+                logger.warning("Skipping entry with undecryptable name in {}", encrypted_path)
+                continue
+
+            size = node.size
+            if not node.is_dir:
+                size = await self._decrypted_file_size(
+                    self._join_encrypted_path(encrypted_path, node.name)
+                )
+
+            nodes.append(
+                FileNode(
+                    name=decrypted_name,
+                    is_dir=node.is_dir,
+                    size=size,
+                    modified_at=node.modified_at,
+                )
+            )
+
+        logger.info("Listed {} decrypted entries in {}", len(nodes), path)
+        return nodes
+
+    async def read(self, path: str) -> AsyncIterator[bytes]:
+        encrypted_path = await self._resolve_encrypted_path(path)
+        if not await self._inner.exists(encrypted_path):
+            raise FileNotFoundError(f"File {path!r} not found")
+
+        async for chunk in self._decrypt_stream(
+            _AsyncByteStream(self._inner.read(encrypted_path))
+        ):
+            yield chunk
+
+    async def read_encrypted_blob(self, file_path: Path) -> AsyncIterator[bytes]:
+        """Decrypt a local encrypted blob (e.g. archive temp file on disk)."""
+        if not file_path.is_file():
+            raise FileNotFoundError(f"Encrypted blob not found at {file_path}")
+
+        async with aiofiles.open(file_path, mode="rb") as file_handle:
+            async for chunk in self._decrypt_stream(file_handle):
+                yield chunk
+
+    async def write(
+        self,
+        path: str,
+        data: AsyncIterator[bytes],
+        size: int,
+    ) -> str:
+        encrypted_path = await self._to_encrypted_path(path)
+        hasher = hashlib.sha256()
+        bytes_written = 0
+        encrypted_size = 0
+
+        async def encrypted_stream() -> AsyncIterator[bytes]:
+            nonlocal bytes_written, encrypted_size
+            async for plaintext_chunk in data:
+                hasher.update(plaintext_chunk)
+                bytes_written += len(plaintext_chunk)
+                iv, ciphertext = self._encrypt_chunk(plaintext_chunk)
+                framed = iv + struct.pack(">I", len(ciphertext)) + ciphertext
+                encrypted_size += len(framed)
+                yield framed
+
+        # Encrypted byte length is known only after framing; pass 0 and rely on
+        # the counted ``encrypted_size`` for logging. Inner adapters treat size
+        # as advisory (warn-only on mismatch).
+        await self._inner.write(encrypted_path, encrypted_stream(), 0)
+
+        if bytes_written != size:
+            logger.warning(
+                "Written byte count {} differs from declared size {} for path {}",
+                bytes_written,
+                size,
+                path,
+            )
+
+        checksum = hasher.hexdigest()
+        logger.info(
+            "Wrote {} plaintext bytes ({} framed) for logical path {}",
+            bytes_written,
+            encrypted_size,
+            path,
+        )
+        return checksum
+
+    async def delete(self, path: str) -> None:
+        encrypted_path = await self._resolve_encrypted_path(path)
+        await self._inner.delete(encrypted_path)
+
+    async def mkdir(self, path: str) -> None:
+        encrypted_path = await self._to_encrypted_path(path)
+        await self._inner.mkdir(encrypted_path)
+
+    async def rename(self, old_path: str, new_path: str) -> None:
+        encrypted_old = await self._resolve_encrypted_path(old_path)
+        encrypted_new = await self._to_encrypted_path(new_path)
+        await self._inner.rename(encrypted_old, encrypted_new)
+
+    async def exists(self, path: str) -> bool:
+        if self._is_plain_storage_path(path):
+            return await self._inner.exists(path)
+        try:
+            encrypted_path = await self._resolve_encrypted_path(path)
+        except FileNotFoundError:
+            return False
+        return await self._inner.exists(encrypted_path)
+
+    async def get_size(self, path: str) -> int:
+        if self._is_plain_storage_path(path):
+            return await self._inner.get_size(path)
+        encrypted_path = await self._resolve_encrypted_path(path)
+        return await self._decrypted_file_size(encrypted_path)
+
+    async def list_stale_tmp_entry_paths(self, cutoff_ts: float) -> list[str]:
+        return await self._inner.list_stale_tmp_entry_paths(cutoff_ts)
+
+    def _encrypt_chunk(self, plaintext: bytes) -> tuple[bytes, bytes]:
+        iv = os.urandom(IV_SIZE)
+        ciphertext = AESGCM(self._key).encrypt(iv, plaintext, None)
+        return iv, ciphertext
+
+    async def _decrypt_stream(self, file_handle) -> AsyncIterator[bytes]:
+        while True:
+            iv = await file_handle.read(IV_SIZE)
+            if not iv:
+                break
+            if len(iv) < IV_SIZE:
+                raise ValueError("Truncated encrypted file: incomplete IV")
+
+            size_bytes = await file_handle.read(CHUNK_SIZE_FIELD)
+            if len(size_bytes) < CHUNK_SIZE_FIELD:
+                raise ValueError("Truncated encrypted file: incomplete chunk size")
+
+            encrypted_size = struct.unpack(">I", size_bytes)[0]
+            ciphertext = await file_handle.read(encrypted_size)
+            if len(ciphertext) < encrypted_size:
+                raise ValueError("Truncated encrypted file: incomplete chunk payload")
+
+            plaintext = AESGCM(self._key).decrypt(iv, ciphertext, None)
+            yield plaintext
+
+    async def _decrypted_file_size(self, encrypted_path: str) -> int:
+        total = 0
+        async for chunk in self._decrypt_stream(
+            _AsyncByteStream(self._inner.read(encrypted_path))
+        ):
+            total += len(chunk)
+        return total
+
+    async def _to_encrypted_path(self, logical_path: str) -> str:
+        normalized = self._normalize_path(logical_path)
+        if not normalized:
+            return ""
+        if self._is_plain_storage_path(normalized):
+            return normalized
+
+        segments = normalized.split("/")
+        if len(segments) == 1:
+            return self.encrypt_name(segments[0])
+
+        parent_logical = "/".join(segments[:-1])
+        leaf_name = segments[-1]
+        parent_encrypted = await self._resolve_encrypted_path(parent_logical)
+        leaf_encrypted = self.encrypt_name(leaf_name)
+        return self._join_encrypted_path(parent_encrypted, leaf_encrypted)
+
+    async def _resolve_encrypted_path(self, logical_path: str) -> str:
+        normalized = self._normalize_path(logical_path)
+        if not normalized:
+            return ""
+        if self._is_plain_storage_path(normalized):
+            return normalized
+
+        segments = normalized.split("/")
+        encrypted_parts: list[str] = []
+
+        for segment in segments:
+            parent_encrypted = "/".join(encrypted_parts)
+            entries = await self._inner.list(parent_encrypted)
+            matched_name: str | None = None
+
+            for entry in entries:
+                try:
+                    decrypted_name = self.decrypt_name(entry.name)
+                except Exception:
+                    continue
+                if decrypted_name == segment:
+                    matched_name = entry.name
+                    break
+
+            if matched_name is None:
+                raise FileNotFoundError(f"Path {logical_path!r} not found")
+
+            encrypted_parts.append(matched_name)
+
+        return "/".join(encrypted_parts)
+
+    @staticmethod
+    def _normalize_path(path: str) -> str:
+        return path.strip().replace("\\", "/").strip("/")
+
+    @staticmethod
+    def _is_plain_storage_path(path: str) -> bool:
+        normalized = path.strip().replace("\\", "/").strip("/")
+        return normalized == PLAIN_TMP_PREFIX or normalized.startswith(f"{PLAIN_TMP_PREFIX}/")
+
+    @staticmethod
+    def _join_encrypted_path(parent: str, name: str) -> str:
+        if not parent:
+            return name
+        return f"{parent}/{name}"

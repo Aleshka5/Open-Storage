@@ -1,0 +1,41 @@
+[project]
+name = "webstorage"
+version = "0.1.0"
+description = "HomeCloud - self-hosted network storage"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy[asyncio]",
+    "asyncpg",
+    "alembic",
+    "redis",
+    "pillow",
+    "pillow-heif",
+    "cryptography",
+    "zstandard",
+    "apscheduler",
+    "pydantic-settings",
+    "loguru",
+    "httpx",
+    "email-validator",
+    "aiofiles",
+    "python-multipart",
+    "python-json-logger>=4.1.0",
+    "aioboto3>=15.5.0",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "moto[s3,server]>=5.2.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
