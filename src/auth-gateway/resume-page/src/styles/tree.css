@@ -270,7 +270,6 @@ a.spine-label:hover {
     height: 2.75rem;
     border-bottom: 1px solid var(--rule);
     background: color-mix(in srgb, var(--paper) 88%, transparent);
-    backdrop-filter: blur(8px);
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;

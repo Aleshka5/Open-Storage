@@ -39,7 +39,7 @@ The resume page is the only frontend in this repository, and it is the hub. It s
 
 - `data-theme` is `light` or `dark` before first paint, and `color-scheme` on the document and the meta tag matches it.
 - `theme.preference` is `light`, `dark`, or `system`. Anything else behaves as `dark`. `system` keeps listening to `prefers-color-scheme`. A storage failure is silent. The page does not store a session in `localStorage`.
-- The header’s right slot holds a radiogroup named `Theme`. The selected segment’s fill is `--ink` and its label is `--paper`. An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`. Arrow keys move inside the group. At 620px the control stays.
+- The header’s right slot holds a radiogroup named `Theme`. This story’s selected segment fill is `--ink` and its label is `--paper`. [US-04](../us-04-liquid-glass-theme/init.md) replaced that face; the current thumb is [brand book §1](../../brand-book/init.md). An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`. Arrow keys move inside the group. At 620px the control stays.
 - Buttons, fields, and banners set both faces. `.btn-ghost` border matches its transparent fill. The error banner uses `--danger-wash`. A 2px focus ring uses `--accent-text`. `--accent` is not text.
 - [frontend/design.md](../../auth-gateway/frontend/design.md) links this outcome and does not restate the palette.
 

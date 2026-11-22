@@ -46,7 +46,6 @@
 [data-header='condensed'] .header {
   height: var(--header-h-c);
   background: color-mix(in srgb, var(--paper) 82%, transparent);
-  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--rule);
 }
 

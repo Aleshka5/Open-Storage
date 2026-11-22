@@ -4,7 +4,7 @@
 
 ## Overview
 
-The resume page already stores `theme.preference`, paints both palettes, and shows a `Theme` radiogroup (`light`, `Dark`, `System`). The selected segment is a solid `--ink` fill. This story replaces that fill with one glass thumb that slides between the three segments, and reveals a new resolved theme as a circle that starts at the control. The circle’s edge refracts like the rim of one glass disk. Inside the disk the new theme is unfiltered. Tasks: [decision](tasks/task-01-rim-decision.md), [thumb](tasks/task-02-glass-thumb.md), [circle](tasks/task-03-circle.md), [rim](tasks/task-04-rim.md), [checks](tasks/task-05-checks.md). The rim decision is [ADR-0011](../../auth-gateway/adrs/11-theme-reveal-rim.md).
+The resume page stores `theme.preference`, paints both palettes, and shows a `Theme` radiogroup (`light`, `Dark`, `System`). Selection is the sliding glass thumb in [brand book §1](../../brand-book/init.md). A new resolved theme reveals as a circle that starts at the control. The circle’s edge refracts like the rim of one glass disk. Inside the disk the new theme is unfiltered. Tasks: [decision](tasks/task-01-rim-decision.md), [thumb](tasks/task-02-glass-thumb.md), [circle](tasks/task-03-circle.md), [rim](tasks/task-04-rim.md), [checks](tasks/task-05-checks.md). The rim decision is [ADR-0011](../../auth-gateway/adrs/11-theme-reveal-rim.md).
 
 ## Locked decisions
 
