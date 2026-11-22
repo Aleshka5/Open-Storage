@@ -7,10 +7,11 @@ from app.domain.value_objects.role import Role
 
 @dataclass(frozen=True)
 class User:
-    """Local projection plus request-time storage role.
+    """Local projection plus the storage role for this request.
 
-    ``role`` is never loaded from the database. It comes from gateway
-    ``X-Storage-Role`` or User-Service ``GET /users/{id}/roles/storage``.
+    ``role`` is never loaded from the database. It is the projection of
+    ``X-Auth-Roles`` for the current request. A row read from ``users``
+    carries ``STRANGER`` because the table has no role column.
     """
 
     id: UUID

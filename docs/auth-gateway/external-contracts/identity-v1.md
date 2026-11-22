@@ -45,3 +45,5 @@ Otherwise verify the bearer JWT: RS256 against the realm JWKS, `iss` equals the 
 `/admin` answers in the same envelope, with its own values ([gateway API contract](../gateway/api-contract.md)).
 
 Names `X-User-Id` and `X-Storage-Role` are not accepted.
+
+The open-storage app is a v1 consumer. It trusts these headers because it is reachable only on `open_network`.

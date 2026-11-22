@@ -10,13 +10,12 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from app.application.ports.user_directory import DirectoryUser
 from app.domain.entities.auth_principal import AuthPrincipal
 from app.domain.entities.user import User
 from app.domain.value_objects.error_codes import ErrorCode
 from app.domain.value_objects.role import Role
 from app.infrastructure.database.session import get_async_session
-from app.presentation.dependencies.auth import get_current_user, get_user_directory, get_user_repository
+from app.presentation.dependencies.auth import get_current_user, get_user_repository
 from app.presentation.exception_handlers import register_exception_handlers
 from app.presentation.middleware.check_role import check_role
 from config import get_settings
@@ -28,15 +27,12 @@ ADMIN = "/api/admin/probe"
 ENDPOINTS = (FILES, SHARED, ADMIN)
 
 
-class FakeUserDirectory:
-    async def get_storage_role(self, user_id: UUID) -> Role:
-        raise AssertionError("role header must be used")
-
-    async def get_user(self, user_id: UUID) -> DirectoryUser:
-        raise AssertionError("email header must be used")
-
-    async def list_users(self) -> list[DirectoryUser]:
-        return []
+_ROLE_HEADER = {
+    Role.STRANGER: "",
+    Role.FAMILY: "svc:storage:family",
+    Role.ADMIN: "svc:storage:admin",
+    Role.BLOCKED: "svc:storage:blocked",
+}
 
 
 class FakeUserRepository:
@@ -45,7 +41,7 @@ class FakeUserRepository:
 
     async def upsert_from_principal(self, principal: AuthPrincipal) -> User:
         user = User(
-            id=principal.id,
+            id=UUID(principal.id),
             email=principal.email,
             role=Role.STRANGER,
             is_active=True,
@@ -58,17 +54,17 @@ class FakeUserRepository:
 @pytest.fixture(autouse=True)
 def clear_settings_cache() -> None:
     get_settings.cache_clear()
-    get_user_directory.cache_clear()
     yield
     get_settings.cache_clear()
-    get_user_directory.cache_clear()
 
 
 def _headers(role: Role) -> dict[str, str]:
     return {
-        "X-User-Id": str(USER_ID),
-        "X-Storage-Role": role.value,
+        "X-Auth-Subject": str(USER_ID),
+        "X-Auth-Roles": _ROLE_HEADER[role],
         "X-Auth-Email": f"{role.value.lower()}@example.test",
+        "X-Auth-Name": role.value.lower(),
+        "X-Auth-Session": "sid-matrix",
     }
 
 
@@ -92,7 +88,6 @@ def _build_app(user_repo: FakeUserRepository | None = None) -> FastAPI:
     ) -> dict[str, bool]:
         return {"ok": True}
 
-    app.dependency_overrides[get_user_directory] = FakeUserDirectory
     app.dependency_overrides[get_user_repository] = lambda: user_repo or FakeUserRepository()
 
     async def fake_session():

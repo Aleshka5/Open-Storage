@@ -11,7 +11,7 @@ Not listed: FastAPI's own `/openapi.json`, `/docs`, `/docs/oauth2-redirect`, `/r
 | Base | Same origin as the SPA. No prefix in front of `/api`. |
 | Caller | The gateway, with [identity v1](../../auth-gateway/external-contracts/identity-v1.md) headers. "Auth: user" below means every one of the five identity headers as the app reads them today; "Auth: role" adds the app's storage-role gate. |
 | Error body | `{"detail": {"error_code": "<CODE>", "message": "<text>"}}`, plus `available_bytes` on `413` and `retry_after` on `429`. Never the edge's `{"error": …}`. |
-| Identity failures, every route | no user id → `401 UNAUTHORIZED`; unparseable role → `500 INTERNAL_ERROR`; blocked → `403 ACCESS_DENIED`; directory lookup fails → `503 USER_SERVICE_UNAVAILABLE` |
+| Identity failures, every route | no `X-Auth-Subject` → `401 UNAUTHORIZED` and no `users` row; missing or unknown `X-Auth-Roles` → `STRANGER`; blocked → `403 ACCESS_DENIED` |
 | Paths | Query or JSON body. `/` prefix accepted, `\` folded to `/`, `..` refused (`PATH_TRAVERSAL_DETECTED`) |
 | Empty success | `204` |
 
@@ -89,7 +89,7 @@ Section root `users/{user_id}/photos`, section `PHOTOS`. Extensions `.jpg .jpeg 
 
 ## private — `/api/private`, tag `private`
 
-The encrypted vault, section root `users/{user_id}/private`, section `PRIVATE`. The session key lives in Redis under the session cookie's value, for `PRIVATE_SESSION_TTL_HOURS` (4).
+The encrypted vault, section root `users/{user_id}/private`, section `PRIVATE`. The Redis key is `private_key:` plus the SHA-256 hex of the `__Secure-open_session` cookie, for `PRIVATE_SESSION_TTL_HOURS` (4). The raw cookie is not the key.
 
 | Method | Path | Does | Request | Success | Non-happy |
 |---|---|---|---|---|---|
@@ -175,8 +175,8 @@ Auth role: ADMIN on every route of this group and of the two admin indexing rout
 
 | Method | Path | Does | Request | Success | Non-happy |
 |---|---|---|---|---|---|
-| `GET` | `/users` | Directory users joined with local quota, filtered and paged | Query `page` ≥ 1, `limit` 1–100, `role?`, `email?` (substring, 1–255) | `200 {items: [UserAdminView], total}` | `503 USER_SERVICE_UNAVAILABLE`, `403 ACCESS_DENIED` |
-| `PATCH` | `/users/{user_id}/role` | Retired: roles live in the directory | — | `410` | always `410 ACCESS_DENIED` |
+| `GET` | `/users` | Local `users` rows joined with local quota, filtered and paged. `role` on a row is the local projection (`STRANGER`: the table has no role column) | Query `page` ≥ 1, `limit` 1–100, `role?`, `email?` (substring, 1–255) | `200 {items: [UserAdminView], total}` | `403 ACCESS_DENIED` |
+| `PATCH` | `/users/{user_id}/role` | Retired: storage roles are assigned in the identity provider | — | `410` | always `410 ACCESS_DENIED` |
 | `PATCH` | `/users/{user_id}/quota` | Set total cap (MB) and/or private cap (GB) | JSON `{limit_mb? ≥ 0, private_limit_gb? ≥ 0}`, at least one | `204` | `400 ACCESS_DENIED` (neither given, negative), `404 USER_NOT_FOUND` |
 | `POST` | `/users/{user_id}/block` | Set the local `users.is_active` flag to false | — | `204` | `404 USER_NOT_FOUND` |
 | `DELETE` | `/users/{user_id}` | Delete the user, their `users/{id}/` prefix and their shared rows | — | `204` | `403 ACCESS_DENIED` (self), `404 USER_NOT_FOUND` |

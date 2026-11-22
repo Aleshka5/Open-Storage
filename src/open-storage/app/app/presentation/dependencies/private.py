@@ -1,3 +1,5 @@
+import hashlib
+
 from fastapi import Depends, HTTPException, Request, status
 from loguru import logger
 
@@ -13,10 +15,16 @@ from app.presentation.dependencies.auth import get_current_user, get_quota_repos
 from app.presentation.dependencies.files import get_file_repository
 from config import get_settings
 
+VAULT_COOKIE_NAME = "__Secure-open_session"
+
+
+def vault_session_key(cookie_value: str) -> str:
+    """Hash the gateway session cookie before it is used as a Redis key."""
+    return hashlib.sha256(cookie_value.encode("utf-8")).hexdigest()
+
 
 def _get_session_id(request: Request) -> str:
-    cookie_name = get_settings().auth.cookie_name
-    token = request.cookies.get(cookie_name)
+    token = request.cookies.get(VAULT_COOKIE_NAME)
     if not token:
         logger.warning("Private vault requested without session cookie")
         raise HTTPException(
@@ -26,7 +34,7 @@ def _get_session_id(request: Request) -> str:
                 "message": "Authentication required",
             },
         )
-    return token
+    return vault_session_key(token)
 
 
 def get_private_service(

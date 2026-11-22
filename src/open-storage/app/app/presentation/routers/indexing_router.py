@@ -163,6 +163,11 @@ async def indexing_status(
     return _status_response(counts)
 
 
+# /api/admin/indexing* uses the same app ADMIN gate as /api/admin. The gateway
+# allows service family and admin; denying a non-admin here is intended.
+# A gateway policy of admin would reject svc:storage:admin without realm admin.
+
+
 @router.get("/api/admin/indexing", response_model=AdminIndexResponse)
 async def admin_indexing(
     request: Request,
