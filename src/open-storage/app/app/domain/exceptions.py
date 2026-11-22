@@ -54,7 +54,7 @@ class SelfUserDeletionError(Exception):
 
 
 class AuthUnauthenticatedError(Exception):
-    """Raised when identity headers are missing or not a UUID."""
+    """Raised when X-Auth-Subject is missing."""
 
 
 class AuthBlockedError(Exception):
@@ -67,10 +67,6 @@ class AuthAccessDeniedError(Exception):
 
 class AuthMisconfiguredError(Exception):
     """Raised when an identity header cannot be mapped (invalid role string)."""
-
-
-class UserServiceUnavailableError(Exception):
-    """Raised when User-Service is unreachable, times out, or returns a failed lookup."""
 
 
 class KeysValidationError(Exception):

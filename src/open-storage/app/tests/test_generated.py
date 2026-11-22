@@ -19,17 +19,14 @@ from app.application.generated_service import GeneratedService
 from app.application.photo_service import PhotoService
 from app.infrastructure.disk_router import DiskRouter
 from app.infrastructure.thumbnail_service import ThumbnailService
-from app.application.ports.user_directory import DirectoryUser
 from app.domain.entities.auth_principal import AuthPrincipal
 from app.domain.entities.file_record import FileRecord, FileSection, FileStatus
 from app.domain.entities.user import User
-from app.domain.exceptions import UserServiceUnavailableError
 from app.domain.value_objects.error_codes import ErrorCode
 from app.domain.value_objects.role import Role
 from app.infrastructure.database.session import get_async_session
 from app.presentation.dependencies.auth import (
     get_current_user,
-    get_user_directory,
     get_user_repository,
 )
 from app.presentation.dependencies.files import get_file_service
@@ -240,45 +237,18 @@ class FakeQuotaRepo:
         return await self.get_by_user_id(user_id)
 
 
-class FakeUserDirectory:
-    def __init__(
-        self,
-        *,
-        role: Role = Role.STRANGER,
-        role_error: Exception | None = None,
-    ) -> None:
-        self.role = role
-        self.role_error = role_error
-        self.role_calls: list[UUID] = []
-        self.user_calls: list[UUID] = []
-
-    async def get_storage_role(self, user_id: UUID) -> Role:
-        self.role_calls.append(user_id)
-        if self.role_error is not None:
-            raise self.role_error
-        return self.role
-
-    async def get_user(self, user_id: UUID) -> DirectoryUser:
-        self.user_calls.append(user_id)
-        return DirectoryUser(
-            id=user_id,
-            email="owner@example.test",
-            username="owner",
-            storage_role=self.role,
-        )
-
-    async def list_users(self) -> list[DirectoryUser]:
-        return []
-
-
 class FakeUserRepository:
     def __init__(self) -> None:
         self.principals: list[AuthPrincipal] = []
 
-    async def upsert_from_principal(self, principal: AuthPrincipal) -> User:
+    async def upsert_from_principal(self, principal: AuthPrincipal) -> User | None:
         self.principals.append(principal)
+        try:
+            user_id = UUID(principal.id)
+        except ValueError:
+            return None
         return User(
-            id=principal.id,
+            id=user_id,
             email=principal.email,
             role=Role.STRANGER,
             is_active=True,
@@ -308,8 +278,7 @@ class AdvancingClock:
 
 
 class GeneratedWorld:
-    def __init__(self, directory: FakeUserDirectory) -> None:
-        self.directory = directory
+    def __init__(self) -> None:
         self.clock = AdvancingClock()
         self.services: dict[UUID, GeneratedService] = {}
         self.storages: dict[UUID, GeneratedInMemoryAdapter] = {}
@@ -349,26 +318,33 @@ def _run_directories(storage: GeneratedInMemoryAdapter) -> set[str]:
     return {item for item in storage._dirs if item and not item.startswith(".")}
 
 
+_ROLE_HEADER = {
+    "STRANGER": "",
+    "FAMILY": "svc:storage:family",
+    "ADMIN": "svc:storage:admin",
+    "BLOCKED": "svc:storage:blocked",
+}
+
+
 def _auth_headers(
     user_id: UUID,
     *,
     storage_role: str | None = None,
-    email: str | None = None,
+    email: str | None = "owner@example.test",
 ) -> dict[str, str]:
-    headers = {"X-Auth-User-Id": str(user_id)}
-    if storage_role is not None:
-        headers["X-Storage-Role"] = storage_role
+    headers = {
+        "X-Auth-Subject": str(user_id),
+        "X-Auth-Name": "owner",
+        "X-Auth-Roles": _ROLE_HEADER.get(storage_role or "", storage_role or ""),
+        "X-Auth-Session": "sid-generated",
+    }
     if email is not None:
         headers["X-Auth-Email"] = email
     return headers
 
 
 def _history_headers(user_id: UUID, role: Role = Role.STRANGER) -> dict[str, str]:
-    return {
-        "X-User-Id": str(user_id),
-        "X-Storage-Role": role.value,
-        "X-Auth-Email": "owner@example.test",
-    }
+    return _auth_headers(user_id, storage_role=role.value, email="owner@example.test")
 
 
 def _form(
@@ -421,7 +397,6 @@ def _client(
     async def _generated_service(current_user: User = Depends(get_current_user)) -> GeneratedService:
         return world.service_for(current_user.id, limit_bytes=limit_bytes)
 
-    app.dependency_overrides[get_user_directory] = lambda: world.directory
     app.dependency_overrides[get_user_repository] = lambda: FakeUserRepository()
     app.dependency_overrides[get_async_session] = _session
     app.dependency_overrides[get_generated_service] = _generated_service
@@ -477,8 +452,7 @@ def _created_at_from_id(run_id: str) -> str:
 
 
 def test_save_under_header_user_id_writes_directory_layout() -> None:
-    directory = FakeUserDirectory(role=Role.STRANGER)
-    world = GeneratedWorld(directory)
+    world = GeneratedWorld()
     client = _client(world)
 
     response = client.post(
@@ -493,8 +467,6 @@ def test_save_under_header_user_id_writes_directory_layout() -> None:
     run_id = body["id"]
     assert RUN_ID_PATTERN.fullmatch(run_id)
     assert body["created_at"] == _created_at_from_id(run_id)
-    assert directory.role_calls == [USER_ID]
-    assert directory.user_calls == [USER_ID]
     assert world.opened_users == [USER_ID]
 
     storage = world.storages[USER_ID]
@@ -541,12 +513,12 @@ def test_save_under_header_user_id_writes_directory_layout() -> None:
 
 def test_family_and_admin_can_store() -> None:
     for role in (Role.FAMILY, Role.ADMIN):
-        world = GeneratedWorld(FakeUserDirectory(role=role))
+        world = GeneratedWorld()
         client = _client(world)
 
         response = client.post(
             "/api/generated",
-            headers=_auth_headers(USER_ID),
+            headers=_auth_headers(USER_ID, storage_role=role.value),
             data=_form(),
             files=_files(references=[]),
         )
@@ -558,77 +530,57 @@ def test_family_and_admin_can_store() -> None:
         assert world.storages[USER_ID]._files[f"{run_id}/result.png"] == RESULT_BYTES
 
 
-def test_missing_or_non_uuid_user_id_is_401_and_writes_nothing() -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+def test_missing_subject_or_legacy_headers_are_401_and_write_nothing() -> None:
+    world = GeneratedWorld()
     client = _client(world)
     payload = {"data": _form(), "files": _files()}
 
     missing = client.post("/api/generated", **payload)
-    invalid = client.post(
+    legacy = client.post(
         "/api/generated",
-        headers={"X-Auth-User-Id": "not-a-uuid"},
+        headers={"X-User-Id": str(USER_ID), "X-Storage-Role": "FAMILY"},
         **payload,
     )
 
     assert missing.status_code == 401
     assert _error_code(missing) == ErrorCode.UNAUTHORIZED
-    assert invalid.status_code == 401
-    assert _error_code(invalid) == ErrorCode.UNAUTHORIZED
+    assert legacy.status_code == 401
+    assert _error_code(legacy) == ErrorCode.UNAUTHORIZED
     assert world.opened_users == []
-    assert world.directory.role_calls == []
 
 
 def test_blocked_role_is_403_and_writes_nothing() -> None:
-    looked_up = FakeUserDirectory(role=Role.BLOCKED)
-    looked_up_world = GeneratedWorld(looked_up)
-    looked_up_client = _client(looked_up_world)
-    looked_up_response = looked_up_client.post(
-        "/api/generated",
-        headers=_auth_headers(USER_ID, email="blocked@example.test"),
-        data=_form(),
-        files=_files(),
-    )
-
-    assert looked_up_response.status_code == 403
-    assert _error_code(looked_up_response) == ErrorCode.ACCESS_DENIED
-    assert looked_up.role_calls == [USER_ID]
-    assert looked_up_world.opened_users == []
-
-    headed = FakeUserDirectory(role=Role.ADMIN)
-    headed_world = GeneratedWorld(headed)
-    headed_client = _client(headed_world)
-    headed_response = headed_client.post(
+    world = GeneratedWorld()
+    client = _client(world)
+    response = client.post(
         "/api/generated",
         headers=_auth_headers(USER_ID, storage_role=Role.BLOCKED.value, email="blocked@example.test"),
         data=_form(),
         files=_files(),
     )
 
-    assert headed_response.status_code == 403
-    assert _error_code(headed_response) == ErrorCode.ACCESS_DENIED
-    assert headed.role_calls == []
-    assert headed_world.opened_users == []
+    assert response.status_code == 403
+    assert _error_code(response) == ErrorCode.ACCESS_DENIED
+    assert world.opened_users == []
 
 
-def test_user_service_down_while_resolving_role_is_503() -> None:
-    directory = FakeUserDirectory(role_error=UserServiceUnavailableError("user directory down"))
-    world = GeneratedWorld(directory)
+def test_missing_roles_is_stranger_not_an_error() -> None:
+    world = GeneratedWorld()
     client = _client(world)
 
     response = client.post(
         "/api/generated",
         headers=_auth_headers(USER_ID),
         data=_form(),
-        files=_files(),
+        files=_files(references=[]),
     )
 
-    assert response.status_code == 503
-    assert _error_code(response) == ErrorCode.USER_SERVICE_UNAVAILABLE
-    assert world.opened_users == []
+    assert response.status_code == 201
+    assert world.opened_users == [USER_ID]
 
 
 def test_invalid_payload_writes_nothing() -> None:
-    world = GeneratedWorld(FakeUserDirectory(role=Role.FAMILY))
+    world = GeneratedWorld()
     client = _client(world)
     headers = _auth_headers(USER_ID, email="owner@example.test")
 
@@ -669,7 +621,7 @@ def test_invalid_payload_writes_nothing() -> None:
 
 
 def test_quota_miss_writes_nothing() -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+    world = GeneratedWorld()
     client = _client(world, limit_bytes=1)
 
     response = client.post(
@@ -689,7 +641,7 @@ def test_quota_miss_writes_nothing() -> None:
 
 
 def test_list_is_owner_scoped_and_skips_corrupt_meta() -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+    world = GeneratedWorld()
     client = _client(world)
     headers = _history_headers(USER_ID)
 
@@ -738,7 +690,7 @@ def test_list_is_owner_scoped_and_skips_corrupt_meta() -> None:
 
 
 def test_get_one_and_streams_only_listed_files() -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+    world = GeneratedWorld()
     client = _client(world)
     created = client.post(
         "/api/generated",
@@ -798,7 +750,7 @@ def test_get_one_and_streams_only_listed_files() -> None:
 
 
 def test_invalid_meta_returns_409_and_does_not_rewrite() -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+    world = GeneratedWorld()
     client = _client(world)
     created = client.post(
         "/api/generated",
@@ -820,7 +772,7 @@ def test_invalid_meta_returns_409_and_does_not_rewrite() -> None:
 
 
 def test_delete_releases_quota_and_records_and_second_delete_is_404() -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+    world = GeneratedWorld()
     client = _client(world)
     created = client.post(
         "/api/generated",
@@ -859,7 +811,7 @@ def test_delete_releases_quota_and_records_and_second_delete_is_404() -> None:
 
 
 def test_generated_objects_are_absent_from_other_sections() -> None:
-    world = GeneratedWorld(FakeUserDirectory(role=Role.FAMILY))
+    world = GeneratedWorld()
     client = _client(world, include_other_sections=True)
     created = client.post(
         "/api/generated",
@@ -896,7 +848,7 @@ def test_generated_objects_are_absent_from_other_sections() -> None:
 
 
 def test_failed_write_removes_partial_directory(monkeypatch: pytest.MonkeyPatch) -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+    world = GeneratedWorld()
     client = _client(world)
     real_upload = FileService.upload_file
 
@@ -924,7 +876,7 @@ def test_failed_write_removes_partial_directory(monkeypatch: pytest.MonkeyPatch)
 
 
 def test_missing_meta_returns_409_and_does_not_write_a_file() -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+    world = GeneratedWorld()
     client = _client(world)
     created = client.post(
         "/api/generated",
@@ -947,7 +899,7 @@ def test_missing_meta_returns_409_and_does_not_write_a_file() -> None:
 
 
 def test_delete_of_another_users_run_is_404() -> None:
-    world = GeneratedWorld(FakeUserDirectory())
+    world = GeneratedWorld()
     client = _client(world)
     created = client.post(
         "/api/generated",

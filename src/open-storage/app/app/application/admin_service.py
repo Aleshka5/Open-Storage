@@ -1,13 +1,10 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID
 
 from loguru import logger
 
-from app.application.ports.user_directory import DirectoryUser
-from app.domain.entities.auth_principal import AuthPrincipal
 from app.domain.entities.file_record import FileRecord, FileSection
-from app.domain.entities.user import User
 from app.domain.exceptions import SelfUserDeletionError, UserNotFoundError
 from app.domain.value_objects.role import Role
 from app.infrastructure.database.repositories.file_repo import FileRepository
@@ -60,125 +57,67 @@ class AdminService:
 
     async def list_users(
         self,
-        directory_users: list[DirectoryUser],
         page: int,
         limit: int,
         role_filter: Role | None = None,
         email_search: str | None = None,
     ) -> dict[str, object]:
+        rows = await self._user_repo.list_admin_rows()
         logger.info(
-            "Admin listing users from User-Service GET /users: count={}, page={}, limit={}, role_filter={}",
-            len(directory_users),
+            "Admin listing local users: count={}, page={}, limit={}, role_filter={}",
+            len(rows),
             page,
             limit,
             role_filter.value if role_filter else None,
         )
-        filtered = self._filter_directory_users(directory_users, role_filter, email_search)
+        filtered = self._filter_local_rows(rows, role_filter, email_search)
         total = len(filtered)
         offset = (page - 1) * limit
-        page_users = filtered[offset : offset + limit]
-        local_rows = await self._user_repo.get_admin_rows_by_ids(
-            [item.id for item in page_users]
-        )
-        items = [
-            self._view_from_directory_user(item, local_rows.get(item.id))
-            for item in page_users
-        ]
+        page_rows = filtered[offset : offset + limit]
+        items = [self._view_from_local_row(row) for row in page_rows]
         logger.info(
-            "Admin user list joined storage roles with local quota: page_items={}, total={}",
+            "Admin user list from local users: page_items={}, total={}",
             len(items),
             total,
         )
         return {"items": items, "total": total}
 
     @staticmethod
-    def _filter_directory_users(
-        directory_users: list[DirectoryUser],
+    def _filter_local_rows(
+        rows: list[UserAdminRow],
         role_filter: Role | None,
         email_search: str | None,
-    ) -> list[DirectoryUser]:
-        filtered = directory_users
+    ) -> list[UserAdminRow]:
+        filtered = rows
         if role_filter is not None:
-            filtered = [item for item in filtered if item.storage_role == role_filter]
+            filtered = [item for item in filtered if item.user.role == role_filter]
         if email_search:
             needle = email_search.casefold()
-            filtered = [item for item in filtered if needle in item.email.casefold()]
+            filtered = [item for item in filtered if needle in item.user.email.casefold()]
         return filtered
 
-    def _default_limit_bytes(self) -> int:
-        return self._settings.business_logic.default_user_quota_bytes
-
-    def _view_from_directory_user(
-        self,
-        directory_user: DirectoryUser,
-        local: UserAdminRow | None,
-    ) -> UserAdminView:
-        if local is not None and local.quota_used_bytes < 0:
+    def _view_from_local_row(self, row: UserAdminRow) -> UserAdminView:
+        if row.quota_used_bytes < 0:
             logger.warning(
                 "User {} has negative cached quota usage: {} bytes",
-                directory_user.id,
-                local.quota_used_bytes,
-            )
-        if local is None:
-            return UserAdminView(
-                id=directory_user.id,
-                email=directory_user.email,
-                role=directory_user.storage_role,
-                is_active=True,
-                created_at=datetime.now(UTC),
-                quota_used_bytes=0,
-                limit_bytes=self._default_limit_bytes(),
-                private_limit_bytes=0,
+                row.user.id,
+                row.quota_used_bytes,
             )
         return UserAdminView(
-            id=directory_user.id,
-            email=directory_user.email,
-            role=directory_user.storage_role,
-            is_active=local.user.is_active,
-            created_at=local.user.created_at,
-            quota_used_bytes=local.quota_used_bytes,
-            limit_bytes=local.limit_bytes,
-            private_limit_bytes=local.private_limit_bytes,
+            id=row.user.id,
+            email=row.user.email,
+            role=row.user.role,
+            is_active=row.user.is_active,
+            created_at=row.user.created_at,
+            quota_used_bytes=row.quota_used_bytes,
+            limit_bytes=row.limit_bytes,
+            private_limit_bytes=row.private_limit_bytes,
         )
-
-    async def _ensure_local_user(
-        self,
-        target_user_id: UUID,
-        directory_users: list[DirectoryUser],
-        operation: str,
-    ) -> None:
-        directory_user = next(
-            (item for item in directory_users if item.id == target_user_id),
-            None,
-        )
-        if directory_user is None:
-            logger.error(
-                "User {} not found in User-Service GET /users for {}",
-                target_user_id,
-                operation,
-            )
-            raise UserNotFoundError(f"User {target_user_id} not found")
-
-        principal = AuthPrincipal(
-            id=directory_user.id,
-            email=directory_user.email,
-            name=directory_user.username,
-            role=directory_user.storage_role,
-        )
-        user = await self._user_repo.upsert_from_principal(principal)
-        if user is None:
-            logger.error(
-                "Cannot project user {} for {} (email/UUID conflict)",
-                target_user_id,
-                operation,
-            )
-            raise RuntimeError(f"Cannot project user {target_user_id} for {operation}")
 
     async def update_user_quota(
         self,
         admin_id: UUID,
         target_user_id: UUID,
-        directory_users: list[DirectoryUser],
         *,
         limit_mb: float | None = None,
         private_limit_gb: float | None = None,
@@ -190,7 +129,10 @@ class AdminService:
         if private_limit_gb is not None and private_limit_gb < 0:
             raise ValueError("Private quota limit cannot be negative")
 
-        await self._ensure_local_user(target_user_id, directory_users, "quota update")
+        user = await self._user_repo.get_by_id(target_user_id)
+        if user is None:
+            logger.error("User {} not found for quota update", target_user_id)
+            raise UserNotFoundError(f"User {target_user_id} not found")
 
         if limit_mb is not None:
             limit_bytes = int(limit_mb * BYTES_PER_MB)

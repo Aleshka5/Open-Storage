@@ -52,38 +52,13 @@ class S3Settings(BaseSettings):
 
 
 class AuthSettings(BaseSettings):
-    """Vault cookie only. Identity comes from gateway headers / User-Service."""
+    """Vault session lifetime. The cookie name is fixed: ``__Secure-open_session``."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    cookie_name: str = Field(
-        default="auth_session",
-        validation_alias="AUTH_COOKIE_NAME",
-        description="Companion cookie used as the private-vault Redis key (not identity).",
-    )
     private_session_ttl_hours: int = Field(
         default=4,
         validation_alias="PRIVATE_SESSION_TTL_HOURS",
-    )
-
-
-class UserServiceSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
-    url: str = Field(
-        default="http://user_service:8000",
-        validation_alias="USER_SERVICE_URL",
-        description="User-Service base URL on user_network. No JWT.",
-    )
-    timeout_ms: int = Field(
-        default=2000,
-        validation_alias="USER_SERVICE_TIMEOUT_MS",
-        description="HTTP timeout for User-Service calls.",
-    )
-    cache_ttl_seconds: int = Field(
-        default=60,
-        validation_alias="USER_SERVICE_CACHE_TTL_SECONDS",
-        description="TTL for cached GET role / GET user reads.",
     )
 
 
@@ -198,7 +173,6 @@ class Settings:
         self.storage = StorageSettings()
         self.s3 = S3Settings()
         self.auth = AuthSettings()
-        self.user_service = UserServiceSettings()
         self.business_logic = BusinessLogicSettings()
         self.logging = LoggingSettings()
         self.spa = SpaSettings()

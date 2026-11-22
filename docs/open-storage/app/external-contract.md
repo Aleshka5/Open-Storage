@@ -9,12 +9,12 @@ The app trusts identity because it has one inbound path, the gateway on `open_ne
 | External system | Call | Used for | Contract it must satisfy |
 |---|---|---|---|
 | gateway | Inbound: any request to `storage.filenkov.store`, proxied to `app:8000` | Every request the product serves | Header set, strip list and header-trust condition: [identity v1](../../auth-gateway/external-contracts/identity-v1.md). Host, upstream, policy and timeout: [upstreams](../../auth-gateway/external-contracts/upstreams.md), [gateway config](../../../src/auth-gateway/gateway/config.yaml) |
-| gateway → app | `X-Auth-Subject` | The user key. Every `users.id`, every `users/{id}/…` object prefix, every quota row, every `file_records.user_id` | Stable per person, one value per person, present on every non-public route |
+| gateway → app | `X-Auth-Subject` | The user key. Every `users.id`, every `users/{id}/…` object prefix, every quota row, every `file_records.user_id`. The reader does not parse it; the column is still UUID, so a non-UUID subject is not inserted | Stable per person, one value per person, present on every non-public route |
 | gateway → app | `X-Auth-Email`, `X-Auth-Name` | `users.email` (unique), display | Email is the identity the local projection refuses to duplicate |
 | gateway → app | `X-Auth-Roles` | Projected onto `STRANGER` / `FAMILY` / `ADMIN` / `BLOCKED`; `BLOCKED` wins, then `ADMIN`, then `FAMILY` | Realm roles only, as defined in [idp roles](../../auth-gateway/idp/init.md): `admin`, `svc:storage:{admin,family,blocked}` |
-| gateway → app | `X-Auth-Session` | Vault session identity: the Redis key chain `private_key:<sid>` | One `sid` per login; a new login must be a new `sid`, or the vault key outlives the person's logout |
+| gateway → app | `X-Auth-Session` | Read with the other v1 headers. Not the vault Redis key | One `sid` per login |
 | gateway → app | Injected `Authorization: Bearer …` | Not read by the app | — |
-| gateway → app | Session cookie `__Secure-open_session`, `Domain=.filenkov.store`, HttpOnly | The vault reads it in-process to key the unlock on the session | Present on this origin; its value different per login; not rotated mid-session |
+| gateway → app | Session cookie `__Secure-open_session`, `Domain=.filenkov.store`, HttpOnly | The vault hashes it in-process; the Redis key is `private_key:` plus that SHA-256 hex. A missing cookie is 401. Two cookies are two keys | Present on this origin; its value different per login; not rotated mid-session |
 | app → gateway | none | The app makes no call to the gateway | — |
 | gateway → client | `{"error":"<code>"}` on its own refusals | Caller sees edge errors for `401`/`403`/`404`/`429`/`502`/`504` before the app is reached | [identity v1 errors](../../auth-gateway/external-contracts/identity-v1.md), [gateway API contract](../../auth-gateway/gateway/api-contract.md) |
 
@@ -44,24 +44,14 @@ Key layout: [app/init.md](init.md#storage-layout-in-minio). The RAG side of the 
 
 | Key | Used for | Contract | TTL |
 |---|---|---|---|
-| `private_key:<session>` | The base64 AES key that unlocks the vault for one session | Plain `SET`/`GET`/`DEL`/`TTL`; no cluster-side TTL loss | `PRIVATE_SESSION_TTL_HOURS` (4 h), set on unlock, never extended |
+| `private_key:<sha256>` | The base64 AES key that unlocks the vault for one session. `<sha256>` is the hex digest of the `__Secure-open_session` cookie, not the raw cookie | Plain `SET`/`GET`/`DEL`/`TTL`; no cluster-side TTL loss | `PRIVATE_SESSION_TTL_HOURS` (4 h), set on unlock, never extended |
 | `unlock_attempts:<user_id>:<ip>` | Unlock and reset rate limit (5 per 900 s) | `INCR` + `EXPIRE` on first hit | 900 s |
 | `auth_rate:<path>:<ip>` | Rate limit on `/api/auth/login` and `/api/auth/register` | Same | 60 s |
 | `oauth_state:<state>`, `oauth_ticket:<ticket>` | Written and consumed by routes that answer `410` | — | 600 s / 120 s |
 
 `REDIS_URL`, default `redis://redis:6379`. Redis is not a cache and not a session store for identity: the only durable thing in it is the vault key, and its loss locks every vault (the data stays).
 
-## User-Service (legacy directory)
-
-| Call | Used for | Contract |
-|---|---|---|
-| `GET {USER_SERVICE_URL}/users/{id}/roles/storage` | The storage role when `X-Storage-Role` is absent | `200 {"role": "<one of STRANGER/FAMILY/ADMIN/BLOCKED>"}`; `404` and `5xx` are failures, not answers |
-| `GET {USER_SERVICE_URL}/users/{id}` | Email and username when `X-Auth-Email` is absent | `200 {"id", "email", "username"}` |
-| `GET {USER_SERVICE_URL}/users` | The admin user list, with `services: [{service, role}]` | `200 {"users": [ … ]}`; a missing `storage` entry means `STRANGER` |
-
-Timeouts `USER_SERVICE_TIMEOUT_MS` (2000), results cached in-process for `USER_SERVICE_CACHE_TTL_SECONDS` (60). No authentication on the call: network trust only, `user_network`.
-
-This is the app's only identity **outbound** call, and the target removes it: `X-Auth-Roles` carries the role. Until then a User-Service outage is `503 USER_SERVICE_UNAVAILABLE` on every route that needs a role. Recorded in the [namespace findings](../init.md#mismatches-with-the-legacy-project).
+The app makes no identity HTTP call. Role and subject come from the headers in [identity v1](../../auth-gateway/external-contracts/identity-v1.md). The admin user list is the local `users` table.
 
 ## rag-edge
 
@@ -84,7 +74,7 @@ The manifest the app sends is `{s3_key, file_name, content_sha256, file_size, co
 | Call | Network |
 |---|---|
 | gateway → app | `open_network` |
-| app → postgres, minio, redis, user_service | the namespace's own bridge |
+| app → postgres, minio, redis | the namespace's own bridge |
 | app → rag-edge | `rag_edge` |
 
 See the [namespace page](../init.md#networks) for why each exists.

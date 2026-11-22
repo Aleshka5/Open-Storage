@@ -15,6 +15,18 @@ from app.infrastructure.database.models import UserQuotaUsage
 from config import get_settings
 
 
+def stored_user_id(subject: str) -> UUID | None:
+    """``users.id`` is a UUID column until the data cutover.
+
+    The header reader does not parse the subject. This is the persistence
+    boundary: a subject the column cannot store is not inserted.
+    """
+    try:
+        return UUID(subject)
+    except (ValueError, AttributeError):
+        return None
+
+
 @dataclass(frozen=True)
 class UserAdminRow:
     user: UserEntity
@@ -41,26 +53,31 @@ class UserRepository:
         return self._to_entity(model)
 
     async def upsert_from_principal(self, principal: AuthPrincipal) -> UserEntity | None:
-        """Project directory identity into the local users table (id + email only).
+        """Project the request subject into the local users table (id + email only).
 
-        Authorization must use ``principal.role``. Returns None when email belongs
-        to a different UUID.
+        Authorization must use ``principal.role``. Returns None when the subject
+        cannot be stored in ``users.id``, or when the email belongs to a different id.
         """
-        existing = await self.get_by_id(principal.id)
+        user_id = stored_user_id(principal.id)
+        if user_id is None:
+            logger.error("Identity subject cannot be stored in users.id")
+            return None
+
+        existing = await self.get_by_id(user_id)
         if existing is not None:
             return await self._sync_projection(principal)
 
         email_owner = await self.get_by_email(principal.email)
         if email_owner is not None:
             logger.error(
-                "Directory principal user_id={} email conflicts with local user_id={}",
-                principal.id,
+                "Identity subject user_id={} email conflicts with local user_id={}",
+                user_id,
                 email_owner.id,
             )
             return None
 
         model = UserModel(
-            id=principal.id,
+            id=user_id,
             email=principal.email,
             is_active=True,
         )
@@ -70,8 +87,8 @@ class UserRepository:
                 await self._session.flush()
         except IntegrityError:
             logger.error(
-                "Directory principal user_id={} could not be inserted due to a unique constraint",
-                principal.id,
+                "Identity subject user_id={} could not be inserted due to a unique constraint",
+                user_id,
             )
             return None
 
@@ -80,10 +97,13 @@ class UserRepository:
         return self._to_entity(model, role=principal.role)
 
     async def _sync_projection(self, principal: AuthPrincipal) -> UserEntity:
-        model = await self._session.get(UserModel, principal.id)
+        user_id = stored_user_id(principal.id)
+        if user_id is None:
+            raise RuntimeError("Identity subject cannot be stored in users.id")
+        model = await self._session.get(UserModel, user_id)
         if model is None:
-            logger.error("User {} disappeared during directory projection sync", principal.id)
-            raise RuntimeError(f"User {principal.id} not found during projection sync")
+            logger.error("User {} disappeared during identity projection sync", user_id)
+            raise RuntimeError(f"User {user_id} not found during projection sync")
 
         if principal.email and model.email != principal.email:
             model.email = principal.email
@@ -127,7 +147,18 @@ class UserRepository:
         rows: dict[UUID, UserAdminRow] = {}
         for user_model, quota_model in result.all():
             rows[user_model.id] = self._to_admin_row(user_model, quota_model)
-        logger.info("Loaded {} local admin projections for {} directory users", len(rows), len(user_ids))
+        logger.info("Loaded {} local admin projections", len(rows))
+        return rows
+
+    async def list_admin_rows(self) -> list[UserAdminRow]:
+        stmt = (
+            select(UserModel, UserQuotaUsage)
+            .outerjoin(UserQuotaUsage, UserQuotaUsage.user_id == UserModel.id)
+            .order_by(UserModel.created_at, UserModel.id)
+        )
+        result = await self._session.execute(stmt)
+        rows = [self._to_admin_row(user_model, quota_model) for user_model, quota_model in result.all()]
+        logger.info("Listed {} local users for admin", len(rows))
         return rows
 
     async def delete(self, user_id: UUID) -> bool:

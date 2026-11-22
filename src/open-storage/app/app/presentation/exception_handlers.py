@@ -20,7 +20,6 @@ from app.domain.exceptions import (
     ResumeNodeExistsError,
     ResumeValidationError,
     StorageUnavailableError,
-    UserServiceUnavailableError,
 )
 from app.domain.indexing import IndexingUnavailable, SearchQueryInvalid
 from app.domain.value_objects.error_codes import ErrorCode
@@ -168,20 +167,6 @@ def register_exception_handlers(app: FastAPI) -> None:
             {
                 "error_code": ErrorCode.ACCESS_DENIED,
                 "message": str(exc) or "Access denied",
-            },
-        )
-
-    @app.exception_handler(UserServiceUnavailableError)
-    async def user_service_unavailable_handler(
-        _request: Request,
-        exc: UserServiceUnavailableError,
-    ) -> JSONResponse:
-        logger.warning("User-Service unavailable: {}", exc)
-        return _error_response(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            {
-                "error_code": ErrorCode.USER_SERVICE_UNAVAILABLE,
-                "message": str(exc) or "User directory is unavailable",
             },
         )
 

@@ -23,7 +23,6 @@ from app.infrastructure.logging_setup import setup_logging
 from app.infrastructure.rag.client import RagIndexClient
 from app.infrastructure.session_store import get_session_store
 from app.infrastructure.storage.s3_adapter import build_disk_root_adapter
-from app.presentation.dependencies.auth import get_user_directory
 from app.presentation.dependencies.admin import get_disk_router
 from app.presentation.routers.admin_router import router as admin_router
 from app.presentation.routers.auth_router import router as auth_router
@@ -207,11 +206,6 @@ async def lifespan(app: FastAPI):
     yield
     scheduler.shutdown(wait=False)
     await get_session_store().close()
-    directory = get_user_directory()
-    close = getattr(directory, "aclose", None)
-    if close is not None:
-        await close()
-        get_user_directory.cache_clear()
 
 
 app = FastAPI(title="HomeCloud", version="1.0", lifespan=lifespan)

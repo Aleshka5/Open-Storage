@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.admin_service import AdminService, DiskStat, UserAdminView
 from app.application.backup_service import BackupService
 from app.application.maintenance_service import MaintenanceService
-from app.application.ports.user_directory import UserDirectory
 from app.domain.entities.user import User
 from app.domain.exceptions import SelfUserDeletionError, UserNotFoundError
 from app.domain.value_objects.error_codes import ErrorCode
@@ -15,7 +14,6 @@ from app.domain.value_objects.role import Role
 from app.infrastructure.database.session import get_async_session
 from app.infrastructure.disk_router import DiskRouter
 from app.presentation.dependencies.admin import get_admin_service, get_disk_router
-from app.presentation.dependencies.auth import get_user_directory
 from app.presentation.dependencies.backup import get_backup_service
 from app.presentation.dependencies.maintenance import get_maintenance_service
 from app.presentation.middleware.check_role import check_role
@@ -36,8 +34,12 @@ from app.presentation.schemas.admin import (
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
+# The gateway allows service(storage, family, admin) on this prefix. This
+# router is the ADMIN gate: a family member is denied here with the app 403
+# envelope. A gateway policy of admin would also deny svc:storage:admin
+# without realm admin, so the double check stays in the app.
 
-_ROLE_MANAGED_IN_USER_SERVICE_MESSAGE = "User roles are managed in User-Service"
+_ROLE_MANAGED_IN_IDP_MESSAGE = "Storage roles are managed in the identity provider"
 
 
 @router.get("/users", response_model=UserListResponse)
@@ -47,12 +49,9 @@ async def list_users(
     role: Role | None = Query(default=None),
     email: str | None = Query(default=None, min_length=1, max_length=255),
     _admin: User = Depends(check_role(Role.ADMIN)),
-    user_directory: UserDirectory = Depends(get_user_directory),
     admin_service: AdminService = Depends(get_admin_service),
 ) -> UserListResponse:
-    directory_users = await user_directory.list_users()
     result = await admin_service.list_users(
-        directory_users=directory_users,
         page=page,
         limit=limit,
         role_filter=role,
@@ -75,14 +74,14 @@ async def update_user_role(
     _admin: User = Depends(check_role(Role.ADMIN)),
 ) -> None:
     logger.warning(
-        "Rejected role update for user {}: roles are managed in User-Service",
+        "Rejected role update for user {}: roles are managed in the identity provider",
         user_id,
     )
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
         detail={
             "error_code": ErrorCode.ACCESS_DENIED,
-            "message": _ROLE_MANAGED_IN_USER_SERVICE_MESSAGE,
+            "message": _ROLE_MANAGED_IN_IDP_MESSAGE,
         },
     )
 
@@ -92,16 +91,13 @@ async def update_user_quota(
     user_id: UUID,
     body: UpdateUserQuotaRequest,
     admin: User = Depends(check_role(Role.ADMIN)),
-    user_directory: UserDirectory = Depends(get_user_directory),
     admin_service: AdminService = Depends(get_admin_service),
     session: AsyncSession = Depends(get_async_session),
 ) -> None:
     try:
-        directory_users = await user_directory.list_users()
         await admin_service.update_user_quota(
             admin.id,
             user_id,
-            directory_users,
             limit_mb=body.limit_mb,
             private_limit_gb=body.private_limit_gb,
         )
