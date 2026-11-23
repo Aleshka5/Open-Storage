@@ -24,20 +24,20 @@ body,
   pointer-events: none;
 }
 
-/* Behind the closed trigger, clear of the wordmark on the left. */
+/* Inside the 40px closed trigger. The diamond corners stay inside the circle. */
 .proof-mark-trigger {
-  top: 12px;
-  right: 22px;
-  width: 46px;
-  height: 46px;
+  top: 25px;
+  right: 33px;
+  width: 22px;
+  height: 22px;
 }
 
 /* Right rim of the first two row wells. The labels sit on the left of the panel. */
 .proof-mark-blob {
-  top: 68px;
-  right: 32px;
-  width: 36px;
-  height: 108px;
+  top: 96px;
+  right: 40px;
+  width: 28px;
+  height: 72px;
 }
 
 .header {

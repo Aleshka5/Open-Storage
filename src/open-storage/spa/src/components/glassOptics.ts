@@ -122,8 +122,11 @@ export function lensOffset(
   const dist = Math.min(1, Math.hypot(nx, ny));
   if (dist >= 1) return { dx: 0, dy: 0, dist };
   const z = Math.sqrt(Math.max(0, 1 - dist * dist));
-  const falloff = 1 - z;
-  // A small liquid term. A larger wobble tears the rim into scallops.
+  // The bulge lives inside. Across the outer few pixels the shift, including
+  // the liquid term, falls to 0 so the silhouette is one smooth curve.
+  const edgePx = (1 - dist) * Math.min(rx, ry);
+  const rimFade = clamp(edgePx / 6, 0, 1);
+  const falloff = (1 - z) * rimFade;
   const wobbleAmp = Math.min(0.2, cap * 0.012);
   const wobble = turbulence(x * 0.15, y * 0.15) * wobbleAmp * falloff;
   const wobbleY = turbulence(x * 0.15 + 19, y * 0.15) * wobbleAmp * falloff;
@@ -221,7 +224,7 @@ export function roundedRectSdf(
 
 /**
  * Coverage of the lens at a dest-pixel centre. 1 inside, 0 outside, and a
- * ramp about 1.35px wide so the rim is not a stairstep.
+ * ramp about 4px wide so a CSS-scaled edge is not a stairstep.
  */
 export function lensCoverage(
   x: number,
@@ -231,7 +234,7 @@ export function lensCoverage(
   radius: number,
 ): number {
   const sdf = roundedRectSdf(x, y, width, height, radius);
-  const aa = 2.4;
+  const aa = 4;
   return clamp(0.5 - sdf / (2 * aa), 0, 1);
 }
 
@@ -298,13 +301,21 @@ export function applyDisplacementMap(
           const py = y + (oy + 0.5) / SUPERSAMPLE;
           const cover = lensCoverage(px, py, dw, dh, radius);
           const shift = mapShift(map, dw, dh, px, py, full);
+          // The coverage ramp is the silhouette. Shift dies there; the bulge stays inside.
+          const sdf = roundedRectSdf(px, py, dw, dh, radius);
+          const silhouette = clamp(-sdf / 6, 0, 1);
+          shift.dx *= silhouette;
+          shift.dy *= silhouette;
           const dist = Math.min(1, Math.hypot(shift.dx, shift.dy) / (full || 1));
           const chroma = dispersion * dist;
           const bend = full === 0 ? 0 : chroma / full;
           const red = sample(source, sw, sh, px + pad + shift.dx * (1 + bend), py + pad + shift.dy * (1 + bend));
           const green = sample(source, sw, sh, px + pad + shift.dx, py + pad + shift.dy);
           const blue = sample(source, sw, sh, px + pad + shift.dx * (1 - bend), py + pad + shift.dy * (1 - bend));
-          const washT = wash.washCenter + (wash.washEdge - wash.washCenter) * dist;
+          const gx = dw > 1 ? (px / dw) * 2 - 1 : 0;
+          const gy = dh > 1 ? (py / dh) * 2 - 1 : 0;
+          const geom = Math.min(1, Math.hypot(gx, gy));
+          const washT = wash.washCenter + (wash.washEdge - wash.washCenter) * geom;
           const cr = clamp(red[0] * (1 - washT) + paper.r * washT, 0, 255);
           const cg = clamp(green[1] * (1 - washT) + paper.g * washT, 0, 255);
           const cb = clamp(blue[2] * (1 - washT) + paper.b * washT, 0, 255);

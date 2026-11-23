@@ -45,6 +45,14 @@ describe("lens offset", () => {
     expect(Math.hypot(offset.dx, offset.dy)).toBeLessThanOrEqual(18 + 1e-6);
   });
 
+  it("does not displace the outer rim by the full ceiling", () => {
+    const outer = lensOffset(0, 16, 32, 32, 14, 18);
+    expect(Math.hypot(outer.dx, outer.dy)).toBeLessThan(2);
+    const bulge = lensOffset(8, 16, 32, 32, 14, 18);
+    expect(Math.hypot(bulge.dx, bulge.dy)).toBeGreaterThan(Math.hypot(outer.dx, outer.dy));
+    expect(Math.hypot(bulge.dx, bulge.dy)).toBeLessThanOrEqual(18);
+  });
+
   it("is zero when the strength is zero or the box is degenerate", () => {
     expect(lensOffset(4, 4, 20, 20, 0, 18)).toEqual({ dx: 0, dy: 0, dist: 0 });
     expect(lensOffset(0, 0, 0, 10, 14, 18).dx).toBe(0);
