@@ -6,15 +6,15 @@ The front end of the storage product. A React single-page app that talks to one 
 
 | Item | Value | Source |
 |---|---|---|
-| Framework | React 18.3, TypeScript 5.7 | `frontend/package.json` |
-| Build | Vite 6 (dev server), `tsc && vite build` (prod) | `frontend/vite.config.ts` |
-| Routing | `react-router-dom` 6, `createBrowserRouter` | `frontend/src/router.tsx` |
-| State | `zustand` 5, two stores: `auth`, `quota` | `frontend/src/store/` |
-| HTTP | `axios` 1.7, one instance, `withCredentials: true` | `frontend/src/services/api.ts` |
-| Style | Tailwind 3.4 plus a CSS token layer | `frontend/tailwind.config.js`, `src/styles/` |
-| Icons, toasts | `lucide-react`, `react-hot-toast` | `package.json` |
-| i18n | `i18next` / `react-i18next`, locales `en`, `ru` | `frontend/src/locales/` |
-| Archives | `jszip` (folder download and ZIP upload on the client side) | `package.json` |
+| Framework | React 18.3, TypeScript 5.7 | `src/open-storage/spa/package.json` |
+| Build | Vite 6 (dev server), `tsc && vite build` (prod) | `src/open-storage/spa/vite.config.ts` |
+| Routing | `react-router-dom` 6, `createBrowserRouter` | `src/open-storage/spa/src/router.tsx` |
+| State | `zustand` 5, two stores: `auth`, `quota` | `src/open-storage/spa/src/store/` |
+| HTTP | `axios` 1.7, one instance, `withCredentials: true` | `src/open-storage/spa/src/services/api.ts` |
+| Style | Tailwind 3.4 plus a CSS token layer | `src/open-storage/spa/tailwind.config.js`, `src/open-storage/spa/src/styles/` |
+| Icons, toasts | `lucide-react`, `react-hot-toast` | `src/open-storage/spa/package.json` |
+| i18n | `i18next` and `react-i18next` are dependencies. The SPA has no locale catalogue. | `src/open-storage/spa/package.json` |
+| Archives | `jszip` (folder download and ZIP upload on the client side) | `src/open-storage/spa/package.json` |
 
 ## Screens
 
@@ -42,7 +42,7 @@ One shared component, `FileManager` (`src/components/FileManager/`), renders Fil
 
 Theme and chrome follow the [brand book](../../brand-book/init.md). `theme.preference` on this origin is `light`, `dark`, or `system`. A missing, unreadable, or unknown value paints dark. The header’s `Theme` control changes it without a reload. Palettes live in `src/styles/theme.css`.
 
-The control’s face is the glass icon trigger and popover slider of [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md); the resume page keeps its segmented control. The brand book keeps the key, the fallback, the palettes, and the circle.
+The control’s face is the glass icon trigger and popover slider of [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md); the material is the refracting glass of [ADR-0005](../../../adrs/5-liquid-glass-is-optical.md). The resume page keeps its segmented control. The brand book keeps the key, the fallback, the palettes, and the circle.
 
 The SPA never sees a token.
 

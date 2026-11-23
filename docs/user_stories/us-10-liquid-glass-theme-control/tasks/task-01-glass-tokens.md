@@ -1,5 +1,5 @@
 > **ID:** task-01
-> **Status:** IN PROGRESS
+> **Status:** DONE
 > **Specs:** [US-10](../init.md), [ADR-0004](../../../../adrs/4-liquid-glass-theme-control.md), [brand book §2](../../../brand-book/init.md)
 
 ## Overview
@@ -21,5 +21,5 @@ The bright arc and the rim need a token that works on both palettes. `theme.css`
 
 ## Definition of Done
 
-- [ ] The five tokens are in `src/styles/theme.css` for both palettes, and the reduced-motion block is untouched.
-- [ ] No other stylesheet gains a glass face.
+- [x] The five tokens are in `src/styles/theme.css` for both palettes, and the reduced-motion block is untouched.
+- [x] No other stylesheet gains a glass face.

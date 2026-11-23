@@ -1,5 +1,5 @@
 > **ID:** task-02
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-11](../init.md), [ADR-0005](../../../../adrs/5-liquid-glass-is-optical.md), [brand book §1](../../../brand-book/init.md)
 
 ## Overview
@@ -20,6 +20,6 @@ One material for the trigger, the bubble, the blob and the panel. Today each fac
 
 ## Definition of Done
 
-- [ ] Every glass face of the control resolves to the same `--glass-*` set, and no face hard-codes a colour.
-- [ ] The rim is visible against both palettes on the rendered page.
-- [ ] Text over the glass meets the brand book contrast rule in both palettes, measured.
+- [x] Every glass face of the control resolves to the same `--glass-*` set, and no face hard-codes a colour.
+- [x] The rim is visible against both palettes on the rendered page.
+- [x] Text over the glass meets the brand book contrast rule in both palettes, measured.

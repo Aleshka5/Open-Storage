@@ -14,12 +14,22 @@
   --danger: #ff9a8a;
   --danger-wash: #3a2522;
 
-  --glass-fill: color-mix(in srgb, var(--paper-raised) 52%, transparent);
+  --glass-fill: color-mix(in srgb, var(--paper-raised) 34%, transparent);
   --glass-rim: color-mix(in srgb, var(--ink) 46%, transparent);
   --glass-edge: color-mix(in srgb, #000000 45%, transparent);
   --glass-arc: color-mix(in srgb, var(--paper) 76%, transparent);
   --glass-sheen: color-mix(in srgb, #ffffff 26%, transparent);
-  --glass-blur: blur(16px) saturate(1.6);
+  --glass-blur: blur(6px) saturate(1.45);
+  --glass-strength: 14;
+  --glass-strength-ceiling: 18;
+  --glass-dispersion: 1.6;
+  --glass-wash-center: 0.72;
+  --glass-wash-edge: 0.1;
+  --glass-light-angle: 135deg;
+  --glass-specular: color-mix(in srgb, #ffffff 82%, transparent);
+  --glass-thickness: color-mix(in srgb, #000000 48%, transparent);
+  --glass-fringe-warm: color-mix(in srgb, var(--accent) 78%, #ffffff);
+  --glass-fringe-cool: color-mix(in srgb, #7eb8c9 70%, transparent);
 
   --dur-fast: 140ms;
   --dur: 240ms;
@@ -41,12 +51,15 @@
   --danger: #8c2f24;
   --danger-wash: #f4e4dc;
 
-  --glass-fill: color-mix(in srgb, var(--paper-raised) 55%, transparent);
+  --glass-fill: color-mix(in srgb, var(--paper-raised) 34%, transparent);
   --glass-rim: color-mix(in srgb, var(--ink) 34%, transparent);
   --glass-edge: color-mix(in srgb, var(--ink) 22%, transparent);
   --glass-arc: color-mix(in srgb, #ffffff 92%, transparent);
   --glass-sheen: color-mix(in srgb, #ffffff 62%, transparent);
-  --glass-blur: blur(16px) saturate(1.6);
+  --glass-specular: color-mix(in srgb, #ffffff 90%, transparent);
+  --glass-thickness: color-mix(in srgb, var(--ink) 28%, transparent);
+  --glass-fringe-warm: color-mix(in srgb, var(--accent) 70%, #ffffff);
+  --glass-fringe-cool: color-mix(in srgb, #3d7f96 55%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -17,9 +17,6 @@
   flex: none;
   display: inline-flex;
   transition:
-    width 260ms cubic-bezier(0.2, 0.9, 0.25, 1.15),
-    height 260ms var(--ease),
-    border-radius 260ms var(--ease),
     background-color 200ms var(--ease),
     border-color 200ms var(--ease);
 }
@@ -27,33 +24,28 @@
 .theme-control[data-glass="closed"]:not([data-glass-hover="true"]) {
   width: 2.5rem;
   height: 2.5rem;
-  border: 1px solid var(--glass-rim);
   border-radius: 999px;
-  background: var(--glass-fill);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: 0 0 0 1px var(--glass-edge);
 }
 
 /* The vent: a capsule with a sagging bottom, still pinned to the trigger. */
 .theme-control[data-glass-hover="true"]:not([data-glass="open"]) {
   width: 4.25rem;
   height: 3.1rem;
-  border: 1px solid var(--glass-rim);
   border-radius: 1.6rem 1.6rem 1.05rem 1.05rem;
-  background: var(--glass-fill);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: 0 0 0 1px var(--glass-edge);
-  animation: theme-bubble-settle 700ms var(--ease);
 }
 
 .theme-control[data-glass="open"] {
-  border: 0 solid transparent;
+  border-color: transparent;
   background: transparent;
   box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+.theme-control[data-glass="open"]::before,
+.theme-control[data-glass="open"]::after,
+.theme-control[data-glass="open"] .glass-lens {
+  display: none;
 }
 
 .theme-control[data-glass="closed"]:not([data-glass-hover="true"]) .theme-trigger {
@@ -71,54 +63,87 @@
   box-shadow: none;
 }
 
-/* The surface lands like a droplet: it wobbles once and settles. */
-@keyframes theme-bubble-settle {
-  0% { transform: scale(0.82, 1); }
-  55% { transform: scale(1.03, 0.96); }
-  100% { transform: none; }
-}
-
 /* The wrap is the hover target that carries the tooltip. */
 .theme-trigger-wrap {
   position: relative;
   display: inline-flex;
 }
 
-/* Glass face shared by the trigger, the panel and the blob host. */
-.theme-trigger-glass::before,
-.theme-popover-glass::before {
-  border-radius: inherit;
-  content: "";
+/*
+ * One material (ADR-0005). The bitmap is the refracted backdrop; the fill and
+ * the blur show on the panel, which does not carry a lens. Light is one
+ * direction, `--glass-light-angle`: a specular crescent on the lit side, a
+ * warm fringe there, a cool fringe opposite, and an inset thickness shadow.
+ */
+.glass-material {
+  border: 1px solid var(--glass-rim);
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 1px 1px 0 var(--glass-specular),
+    inset -1px -1px 0 var(--glass-fringe-cool),
+    inset 0 -10px 14px var(--glass-thickness);
+}
+
+.glass-lens {
   position: absolute;
   inset: 0;
   z-index: 0;
+  width: 100%;
+  height: 100%;
   border-radius: inherit;
-  background: var(--glass-arc);
-  -webkit-mask:
-    linear-gradient(var(--ink), transparent) top / 100% 30% no-repeat,
-    linear-gradient(90deg, var(--ink), transparent) left / 30% 100% no-repeat;
-  mask:
-    linear-gradient(var(--ink), transparent) top / 100% 30% no-repeat,
-    linear-gradient(90deg, var(--ink), transparent) left / 30% 100% no-repeat;
   pointer-events: none;
 }
 
-/* The inset hairline rides above the content. */
-.theme-trigger-glass::after,
-.theme-popover-glass::after {
+.theme-blob.glass-material::before,
+.theme-blob.glass-material::after {
+  content: none;
+}
+
+.glass-material::before,
+.theme-blob-arc {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 3;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--glass-sheen);
+  background:
+    radial-gradient(90% 55% at 18% 0%, var(--glass-specular), transparent 58%),
+    radial-gradient(42% 38% at 8% 18%, var(--glass-fringe-warm), transparent 70%);
+  pointer-events: none;
+}
+
+.glass-material::after,
+.theme-blob-sheen {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    var(--glass-light-angle),
+    var(--glass-fringe-warm) 0%,
+    var(--glass-specular) 18%,
+    transparent 46%,
+    var(--glass-fringe-cool) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
   pointer-events: none;
 }
 
 /* Trigger: a round glass blob. */
 .theme-trigger {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -126,22 +151,11 @@
   width: 2.25rem;
   height: 2.25rem;
   padding: 0;
-  border: 1px solid var(--glass-rim);
+  border: 0;
   border-radius: 999px;
-  background: var(--glass-fill);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: 0 0 0 1px var(--glass-edge);
+  background: transparent;
   color: var(--ink);
   cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease);
-}
-
-.theme-trigger:hover,
-.theme-trigger[aria-expanded="true"] {
-  border-color: var(--glass-arc);
 }
 
 .theme-trigger:focus-visible {
@@ -151,10 +165,11 @@
 
 .theme-trigger-icon {
   position: relative;
-  z-index: 2;
+  z-index: 5;
   width: 18px;
   height: 18px;
   stroke-width: 1.75;
+  filter: drop-shadow(0 0 1px var(--paper));
 }
 
 .theme-trigger[data-preference="system"] .theme-trigger-icon {
@@ -201,30 +216,17 @@
    z-index: 30;
  }
 
-/* The opening morph grows out of the trigger; the rows fade in. */
-@keyframes theme-popover-morph {
-  from {
-    transform: scale(0.92);
-    transform-origin: 100% 0;
-    opacity: 0;
-  }
-}
-
+/* The rows fade in. The panel does not scale: geometry belongs to the blob loop. */
 @keyframes theme-popover-fade {
   from {
     opacity: 0;
   }
 }
 
-.theme-popover.is-opening .theme-popover-panel {
-  animation: theme-popover-morph 180ms var(--ease) both;
-}
-
 .theme-popover.is-opening .theme-rows {
-  animation: theme-popover-fade 140ms var(--ease) 40ms both;
+  animation: theme-popover-fade 140ms var(--ease) both;
 }
 
-.theme-popover.is-instant .theme-popover-panel,
 .theme-popover.is-instant .theme-rows {
   animation: none;
 }
@@ -234,11 +236,7 @@
   box-sizing: border-box;
   width: 11.5rem;
   padding: var(--s2);
-  border: 1px solid var(--glass-rim);
   border-radius: 0;
-  background: var(--glass-fill);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
   color: var(--ink);
 }
 
@@ -287,37 +285,7 @@
   display: block;
   box-sizing: border-box;
   pointer-events: none;
-  border: 1px solid var(--glass-rim);
-  background: var(--glass-fill);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: 0 0 0 1px var(--glass-edge);
   will-change: left, top, width, height, border-radius;
-  transition: border-color var(--dur-fast) var(--ease);
-}
-
-/* The bright arc: a soft crescent along the top and left of the blob. */
-.theme-blob-arc {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--glass-arc);
-  -webkit-mask:
-    linear-gradient(var(--ink), transparent) top / 100% 34% no-repeat,
-    linear-gradient(90deg, var(--ink), transparent) left / 34% 100% no-repeat;
-  mask:
-    linear-gradient(var(--ink), transparent) top / 100% 34% no-repeat,
-    linear-gradient(90deg, var(--ink), transparent) left / 34% 100% no-repeat;
-  pointer-events: none;
-}
-
-/* The sheen: a hairline inside the rim, so the edge has thickness. */
-.theme-blob-sheen {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--glass-sheen);
-  pointer-events: none;
 }
 
 .theme-row {
@@ -370,6 +338,7 @@
 
 .theme-row-label {
   flex: 1 1 auto;
+  text-shadow: 0 0 2px var(--paper);
 }
 
 /* The active row keeps a mark that does not depend on the blob. */
@@ -395,51 +364,64 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .theme-popover.is-opening .theme-popover-panel,
   .theme-popover.is-opening .theme-rows {
     animation: none;
   }
 }
 
-/* No backdrop-filter: every glass face takes the solid face. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .theme-trigger {
-    background: var(--ink);
-    border-color: var(--ink);
-    box-shadow: none;
-    color: var(--paper);
-  }
-
-  .theme-trigger-glass::before,
-  .theme-popover-glass::before {
-    content: none;
-  }
-
+/* Reduced transparency: the solid brand face, no refraction and no blur. */
+@media (prefers-reduced-transparency: reduce) {
+  .theme-control,
+  .theme-blob,
   .theme-popover-panel {
-    background: var(--paper-raised);
-    border-color: var(--ink);
-  }
-
-  .theme-blob {
     background: var(--ink);
     border-color: var(--ink);
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    color: var(--paper);
   }
 
+  .glass-lens,
+  .glass-material::before,
+  .glass-material::after,
   .theme-blob-arc,
   .theme-blob-sheen {
+    display: none;
+  }
+
+  .theme-trigger,
+  .theme-row,
+  .theme-row-icon {
+    color: var(--paper);
+  }
+}
+
+/* No backdrop-filter: every glass face takes the solid brand face. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .theme-control,
+  .theme-blob,
+  .theme-popover-panel {
+    background: var(--ink);
+    border-color: var(--ink);
+    box-shadow: none;
+    color: var(--paper);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .glass-material::before,
+  .glass-material::after,
+  .theme-blob-arc,
+  .theme-blob-sheen,
+  .glass-lens {
     content: none;
     display: none;
   }
 
-  .theme-row {
-    color: var(--paper);
-  }
-
-  .theme-row.is-active,
-  .theme-row:hover {
+  .theme-trigger,
+  .theme-row,
+  .theme-row-icon {
     color: var(--paper);
   }
 }

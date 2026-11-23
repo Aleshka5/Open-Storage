@@ -1,10 +1,10 @@
 > **ID:** US-10
-> **Status:** IN PROGRESS
+> **Status:** DONE
 > **Specs:** [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md), [brand book §1](../../brand-book/init.md), [US-04](../us-04-liquid-glass-theme/init.md), [US-09](../us-09-storage-theme/init.md), [spa](../../open-storage/spa/init.md)
 
 ## Overview
 
-The storage SPA header's `Theme` control is three labeled segments with a sliding thumb ([US-09](../us-09-storage-theme/init.md) D3). This story replaces that face with the control in [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md): a round glass trigger that shows `light` as a sun, `dark` as a moon, and `system` as a half-filled circle; a pointer over it opens a glass popover slider in which one blob follows the pointer with a spring and morphs from a circle to a pill per row. The state, the key, the palettes, and the reveal circle do not change.
+The storage SPA header's `Theme` control is three labeled segments with a sliding thumb ([US-09](../us-09-storage-theme/init.md) D3). This story replaces that face with the control in [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md): a round glass trigger that shows `light` as a sun, `dark` as a moon, and `system` as a half-filled circle; a pointer over it opens a glass popover slider in which one blob follows the pointer with a spring and morphs from a circle to a pill per row. The state, the key, the palettes, and the reveal circle do not change. The glass material this story first described is replaced by [US-11](../us-11-liquid-glass-real/init.md); ADR-0004 keeps the shape and the motion.
 
 Tasks: [glass tokens](tasks/task-01-glass-tokens.md), [trigger and popover](tasks/task-02-trigger-popover.md), [blob](tasks/task-03-blob.md), [checks](tasks/task-04-checks.md).
 
@@ -51,8 +51,8 @@ Tasks: [glass tokens](tasks/task-01-glass-tokens.md), [trigger and popover](task
 
 ## Definition of Done
 
-- [ ] A test locks the open/close state machine (intent delay, grace, `Escape`, outside press), the icon per preference, and the reduced-motion path, and `npm test` passes.
-- [ ] The spring and the blob geometry live in a pure module with a test: the blob center converges toward the target, stays inside the panel, and reports a circle radius away from the rows and a pill radius over one.
-- [ ] `npm run build` in `src/open-storage/spa` passes.
-- [ ] The acceptance items are checked on the running SPA: the popover opens and closes on the pointer, the blob trails the pointer, and the rim is visible in both palettes.
-- [ ] [brand book §1](../../brand-book/init.md) and [spa/init.md](../../open-storage/spa/init.md) describe this control, and [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md) is the decision they link.
+- [x] A test locks the open/close state machine (intent delay, grace, `Escape`, outside press), the icon per preference, and the reduced-motion path, and `npm test` passes.
+- [x] The spring and the blob geometry live in a pure module with a test: the blob center converges toward the target, stays inside the panel, and reports a circle radius away from the rows and a pill radius over one.
+- [x] `npm run build` in `src/open-storage/spa` passes.
+- [x] The acceptance items are checked on the running SPA: the popover opens and closes on the pointer, the blob trails the pointer, and the rim is visible in both palettes.
+- [x] [brand book §1](../../brand-book/init.md) and [spa/init.md](../../open-storage/spa/init.md) describe this control, and [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md) is the decision they link. The material is [ADR-0005](../../../adrs/5-liquid-glass-is-optical.md).

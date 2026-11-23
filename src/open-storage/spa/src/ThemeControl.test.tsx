@@ -29,8 +29,8 @@ function render(preference: Preference, onChange = vi.fn()) {
 }
 
 const trigger = () => host.querySelector<HTMLButtonElement>(".theme-trigger");
-const rows = () => [...host.querySelectorAll<HTMLButtonElement>(".theme-row")];
-const popover = () => host.querySelector("#theme-popover");
+const rows = () => [...document.querySelectorAll<HTMLButtonElement>(".theme-row")];
+const popover = () => document.querySelector("#theme-popover");
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -78,14 +78,14 @@ describe("the popover", () => {
     });
     expect(popover()?.getAttribute("role")).toBe("dialog");
     expect(popover()?.getAttribute("aria-label")).toBe("Theme");
-    expect(host.querySelector("[role='radiogroup']")?.getAttribute("aria-label")).toBe("Theme");
+    expect(document.querySelector("[role='radiogroup']")?.getAttribute("aria-label")).toBe("Theme");
     expect(rows().map((row) => row.textContent)).toEqual(["Light", "Dark", "System"]);
     expect(rows().map((row) => row.querySelector("svg") !== null)).toEqual([true, true, true]);
     expect(rows().map((row) => row.getAttribute("aria-checked"))).toEqual(["false", "false", "true"]);
     expect(rows()[2].className).toContain("is-active");
     expect(rows()[2].tabIndex).toBe(0);
     expect(rows()[0].tabIndex).toBe(-1);
-    const host0 = host.querySelector(".theme-popover-glass");
+    const host0 = document.querySelector(".theme-rows .theme-popover-glass");
     expect(host0?.children.length).toBe(1);
     expect(host0?.querySelectorAll(".theme-blob").length).toBe(1);
   });

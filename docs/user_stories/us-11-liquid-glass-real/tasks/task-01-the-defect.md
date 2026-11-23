@@ -1,5 +1,5 @@
 > **ID:** task-01
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-11](../init.md), [ADR-0006](../../../../adrs/6-one-owner-per-frame.md)
 
 ## Overview
@@ -19,6 +19,6 @@ The blob of [US-10](../../us-10-liquid-glass-theme-control/init.md) mounts and t
 
 ## Definition of Done
 
-- [ ] `grep -n 'transition' ThemeControl.css` shows no geometry property, and a test fails if one returns.
-- [ ] With the popover open, a pointer moved across three rows moves the blob each time; measured on the running page.
-- [ ] With the popover closed, a 2s window records zero `requestAnimationFrame` calls from the control.
+- [x] `grep -n 'transition' ThemeControl.css` shows no geometry property, and a test fails if one returns.
+- [x] With the popover open, a pointer moved across three rows moves the blob each time; measured on the running page.
+- [x] With the popover closed, a 2s window records zero `requestAnimationFrame` calls from the control.

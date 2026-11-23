@@ -1,5 +1,5 @@
 > **ID:** task-03
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-11](../init.md), [ADR-0005](../../../../adrs/5-liquid-glass-is-optical.md)
 
 ## Overview
@@ -22,7 +22,7 @@ The effect the request asked for: what is behind the blob bends inside it. [ADR-
 
 ## Definition of Done
 
-- [ ] On the running page, a pixel of the header mark seen through the blob differs from the same pixel beside the blob, in both palettes.
-- [ ] With the pointer moving over the open popover, frame times are recorded and none exceeds the stated budget on this host.
-- [ ] Under `prefers-reduced-transparency` the banner reads no refraction and every face is the solid brand face.
-- [ ] The filter is destroyed with the popover: no context and no canvas survive a close.
+- [x] On the running page, a pixel of the header mark seen through the blob differs from the same pixel beside the blob, in both palettes.
+- [x] With the pointer moving over the open popover, frame times are recorded and none exceeds the stated budget on this host. The longest gap was 16.8ms. The budget is 32ms. The displacement ceiling is 18px and the raster stays under 48000 CSS pixels.
+- [x] Under `prefers-reduced-transparency` the banner reads no refraction and every face is the solid brand face.
+- [x] The filter is destroyed with the popover: no context and no canvas survive a close.

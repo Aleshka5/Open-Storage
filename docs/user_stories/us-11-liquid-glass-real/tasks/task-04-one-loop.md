@@ -1,5 +1,5 @@
 > **ID:** task-04
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-11](../init.md), [ADR-0006](../../../../adrs/6-one-owner-per-frame.md)
 
 ## Overview
@@ -21,6 +21,6 @@ The blob is one body: the spring drives position, size and radius together, and 
 
 ## Definition of Done
 
-- [ ] The geometry module has a test per rule: circle, capsule, lean, clamp, settle, no NaN on a degenerate box.
-- [ ] A pointer sweep from the trigger into the panel and across three rows produces motion on every step and no jump.
-- [ ] After the popover closes, the loop reports stopped and no frame is requested.
+- [x] The geometry module has a test per rule: circle, capsule, lean, clamp, settle, no NaN on a degenerate box.
+- [x] A pointer sweep from the trigger into the panel and across three rows produces motion on every step and no jump.
+- [x] After the popover closes, the loop reports stopped and no frame is requested.

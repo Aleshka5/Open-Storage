@@ -1,5 +1,5 @@
 > **ID:** task-05
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-11](../init.md)
 
 ## Goals
@@ -10,7 +10,7 @@
 
 ## Definition of Done
 
-- [ ] `npm test` and `npm run build` pass in `src/open-storage/spa`.
-- [ ] Every acceptance item of [US-11](../init.md) is observed on the running page and recorded with the value that was read.
-- [ ] `US-11` and its tasks are DONE, and [US-10](../../us-10-liquid-glass-theme-control/init.md) no longer claims the control's material.
-- [ ] The scratch harness and probes are out of `src/`.
+- [x] `npm test` and `npm run build` pass in `src/open-storage/spa`.
+- [x] Every acceptance item of [US-11](../init.md) is observed on the running page and recorded with the value that was read.
+- [x] `US-11` and its tasks are DONE, and [US-10](../../us-10-liquid-glass-theme-control/init.md) no longer claims the control's material.
+- [x] The scratch harness and probes are out of `src/`.

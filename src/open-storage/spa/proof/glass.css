@@ -1,0 +1,32 @@
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: transparent;
+}
+
+.proof-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+}
+
+.proof-stripe {
+  flex: 1 0 0;
+  height: 100%;
+}
+
+.proof-mark {
+  position: fixed;
+  top: 78px;
+  right: 28px;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+}
+
+.header {
+  background: transparent;
+}

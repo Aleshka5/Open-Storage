@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. It refines [ADR-0004](4-liquid-glass-theme-control.md): the shape and the motion that ADR fixes stay, and this ADR fixes what makes the glass read as glass.
+Accepted. It refines [ADR-0004](4-liquid-glass-theme-control.md): the shape and the motion that ADR fixes stay, and this ADR fixes what makes the glass read as glass.
 
 ## Decision
 

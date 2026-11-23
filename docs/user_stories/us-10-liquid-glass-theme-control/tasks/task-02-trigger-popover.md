@@ -1,5 +1,5 @@
 > **ID:** task-02
-> **Status:** IN PROGRESS
+> **Status:** DONE
 > **Specs:** [US-10](../init.md), [ADR-0004](../../../../adrs/4-liquid-glass-theme-control.md)
 
 ## Overview
@@ -21,6 +21,6 @@
 
 ## Definition of Done
 
-- [ ] The control is one file for the component and one for its stylesheet, replacing the segmented markup and the segmented CSS.
-- [ ] The state machine is a tested module, not handlers spread over JSX.
-- [ ] `Header` compiles without a change to its props.
+- [x] The control is one file for the component and one for its stylesheet, replacing the segmented markup and the segmented CSS.
+- [x] The state machine is a tested module, not handlers spread over JSX.
+- [x] `Header` compiles without a change to its props.

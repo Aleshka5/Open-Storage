@@ -1,5 +1,5 @@
 > **ID:** task-03
-> **Status:** IN PROGRESS
+> **Status:** DONE
 > **Specs:** [US-10](../init.md), [ADR-0004](../../../../adrs/4-liquid-glass-theme-control.md)
 
 ## Overview
@@ -21,5 +21,5 @@ One element and one pointer loop. The loop writes the blob's centre, its radius 
 
 ## Definition of Done
 
-- [ ] The spring and the geometry are pure functions in their own module with a test.
-- [ ] The closed state runs no animation frame: the trigger's blob is placed by CSS at rest.
+- [x] The spring and the geometry are pure functions in their own module with a test.
+- [x] The closed state runs no animation frame: the trigger's blob is placed by CSS at rest.

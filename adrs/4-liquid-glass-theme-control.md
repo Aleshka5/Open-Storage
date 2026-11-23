@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. It reopens the thumb of [ADR-0012](../docs/auth-gateway/adrs/12-theme-reveal-without-rim.md), which stays in force for the theme circle.
+Accepted for the shape and the motion. The flat backdrop recipe in item 2 is refined by [ADR-0005](5-liquid-glass-is-optical.md): the glass refracts, it is not only a blurred fill.
 
 ## Decision
 

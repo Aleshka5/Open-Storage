@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. It settles what [ADR-0004](4-liquid-glass-theme-control.md) item 4 left implicit, after [US-10](../docs/user_stories/us-10-liquid-glass-theme-control/init.md) shipped a blob that mounted but did not move.
+Accepted. It settles what [ADR-0004](4-liquid-glass-theme-control.md) item 4 left implicit, after [US-10](../docs/user_stories/us-10-liquid-glass-theme-control/init.md) shipped a blob that mounted but did not move.
 
 ## Decision
 

@@ -8,6 +8,7 @@ import {
 import { Monitor, Moon, Sun } from "lucide-react";
 import type { Preference } from "../theme";
 import { prefersReducedMotion } from "../hooks/useReducedMotion";
+import { mountGlassLens } from "./glassLens";
 import { mountThemeBlob, type BlobMount } from "./themeBlob";
 import { ViewportPortal } from "./ui/ViewportPortal";
 import { MORPH_LEAD, OPTIONS, PopoverController, isOutsidePress, rowIndex, within, type RowEvent } from "./themePopover";
@@ -55,6 +56,27 @@ export function ThemeControl({
   const morphIn = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Read per render, not per mount: a preference change on the OS re-reads the query.
   const instant = prefersReducedMotion();
+
+  // The plate's lens samples the backdrop when the layout changes. It does not
+  // own a frame: the blob loop is the only animation clock, and it is mounted
+  // only while the popover is open.
+  useLayoutEffect(() => {
+    const plate = rootRef.current;
+    if (!plate) return;
+    const lens = mountGlassLens(plate, () => plate.dataset.glass !== "open");
+    lens.paint();
+    const repaint = () => lens.paint();
+    window.addEventListener("scroll", repaint, { passive: true, capture: true });
+    window.addEventListener("resize", repaint);
+    const theme = new MutationObserver(repaint);
+    theme.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => {
+      lens.dispose();
+      window.removeEventListener("scroll", repaint, true);
+      window.removeEventListener("resize", repaint);
+      theme.disconnect();
+    };
+  }, [open, hovering]);
 
   // The panel is on the body; its place is the trigger's box, read when it opens.
   const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
@@ -120,12 +142,15 @@ export function ThemeControl({
     if (!root) return;
     // `blur` carries no target, hence the capture phase.
     const onPress = (event: PointerEvent | FocusEvent) => {
-      if (isOutsidePress(event, [root])) controller.closeNow();
+      if (isOutsidePress(event, [rootRef.current, popoverRef.current])) controller.closeNow();
     };
-    // Only a successor is reported. A null `relatedTarget` means focus went back
-    // to the document, which a click on the page or a programmatic move causes.
+    // A portaled row is not inside the trigger. Focus moving between rows, or a
+    // press on a row, is still inside the control.
     const onFocusOut = (event: FocusEvent) => {
-      if (event.relatedTarget && !within(event.relatedTarget, root)) controller.closeNow();
+      const next = event.relatedTarget;
+      if (!next) return;
+      if (within(next, rootRef.current) || within(next, popoverRef.current)) return;
+      controller.closeNow();
     };
     // A page that sees focus without a focused window was focused by a switch,
     // not by a pointer or a `Tab`; the control must not sit open behind it.
@@ -182,6 +207,11 @@ export function ThemeControl({
       blobRef.current = null;
     };
   }, [open, hovering, instant]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    blobRef.current?.sync();
+  }, [open, anchor]);
 
 
   const aim = (index: number) => {
@@ -313,7 +343,7 @@ export function ThemeControl({
   return (
     <div
       ref={rootRef}
-      className="theme-control header-glass-bubble"
+      className="theme-control header-glass-bubble glass-material"
       data-glass={open ? "open" : "closed"}
       data-glass-hover={hovering ? "true" : "false"}
       onPointerEnter={() => {
@@ -323,10 +353,15 @@ export function ThemeControl({
         setHovering(true);
       }}
       onPointerMove={aimAtPointer}
-      onPointerLeave={() => {
+      onPointerLeave={(event) => {
         if (morphIn.current) {
           clearTimeout(morphIn.current);
           morphIn.current = null;
+        }
+        const next = event.relatedTarget;
+        if (within(next, rootRef.current) || within(next, popoverRef.current)) {
+          controller.pointerStay();
+          return;
         }
         setHovering(false);
         // Unconditional: the controller decides whether a grace close is due. Asking
@@ -346,7 +381,7 @@ export function ThemeControl({
         <button
           ref={triggerRef}
           type="button"
-          className="theme-trigger-glass theme-trigger"
+          className="theme-trigger"
           aria-label={`Theme: ${preference}`}
           aria-haspopup="dialog"
           aria-expanded={open}
@@ -379,7 +414,7 @@ export function ThemeControl({
           aria-label="Theme"
           style={anchor ? { top: anchor.top, right: anchor.right } : undefined}
         >
-          <div className="theme-popover-panel theme-popover-glass">
+          <div className="theme-popover-panel theme-popover-glass glass-material">
             <div className="theme-rows" role="radiogroup" aria-label="Theme">
               {/* geometry, the spring and the paint element live in themeBlob.ts */}
               <div

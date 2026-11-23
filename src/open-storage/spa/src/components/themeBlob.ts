@@ -9,9 +9,13 @@
  *
  * Coordinates are the host's own: the caller subtracts `hostRect.left` and
  * `hostRect.top` from client coordinates, and the results are written straight
- * to `style.left` / `style.top`. Nothing here reads the DOM or starts a frame,
- * so every rule below is unit-testable.
- *
+ * to `style.left` / `style.top`. The geometry functions below do not read the
+ * DOM and do not start a frame.
+ */
+
+import { mountGlassLens, type GlassLens } from "./glassLens";
+
+/**
  * Geometry rules
  * --------------
  * - With no active row the blob is a circle: `r = max(rowH/2 - WELL_INSET, 14)`
@@ -320,7 +324,7 @@ export function mountThemeBlob(options: BlobMountOptions): BlobMount {
   const tokens: Tokens = { ...DEFAULT_TOKENS, ...options.tokens };
 
   const blob = document.createElement("span");
-  blob.className = "theme-blob";
+  blob.className = "theme-blob glass-material";
   blob.setAttribute("aria-hidden", "true");
   for (const name of ["arc", "sheen"]) {
     const child = document.createElement("span");
@@ -328,6 +332,11 @@ export function mountThemeBlob(options: BlobMountOptions): BlobMount {
     blob.appendChild(child);
   }
   host.appendChild(blob);
+  const lens: GlassLens = mountGlassLens(blob);
+  const paint = (frame: Frame) => {
+    paintBlob(blob, frame);
+    lens.paint();
+  };
 
   const readShape = (): BlobGeometry => {
     const hostRect = host.getBoundingClientRect();
@@ -347,15 +356,18 @@ export function mountThemeBlob(options: BlobMountOptions): BlobMount {
   const initial = geometryToFrame(readShape());
   if (instant) {
     // Reduced motion: place every frame, never request one.
-    paintBlob(blob, initial);
+    paint(initial);
     return {
-      sync: () => paintBlob(blob, geometryToFrame(readShape())),
+      sync: () => paint(geometryToFrame(readShape())),
       shape: readShape,
-      dispose: () => blob.remove(),
+      dispose: () => {
+        lens.dispose();
+        blob.remove();
+      },
     };
   }
 
-  const loop = createBlobLoop((frame) => paintBlob(blob, frame));
+  const loop = createBlobLoop(paint);
   loop.start(initial, initial);
 
   return {
@@ -365,6 +377,7 @@ export function mountThemeBlob(options: BlobMountOptions): BlobMount {
     shape: readShape,
     dispose: () => {
       loop.dispose();
+      lens.dispose();
       blob.remove();
     },
   };

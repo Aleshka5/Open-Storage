@@ -33,13 +33,13 @@ afterEach(() => {
 })
 
 describe('blob geometry', () => {
-  it('is a 14px circle when no row is active', () => {
-    const shape = blobGeometry(HOST, { rows: ROWS.rows, active: -1 }, { x: 150, y: 90 }, TOKENS)
+  it('is a circle when the pointer is off every row', () => {
+    const shape = blobGeometry(HOST, { rows: ROWS.rows, active: -1 }, { x: 150, y: 20 }, TOKENS)
     expect(shape.circle).toBe(true)
     if (!shape.circle) throw new Error('expected a circle')
     expect(shape.r).toBe(CIRCLE_RADIUS)
-    expect(shape.cx).toBe(200)
-    expect(shape.cy).toBe(138)
+    expect(shape.cx).toBe(150)
+    expect(shape.cy).toBe(78)
   })
 
   it('is a pill the row height minus 8 over a row', () => {
@@ -68,15 +68,23 @@ describe('blob geometry', () => {
     expect(shape.left + shape.width).toBeLessThanOrEqual(narrow.width - 6)
   })
 
-  it('moves the centre toward a pointer further from the row centre', () => {
-    const centre = blobGeometry(HOST, ROWS, { x: 200, y: 130 }, TOKENS)
-    const near = blobGeometry(HOST, ROWS, { x: 210, y: 130 }, TOKENS)
-    const far = blobGeometry(HOST, ROWS, { x: 240, y: 130 }, TOKENS)
+  it('leans toward the pointer when the host has room, and stays put when the well already fills it', () => {
+    const wide = { left: 0, top: 0, width: 800, height: 176 }
+    const rows = { rows: [{ x: 0, y: 50, height: 56 }], active: 0 }
+    const centre = blobGeometry(wide, rows, { x: 400, y: 78 }, TOKENS)
+    const near = blobGeometry(wide, rows, { x: 430, y: 78 }, TOKENS)
+    const far = blobGeometry(wide, rows, { x: 520, y: 78 }, TOKENS)
     if (centre.circle || near.circle || far.circle) throw new Error('expected pills')
     const cx = (s: typeof near) => s.left + s.width / 2
     expect(cx(near)).toBeGreaterThan(cx(centre))
     expect(cx(far)).toBeGreaterThan(cx(near))
-    expect(far.width).toBeGreaterThan(near.width)
+    expect(far.width).toBe(near.width)
+
+    const tightCentre = blobGeometry(HOST, ROWS, { x: 200, y: 130 }, TOKENS)
+    const tightFar = blobGeometry(HOST, ROWS, { x: 240, y: 130 }, TOKENS)
+    if (tightCentre.circle || tightFar.circle) throw new Error('expected pills')
+    expect(tightCentre.left).toBe(tightFar.left)
+    expect(tightCentre.width).toBe(tightFar.width)
   })
 
   it('holds the circle inside the host with the inset', () => {

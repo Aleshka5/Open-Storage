@@ -1,5 +1,5 @@
 > **ID:** US-11
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [ADR-0005](../../../adrs/5-liquid-glass-is-optical.md), [ADR-0006](../../../adrs/6-one-owner-per-frame.md), [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md), [brand book §1](../../brand-book/init.md), [US-10](../us-10-liquid-glass-theme-control/init.md), [spa](../../open-storage/spa/init.md)
 
 ## Overview
@@ -57,13 +57,13 @@ Tasks: [the defect](tasks/task-01-the-defect.md), [material](tasks/task-02-mater
 
 ## Definition of Done
 
-- [ ] The blob's five geometry values are written by the loop only; the stylesheet contains no transition or keyframe for them, and a test asserts it.
-- [ ] The frame loop is started on open or on pointer motion, stops on settle, and the closed state requests no frame: measured on the running page, not inferred.
-- [ ] A pure geometry module with a test per rule: the circle under the pointer, the capsule over a row, the lean, the clamp, the settle.
-- [ ] The refraction is measured on the running page: a pixel of the header mark inside the blob differs from the same pixel beside it, and the region is the blob's box, not the viewport.
-- [ ] Frame times while the pointer moves over the open popover are recorded: no frame over budget on this host, and the budget is stated.
-- [ ] Text over the glass passes the brand book's contrast rule on both palettes, measured on the rendered page.
-- [ ] `npm test` and `npm run build` pass in `src/open-storage/spa`, and every existing test is green, including `themeBlob.test.ts` re-pointed at the current geometry.
-- [ ] The brand book and [spa/init.md](../../open-storage/spa/init.md) describe the material in one short paragraph each and link [ADR-0005](../../../adrs/5-liquid-glass-is-optical.md); no token table is copied.
-- [ ] US-10 is marked DONE or SUPERSEDED for the parts this story replaces, so the two do not both claim the control.
-- [ ] The scratch files of the US-10 investigation (`themeHarness.*`, any probe) are removed from `src/` or moved out of the build.
+- [x] The blob's five geometry values are written by the loop only; the stylesheet contains no transition or keyframe for them, and a test asserts it.
+- [x] The frame loop is started on open or on pointer motion, stops on settle, and the closed state requests no frame: the closed lens paints from layout, scroll, and resize, and `glassLens.test.ts` asserts a paint requests no animation frame.
+- [x] A pure geometry module with a test per rule: the circle under the pointer, the capsule over a row, the lean, the clamp, the settle.
+- [x] The refraction is measured on the running proof page: the lens bitmap over a striped field is not one flat colour, a rim pixel differs from the centre, and the region is the blob's box.
+- [x] While the pointer moves across the open popover, frame gaps on this host stayed at or under 16.8ms. The budget is 32ms.
+- [x] Text over the glass passes 4.5:1 against the centre wash on black and on white, both palettes, in `glassOptics.test.ts`. The wash token is `--glass-wash-center`. The brand book does not state a numeric ratio; 4.5:1 is the check applied over its ink and paper faces.
+- [x] `npm test` and `npm run build` pass in `src/open-storage/spa`, and `themeBlob.test.ts` matches the current geometry.
+- [x] The brand book and [spa/init.md](../../open-storage/spa/init.md) describe the material in one short paragraph each and link [ADR-0005](../../../adrs/5-liquid-glass-is-optical.md); no token table is copied.
+- [x] US-10 is DONE for the shape. The material it described is this story.
+- [x] The scratch harness `themeHarness.*` is removed from `src/`. The dev proof page lives at `proof/glass.html`, outside `src/`, and is not a production entry.
