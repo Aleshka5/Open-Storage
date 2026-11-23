@@ -73,7 +73,7 @@ declare -A EXPECT_ANON=(
     [audio.filenkov.store]="302"
     [llm.filenkov.store]="302 401 403"
     [observer.filenkov.store]="302"
-    [id.filenkov.store]="302 200" # Keycloak welcome; Caddy also 403s sources outside the lan gate
+    [id.filenkov.store]="302 200" # Keycloak welcome; the name is public (ADR-0013)
 )
 
 # A signed-in account with no realm roles. storage, image, rag and llm need a

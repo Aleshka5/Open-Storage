@@ -56,8 +56,7 @@ Upstream names, hosts and per-host policy rows are owned by ([upstreams](auth-ga
 ## Where a request goes
 
 1. Proxy terminates TLS and sets HSTS. It does not use one backend. The classes are in [deploy/auth-gateway/Caddyfile](../deploy/auth-gateway/Caddyfile):
-   - `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.` → `127.0.0.1:8083`
-   - `id.filenkov.store` → `127.0.0.1:8083`, and only from the LAN / WireGuard list
+   - `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `id.` → `127.0.0.1:8083`. `id.` is public ([ADR-0013](auth-gateway/adrs/13-idp-host-public.md))
    - `mvp.filenkov.store` → `127.0.0.1:18080`
    - `meet.filenkov.store` → `127.0.0.1:8000`, no SSO and not the gateway, LAN / WireGuard only
    - `hermes.` → `127.0.0.1:9119`, `lite-llm.` → `127.0.0.1:4000`

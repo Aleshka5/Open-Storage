@@ -6,9 +6,9 @@
 # header and does not route by application — that is the gateway's job, and
 # a duplicated header is a defect (browsers intersect the policies).
 #
-#   filenkov.store, storage. image. rag. audio. llm. observer.
+#   filenkov.store, storage. image. rag. audio. llm. observer. id.
 #                        -> 127.0.0.1:8083  gateway
-#   id.filenkov.store    -> 127.0.0.1:8083  gateway (LAN / WireGuard only)
+#   id.filenkov.store is public (ADR-0013). meet. and hermes. keep the lan gate.
 #   mvp.filenkov.store   -> 127.0.0.1:18080 gateway (MVP stand)
 #   meet.filenkov.store  -> 127.0.0.1:8000  Jitsi web, no SSO (LAN / WireGuard only)
 #   hermes.filenkov.store -> 127.0.0.1:9119  Hermes (LAN / WireGuard only)
@@ -57,16 +57,17 @@
 
 # --------------------------------------------------------------------- sites
 
-# One backend (127.0.0.1:8083) behind the seven hostnames below. The size of this file
+# One backend (127.0.0.1:8083) behind the hostnames below. The size of this file
 # is the price of one certificate per name and one upstream per host
-# (ADR-0001).
+# (ADR-0001). id. is public (ADR-0013): no lan gate.
 https://filenkov.store,
 https://storage.filenkov.store,
 https://image.filenkov.store,
 https://rag.filenkov.store,
 https://audio.filenkov.store,
 https://llm.filenkov.store,
-https://observer.filenkov.store {
+https://observer.filenkov.store,
+https://id.filenkov.store {
 	reverse_proxy 127.0.0.1:8083
 
 	import secure
@@ -75,22 +76,6 @@ https://observer.filenkov.store {
 # MVP stand only. The live gateway is :8083.
 https://mvp.filenkov.store {
 	reverse_proxy 127.0.0.1:18080
-
-	import secure
-}
-
-# Keycloak. The certificate stays public because this name is the issuer URL.
-# The lan gate is what keeps the console and the broker off the internet:
-# a browser that is not on the LAN or the WireGuard tunnel gets 403, so
-# Google sign-in only finishes from those sources.
-https://id.filenkov.store {
-	import lan
-	handle @lan {
-		reverse_proxy 127.0.0.1:8083
-	}
-	handle {
-		respond "Access is limited to the LAN and the WireGuard tunnel" 403
-	}
 
 	import secure
 }

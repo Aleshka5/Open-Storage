@@ -16,7 +16,7 @@ rebuild:
 # host becomes mvp.filenkov.store (the live apex belongs to the live stack) and
 # public_origin follows it. There is one Caddyfile for both stacks — it already
 # routes mvp.filenkov.store to the MVP gateway on :18080. id.filenkov.store
-# stays on the live gateway (:8083) behind the LAN / WireGuard gate.
+# stays on the live gateway (:8083) and is public (ADR-0013).
 # Generated, not committed.
 mvp-config:
 	sed -e 's|^public_origin: .*|public_origin: "https://mvp.filenkov.store"|' \
