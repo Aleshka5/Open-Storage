@@ -1,5 +1,5 @@
 > **ID:** task-02
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-09](../init.md), [brand book §1](../../../brand-book/init.md), [brand book §3](../../../brand-book/init.md), [ADR-0012](../../../auth-gateway/adrs/12-theme-reveal-without-rim.md)
 
 ## Overview
@@ -20,6 +20,6 @@ The `Theme` control selects with one glass thumb. A user choice that flips the r
 
 ## Definition of Done
 
-- [ ] The thumb slides, and the solid `--ink` face is the fallback.
-- [ ] `--dur-theme` is `700ms` with `--ease`, and `1ms` under reduced motion.
-- [ ] No SVG filter is drawn at the circle’s edge, and none remains after the reveal.
+- [x] The thumb slides, and the solid `--ink` face is the fallback.
+- [x] `--dur-theme` is `700ms` with `--ease`, and `1ms` under reduced motion.
+- [x] No SVG filter is drawn at the circle’s edge, and none remains after the reveal.

@@ -1,5 +1,5 @@
 > **ID:** task-04
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-09](../init.md), [spa](../../../open-storage/spa/init.md)
 
 ## Overview
@@ -20,6 +20,6 @@ Lock the theme skips with a test, and record the behaviour in the SPA doc once i
 
 ## Definition of Done
 
-- [ ] The SPA test script passes, including the three cases above.
-- [ ] `npm run build` passes.
-- [ ] US-09’s definition of done is checked only for items that hold.
+- [x] The SPA test script passes, including the three cases above.
+- [x] `npm run build` passes.
+- [x] US-09’s definition of done is checked only for items that hold.

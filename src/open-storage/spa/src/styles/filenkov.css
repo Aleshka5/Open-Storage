@@ -79,18 +79,6 @@
 }
 
 :root {
-  --paper: #f4efe6;
-  --paper-raised: #fffdf8;
-  --ink: #1a1612;
-  --ink-muted: #5c5348;
-  --rule: #d9d1c3;
-  --rule-strong: #b9ae9c;
-  --accent: #b85c38;
-  --accent-text: #8f4128;
-  --chip: #e6ddd0;
-  --danger: #8c2f24;
-  --danger-wash: #f4e4dc;
-
   --serif: 'Fraunces', 'Fraunces Fallback', 'Iowan Old Style', 'Palatino Linotype', serif;
   --sans: 'Public Sans', 'Public Sans Fallback', system-ui, 'Segoe UI', sans-serif;
 
@@ -112,19 +100,8 @@
   --s7: 3rem;
   --s8: 4.5rem;
 
-  --dur-fast: 140ms;
-  --dur: 240ms;
-  --ease: cubic-bezier(0.2, 0, 0, 1);
-
   --header-h: 4.5rem;
   --header-h-c: 3.5rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --dur-fast: 1ms;
-    --dur: 1ms;
-  }
 }
 
 *,
@@ -182,7 +159,6 @@ textarea {
 :focus-visible {
   outline: 2px solid var(--accent-text);
   outline-offset: 2px;
-  border-radius: 1px;
 }
 
 h1,
@@ -266,7 +242,6 @@ h3 { font-size: var(--step-2); }
 [data-header='condensed'] .header {
   height: var(--header-h-c);
   background: color-mix(in srgb, var(--paper) 82%, transparent);
-  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--rule);
 }
 

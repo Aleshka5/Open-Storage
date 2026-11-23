@@ -1,4 +1,4 @@
-/* Storage screens inside the Filenkov frame. Colors come from filenkov.css tokens. */
+/* Storage screens inside the Filenkov frame. Colors come from theme.css tokens. */
 
 .workspace {
   display: flex;
@@ -146,10 +146,12 @@
 
 .crumbs button:hover,
 .crumbs a:hover {
+  background: transparent;
   color: var(--accent-text);
 }
 
 .crumbs .is-current {
+  background: transparent;
   color: var(--ink);
   font-weight: 600;
 }
@@ -233,6 +235,7 @@ th button {
 }
 
 th button:hover {
+  background: transparent;
   color: var(--accent-text);
 }
 
@@ -322,6 +325,7 @@ td:has(.banner) {
 }
 
 .name-button:hover {
+  background: transparent;
   color: var(--accent-text);
 }
 
@@ -345,6 +349,7 @@ td:has(.banner) {
   padding: 0;
   border: 0;
   background: var(--rule);
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -434,10 +439,12 @@ td:has(.banner) {
 
 .lightbox .btn-ghost {
   background: var(--paper-raised);
+  color: var(--ink);
 }
 
 .lightbox .btn-ghost:hover {
   background: var(--chip);
+  color: var(--ink);
 }
 
 .lightbox-bar {
@@ -550,6 +557,7 @@ td:has(.banner) {
 
 .segment button:hover,
 .choice-chip:hover {
+  background: transparent;
   color: var(--accent-text);
 }
 
@@ -605,6 +613,7 @@ td:has(.banner) {
   height: 2.75rem;
   padding: var(--s1);
   background: var(--paper);
+  color: var(--ink);
   border: 1px solid var(--rule);
   cursor: pointer;
 }
@@ -773,6 +782,7 @@ td:has(.banner) {
 
 .banner.flash {
   background: var(--chip);
+  color: var(--ink);
 }
 
 .role-note {
