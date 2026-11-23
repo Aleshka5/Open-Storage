@@ -9,13 +9,9 @@
 #   filenkov.store, storage. image. rag. audio. llm. observer. id.
 #                        -> 127.0.0.1:8083  gateway
 #   id.filenkov.store is public (ADR-0013). meet. and hermes. keep the lan gate.
-#   mvp.filenkov.store   -> 127.0.0.1:18080 gateway (MVP stand)
 #   meet.filenkov.store  -> 127.0.0.1:8000  Jitsi web, no SSO (LAN / WireGuard only)
 #   hermes.filenkov.store -> 127.0.0.1:9119  Hermes (LAN / WireGuard only)
 #   lite-llm.filenkov.store -> 127.0.0.1:4000  LiteLLM (dev)
-#
-# The MVP stand generates the same file with the apex renamed to
-# mvp.filenkov.store (deploy/auth-gateway/Makefile: mvp-config).
 #
 # Edit: shared behaviour lives in the snippets below; each host class is a
 # short, readable block that imports them.
@@ -69,13 +65,6 @@ https://audio.filenkov.store,
 https://llm.filenkov.store,
 https://observer.filenkov.store,
 https://id.filenkov.store {
-	reverse_proxy 127.0.0.1:8083
-
-	import secure
-}
-
-# MVP stand only. The live gateway is :8083.
-https://mvp.filenkov.store {
 	reverse_proxy 127.0.0.1:8083
 
 	import secure
@@ -138,7 +127,6 @@ http://observer.filenkov.store,
 http://id.filenkov.store,
 http://meet.filenkov.store,
 http://hermes.filenkov.store,
-http://lite-llm.filenkov.store,
-http://mvp.filenkov.store {
+http://lite-llm.filenkov.store {
 	redir https://{host}{uri} permanent
 }

@@ -20,7 +20,7 @@ The proxy is the host's systemd Caddy, not a compose service ([ADR-0005](../adrs
 One upstream for every SSO host and for `id.`: `127.0.0.1:8083`, a host loopback port. Two consequences:
 
 - The proxy must run on the host. A container cannot reach the host's loopback ([ADR-0005](../adrs/5-port-from-auth-service.md)).
-- Nothing else may publish 8083. [`.env.example`](../../../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`. `make up-mvp` publishes `18080` for `mvp.` only. Compose falls back to `8080` when `GATEWAY_PORT` is unset, and this file does not use `8080`.
+- Nothing else may publish 8083. [`.env.example`](../../../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`, and the Makefile declares the same default, so `make up` publishes 8083 with or without the env line. Compose falls back to `8080` only when the variable is unset, and this file does not use `8080`.
 
 The gateway is not on a shared network with the proxy and does not need to be: the only link is that port. The proxy does not know route names, policies, or hosts' header settings; it forwards to the same address for the SSO hosts and for `id.`, and lets `Host` decide.
 

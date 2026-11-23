@@ -42,7 +42,7 @@ Query, built by the gateway, all of it required:
 | Parameter | Value |
 |---|---|
 | `client_id` | `gateway` |
-| `redirect_uri` | `https://filenkov.store/auth/callback` (`https://mvp.filenkov.store/auth/callback` on the MVP stand) |
+| `redirect_uri` | `https://filenkov.store/auth/callback` |
 | `response_type` | `code` |
 | `scope` | `openid profile email` |
 | `state` | 16 random bytes, compared to `__Secure-open_flow` on return |

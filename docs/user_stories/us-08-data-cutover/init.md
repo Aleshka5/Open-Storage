@@ -31,7 +31,6 @@ Tasks: [dump](tasks/task-01-dump.md), [restore](tasks/task-02-restore.md), [copy
 
 - New features.
 - RAG re-index changes beyond the re-queue.
-- The MVP stand.
 - Idp key rotation, or preserving old UUIDs ([US-01](../../user_stories/us-01-identity-edge/init.md) already refused them).
 
 ## User Story

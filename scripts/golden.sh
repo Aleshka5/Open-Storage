@@ -60,7 +60,9 @@ edge_check() {
         failures=$((failures + 1))
         return 0
     fi
-    if bash "$script_dir/verify-edge.sh"; then
+    # The address is passed down: a stand on another port must not be checked
+    # against the script's own default.
+    if GATEWAY_ADDR="$GATEWAY_ADDR" bash "$script_dir/verify-edge.sh"; then
         report PASS "scripts/verify-edge.sh"
         pass=$((pass + 1))
     else

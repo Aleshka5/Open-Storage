@@ -66,7 +66,6 @@ HOSTS=(
 #   a signed-in non-admin 403 — all three are contract answers.
 declare -A EXPECT_ANON=(
     [filenkov.store]="200"   # public, resume page
-    [mvp.filenkov.store]="200" # public, resume page (MVP stand, EXTRA_HOSTS)
     [storage.filenkov.store]="302"
     [image.filenkov.store]="302"
     [rag.filenkov.store]="302"
@@ -80,7 +79,6 @@ declare -A EXPECT_ANON=(
 # role it does not have (403); audio and observer guard /** with `session` (200).
 declare -A EXPECT_SIGNED_IN=(
     [filenkov.store]="200"
-    [mvp.filenkov.store]="200"
     [storage.filenkov.store]="403"
     [image.filenkov.store]="403"
     [rag.filenkov.store]="403"
@@ -93,7 +91,6 @@ declare -A EXPECT_SIGNED_IN=(
 # The `admin` realm role opens every host.
 declare -A EXPECT_ADMIN=(
     [filenkov.store]="200"
-    [mvp.filenkov.store]="200"
     [storage.filenkov.store]="200"
     [image.filenkov.store]="200"
     [rag.filenkov.store]="200"
@@ -190,28 +187,6 @@ cookie_conf() { # name cookie-value -> writes a 0600 curl config, prints path
     printf '%s' "$path"
 }
 
-# Hosts to leave out of this run. The MVP stand renames the apex, so it skips
-# filenkov.store and adds mvp.filenkov.store through EXTRA_HOSTS.
-if [ -n "${SKIP_HOSTS:-}" ]; then
-    filtered=()
-    for host in "${HOSTS[@]}"; do
-        drop=0
-        for skipped in $SKIP_HOSTS; do
-            [ "$skipped" = "$host" ] && drop=1
-        done
-        [ "$drop" = "0" ] && filtered+=("$host")
-    done
-    HOSTS=("${filtered[@]}")
-fi
-
-# Names added for a stand whose config renames a host. They are not part of
-# the committed config.yaml, so the default run does not list them.
-if [ -n "${EXTRA_HOSTS:-}" ]; then
-    for extra in $EXTRA_HOSTS; do
-        HOSTS+=("$extra")
-    done
-fi
-
 # Every host needs an expectation before anything is requested.
 for host in "${HOSTS[@]}"; do
     if [ -z "${EXPECT_ANON[$host]+set}" ]; then
@@ -279,11 +254,7 @@ fi
 # edge, so it is a failure, not a warning.
 
 CONFIG_YAML=${GATEWAY_CONFIG:-$repo_root/src/auth-gateway/gateway/config.yaml}
-# A stand that renames the apex (mvp.filenkov.store) serves a different host set
-# by design, so it runs with DRIFT_CHECK=0 and says so in the Makefile target.
-DRIFT_CHECK=${DRIFT_CHECK:-1}
-
-if [ "$DRIFT_CHECK" = "1" ] && [ -f "$CONFIG_YAML" ]; then
+if [ -f "$CONFIG_YAML" ]; then
     mapfile -t config_hosts < <(
         awk '
             /^hosts:[[:space:]]*$/ { in_hosts = 1; next }

@@ -11,7 +11,7 @@ It stores nothing. Users, roles, sessions and tokens are Keycloak's; the session
 | Fact | Value |
 |---|---|
 | Stack | Go 1.26, stdlib, `gopkg.in/yaml.v3`, `coreos/go-oidc/v3`, `go-jose/v4` |
-| Public listener | `:8080` inside the container. [`.env.example`](../../../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`. `make up-mvp` publishes `18080`. Compose falls back to `8080` only when the variable is unset. |
+| Public listener | `:8080` inside the container. [`.env.example`](../../../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`, and the Makefile declares the same default. Compose falls back to `8080` only when the variable is unset. |
 | Metrics listener | `METRICS_ADDR`, default `:9000`, published as `127.0.0.1:${METRICS_PORT:-19000}` |
 | Config | `GATEWAY_CONFIG`, a YAML file read once at start ([ADR-0004](../adrs/4-config-fails-at-start.md)) |
 | State | none on disk |
@@ -31,7 +31,7 @@ browser --TLS--> proxy --http--> gateway --http--> resume, idp, storage, image, 
                                     +-- chat       --> llm host (OpenAI-compatible, SSE)
 ```
 
-The proxy terminates TLS. The SSO hosts and `id.` share `127.0.0.1:8083`. `id.` is public ([ADR-0013](../adrs/13-idp-host-public.md)). `mvp.` goes to `127.0.0.1:18080`. `meet.` does not reach the gateway. On the hosts that do, the `Host` header picks the block. Product apps receive the [identity v1](../external-contracts/identity-v1.md) headers and their own `Bearer` access token, and never see a header the client sent.
+The proxy terminates TLS. The SSO hosts and `id.` share `127.0.0.1:8083`. `id.` is public ([ADR-0013](../adrs/13-idp-host-public.md)). `meet.` does not reach the gateway. On the hosts that do, the `Host` header picks the block. Product apps receive the [identity v1](../external-contracts/identity-v1.md) headers and their own `Bearer` access token, and never see a header the client sent.
 
 ## Configuration
 

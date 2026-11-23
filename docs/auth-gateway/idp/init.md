@@ -31,7 +31,7 @@ It reaches nothing outward except Google. The gateway reaches it on `open_networ
 | Registration | Off |
 | Username | `registrationEmailAsUsername: true` — the console label is "Email as username". Keycloak 26 has no `emailAsUsername` realm field; an import that carries one is refused |
 | Duplicate emails | Forbidden |
-| Client `gateway` | Confidential, standard flow, PKCE S256, redirects `https://filenkov.store/auth/callback` and `https://mvp.filenkov.store/auth/callback` |
+| Client `gateway` | Confidential, standard flow, PKCE S256, redirect `https://filenkov.store/auth/callback` |
 | Client `gateway-admin` | Confidential service account. Realm-management roles `view-users`, `manage-users`, `query-users`, `view-realm`. |
 | Client `account` | Off |
 | `gateway` audience | An audience mapper adds `account` to the access token. Without it a token with no client roles carries no `aud` at all, and the edge rejects it ([gateway external contract](../gateway/external-contracts.md)) |

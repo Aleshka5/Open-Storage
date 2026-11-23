@@ -33,8 +33,8 @@ services:
       GATEWAY_CONFIG: /etc/gateway/config.yaml
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
-      # Overridable so a stand or an MVP run can use a different host set without
-      # editing the committed contract file.
+      # Overridable so a stand can use a different host set without editing the
+      # committed contract file.
       - ${GATEWAY_CONFIG_FILE:-../../src/auth-gateway/gateway/config.yaml}:/etc/gateway/config.yaml:ro
     ports:
       # Caddy on the host reaches the gateway here; nothing else does. The port is

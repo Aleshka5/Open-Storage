@@ -28,7 +28,6 @@ Tasks: [upstream and host block](tasks/task-01-host-block.md), [route set](tasks
 ## Non-goals
 
 - Any change to the gateway binary, the realm, or the app.
-- The MVP stand.
 - Cutting over the data ([US-08](../us-08-data-cutover/init.md)).
 
 ## User Story
