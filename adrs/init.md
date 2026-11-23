@@ -1,3 +1,6 @@
 - ([1-one-contract-version.md](1-one-contract-version.md)) - Identity speaks one contract, v1, with no compatibility flag or legacy header set.
 - ([2-roles-in-the-token.md](2-roles-in-the-token.md)) - Realm roles travel in the access token, so the edge reads claims and no catalog service sits on the request path.
 - ([3-one-session-store.md](3-one-session-store.md)) - Sessions, logout-all and not-before live in the identity provider; the edge keeps no Redis or DB and hands the browser a sealed cookie.
+- ([4-liquid-glass-theme-control.md](4-liquid-glass-theme-control.md)) - The theme control is a glass icon trigger that morphs into a popover slider, and one blob follows the pointer between rows.
+- ([5-liquid-glass-is-optical.md](5-liquid-glass-is-optical.md)) - The glass refracts what is behind it and lights its rim from one direction; it is not a blurred translucent fill.
+- ([6-one-owner-per-frame.md](6-one-owner-per-frame.md)) - One frame loop writes the blob's geometry, in a fixed viewport layer; the pointer comes from one document listener.

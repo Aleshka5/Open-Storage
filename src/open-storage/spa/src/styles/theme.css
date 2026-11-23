@@ -14,6 +14,13 @@
   --danger: #ff9a8a;
   --danger-wash: #3a2522;
 
+  --glass-fill: color-mix(in srgb, var(--paper-raised) 52%, transparent);
+  --glass-rim: color-mix(in srgb, var(--ink) 46%, transparent);
+  --glass-edge: color-mix(in srgb, #000000 45%, transparent);
+  --glass-arc: color-mix(in srgb, var(--paper) 76%, transparent);
+  --glass-sheen: color-mix(in srgb, #ffffff 26%, transparent);
+  --glass-blur: blur(16px) saturate(1.6);
+
   --dur-fast: 140ms;
   --dur: 240ms;
   --dur-theme: 700ms;
@@ -33,6 +40,13 @@
   --chip: #e6ddd0;
   --danger: #8c2f24;
   --danger-wash: #f4e4dc;
+
+  --glass-fill: color-mix(in srgb, var(--paper-raised) 55%, transparent);
+  --glass-rim: color-mix(in srgb, var(--ink) 34%, transparent);
+  --glass-edge: color-mix(in srgb, var(--ink) 22%, transparent);
+  --glass-arc: color-mix(in srgb, #ffffff 92%, transparent);
+  --glass-sheen: color-mix(in srgb, #ffffff 62%, transparent);
+  --glass-blur: blur(16px) saturate(1.6);
 }
 
 @media (prefers-reduced-motion: reduce) {

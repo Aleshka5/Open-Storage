@@ -25,7 +25,12 @@ The resolved theme is `light` or `dark` only. Set it on the document element bef
 
 Changing the theme does not reload the page. The key is a UI preference. It is not a credential. The page never stores a session in `localStorage`.
 
-The control sits in the header’s right slot. It is a segmented group of three radios, `role="radiogroup"`, accessible name `Theme`. Labels are `light`, `Dark`, and `System`. Each segment is at least `2.25rem` tall, square, with no shadow. Selection is one thumb. It translates with `transform` over `--dur`. Its fill is `--paper-raised` at 55% opacity, with `backdrop-filter: blur(14px) saturate(1.7)`, a 1px translucent edge, and a 1px inset top hairline. `will-change: transform` applies only while that thumb moves. An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`. Without `backdrop-filter`, the thumb’s fill is `--ink` and its label is `--paper`. Arrow keys move inside the group. At 620px the wordmark hides and this control stays.
+The control sits in the header’s right slot, accessible name `Theme`. Its face has two shipped forms, and both keep the same key, values, fallback, palettes, and the circle below.
+
+- Storage uses the glass icon trigger of [ADR-0004](../../adrs/4-liquid-glass-theme-control.md): a round closed trigger that shows one sun, moon, or half-filled circle, and a glass popover slider under it. ADR-0004 owns the glass face, the open and close timing, and the motion of its blob; this file does not restate them.
+- The resume page keeps its segmented group of three radios, `role="radiogroup"`, labels `light`, `Dark`, and `System`. Each segment is at least `2.25rem` tall, square, with no shadow. Selection is one thumb that translates with `transform` over `--dur`. Its fill is `--paper-raised` at 55% opacity, with `backdrop-filter: blur(14px) saturate(1.7)`, a 1px translucent edge, and a 1px inset top hairline. `will-change: transform` applies only while that thumb moves. An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`.
+
+On both pages the corners stay square. What is round is the interior: the storage trigger, its blob, and its popover wells; the resume page has no round part. Neither control carries a drop shadow. Without `backdrop-filter`, the glass faces take the solid `--ink` fill with `--paper` label, and the resume page’s thumb does the same. Arrow keys move inside the resume group, and at 620px the wordmark hides while the control stays.
 
 Both palettes use the same token names. light copper text is `#8f4128`. Dark copper text is `#e0a181`. Do not mix them.
 
@@ -155,6 +160,7 @@ A duration token read by JavaScript is a number with a unit, and the production 
 | A choice row | A 2px `--accent` bar on the left, `scaleY(0 → 1)` from the top, over `--dur-fast` |
 | A button | Background color over `--dur-fast` |
 | A flipped theme | One circle from the control’s border box. `clip-path: circle()` on `::view-transition-new(root)` over `--dur-theme` with `--ease`. The new theme is inside. The old theme stays outside until the circle covers the viewport. The edge is a hard cut. No circle when the choice does not change the resolved theme, when the OS changes under System, under reduced motion, or without `startViewTransition` |
+| The theme selection | Resume: one square thumb, over `--dur`. Storage: the blob of [ADR-0004](../../adrs/4-liquid-glass-theme-control.md), which owns its spring |
 | Anything else | Still |
 
 ### The theme circle

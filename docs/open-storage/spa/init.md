@@ -42,6 +42,8 @@ One shared component, `FileManager` (`src/components/FileManager/`), renders Fil
 
 Theme and chrome follow the [brand book](../../brand-book/init.md). `theme.preference` on this origin is `light`, `dark`, or `system`. A missing, unreadable, or unknown value paints dark. The header’s `Theme` control changes it without a reload. Palettes live in `src/styles/theme.css`.
 
+The control’s face is the glass icon trigger and popover slider of [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md); the resume page keeps its segmented control. The brand book keeps the key, the fallback, the palettes, and the circle.
+
 The SPA never sees a token.
 
 1. `AppRouter` calls `useAuthStore.fetchMe()` once: `GET /api/auth/me` with credentials.

@@ -1,108 +1,452 @@
-/* Selection is one thumb. The segment underneath stays transparent. */
+/*
+ * US-10 theme control. One round glass trigger and a square glass popover.
+ * Corners are square on the panel and the rows; only the trigger, the moved
+ * blob and the interior wells are round. No drop shadows.
+ * Glass tokens live in src/styles/theme.css.
+ */
 
-.theme-switch {
+/*
+ * The bubble surface. Closed, it is the 36px round trigger plate. With the
+ * pointer on it, it becomes a small glass vent under the trigger: the blob in
+ * it widens into a capsule and its bottom edge drips, so the surface reads as
+ * liquid rather than as a circle that changed size. Open, the plate steps
+ * aside and the popover carries the glass.
+ */
+.theme-control {
   position: relative;
-  display: inline-flex;
   flex: none;
+  display: inline-flex;
+  transition:
+    width 260ms cubic-bezier(0.2, 0.9, 0.25, 1.15),
+    height 260ms var(--ease),
+    border-radius 260ms var(--ease),
+    background-color 200ms var(--ease),
+    border-color 200ms var(--ease);
 }
 
-.theme-segment {
+.theme-control[data-glass="closed"]:not([data-glass-hover="true"]) {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--glass-rim);
+  border-radius: 999px;
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 0 0 1px var(--glass-edge);
+}
+
+/* The vent: a capsule with a sagging bottom, still pinned to the trigger. */
+.theme-control[data-glass-hover="true"]:not([data-glass="open"]) {
+  width: 4.25rem;
+  height: 3.1rem;
+  border: 1px solid var(--glass-rim);
+  border-radius: 1.6rem 1.6rem 1.05rem 1.05rem;
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 0 0 1px var(--glass-edge);
+  animation: theme-bubble-settle 700ms var(--ease);
+}
+
+.theme-control[data-glass="open"] {
+  border: 0 solid transparent;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.theme-control[data-glass="closed"]:not([data-glass-hover="true"]) .theme-trigger {
+  width: 100%;
+  height: 100%;
+}
+
+.theme-control[data-glass-hover="true"]:not([data-glass="open"]) .theme-trigger {
+  width: 100%;
+  height: 2.5rem;
+  border: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* The surface lands like a droplet: it wobbles once and settles. */
+@keyframes theme-bubble-settle {
+  0% { transform: scale(0.82, 1); }
+  55% { transform: scale(1.03, 0.96); }
+  100% { transform: none; }
+}
+
+/* The wrap is the hover target that carries the tooltip. */
+.theme-trigger-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Glass face shared by the trigger, the panel and the blob host. */
+.theme-trigger-glass::before,
+.theme-popover-glass::before {
+  border-radius: inherit;
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--glass-arc);
+  -webkit-mask:
+    linear-gradient(var(--ink), transparent) top / 100% 30% no-repeat,
+    linear-gradient(90deg, var(--ink), transparent) left / 30% 100% no-repeat;
+  mask:
+    linear-gradient(var(--ink), transparent) top / 100% 30% no-repeat,
+    linear-gradient(90deg, var(--ink), transparent) left / 30% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* The inset hairline rides above the content. */
+.theme-trigger-glass::after,
+.theme-popover-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--glass-sheen);
+  pointer-events: none;
+}
+
+/* Trigger: a round glass blob. */
+.theme-trigger {
   position: relative;
   z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.25rem;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--glass-rim);
+  border-radius: 999px;
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 0 0 1px var(--glass-edge);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.theme-trigger:hover,
+.theme-trigger[aria-expanded="true"] {
+  border-color: var(--glass-arc);
+}
+
+.theme-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-trigger-icon {
+  position: relative;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.75;
+}
+
+.theme-trigger[data-preference="system"] .theme-trigger-icon {
+  /* A half-filled circle reads as system: the left half takes the ink. */
+  fill: currentColor;
+  fill-opacity: 0.5;
+}
+
+/* Tooltip: hover only, so a tap never leaves it on screen. */
+.theme-tooltip {
+  position: absolute;
+  top: calc(100% + var(--s2));
+  right: 0;
+  z-index: 4;
+  padding: 2px var(--s2);
+  border: 1px solid var(--glass-rim);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: var(--step--1);
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .theme-trigger-wrap:hover .theme-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--dur-fast) var(--ease) 120ms;
+  }
+}
+
+/*
+ /*
+  * Popover: square panel under the trigger's right edge. It is portalled to the
+  * body, so its place comes from the trigger's box, read at open. It overlaps the
+  * trigger's edge on purpose: a gap no element covers would take the pointer when
+  * it descends, and the control would close on the way into its own panel.
+  */
+ .theme-popover {
+   position: fixed;
+   z-index: 30;
+ }
+
+/* The opening morph grows out of the trigger; the rows fade in. */
+@keyframes theme-popover-morph {
+  from {
+    transform: scale(0.92);
+    transform-origin: 100% 0;
+    opacity: 0;
+  }
+}
+
+@keyframes theme-popover-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.theme-popover.is-opening .theme-popover-panel {
+  animation: theme-popover-morph 180ms var(--ease) both;
+}
+
+.theme-popover.is-opening .theme-rows {
+  animation: theme-popover-fade 140ms var(--ease) 40ms both;
+}
+
+.theme-popover.is-instant .theme-popover-panel,
+.theme-popover.is-instant .theme-rows {
+  animation: none;
+}
+
+.theme-popover-panel {
+  position: relative;
+  box-sizing: border-box;
+  width: 11.5rem;
+  padding: var(--s2);
+  border: 1px solid var(--glass-rim);
+  border-radius: 0;
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--ink);
+}
+
+/*
+ * The list shares its box with the blob host, so the blob sits behind the rows.
+ * `isolation` makes this the containing block of the host's absolutely placed
+ * children; `position: relative` alone does not, because React's static CSS is
+ * injected after this file and would win a specificity tie on the row stack.
+ */
+.theme-rows {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  z-index: 1;
+}
+
+.theme-rows > .theme-popover-glass {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+/* The rows and the panel must hit-test, or the pointer falls into the page and the control closes. */
+.theme-popover-panel,
+.theme-row {
+  pointer-events: auto;
+}
+
+/* Every .theme-popover-glass is a positioned glass container. */
+.theme-popover-glass {
+  border-radius: 0;
+}
+
+/*
+ * The blob. `themeBlob.ts` writes left, top, width, height and border-radius;
+ * the glass, the rim and the arc are here. It is the selection: one element
+ * slides between the rows and morphs from a circle to a pill (ADR-0004 item 4).
+ */
+.theme-blob {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 1px solid var(--glass-rim);
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 0 0 1px var(--glass-edge);
+  will-change: left, top, width, height, border-radius;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+/* The bright arc: a soft crescent along the top and left of the blob. */
+.theme-blob-arc {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-arc);
+  -webkit-mask:
+    linear-gradient(var(--ink), transparent) top / 100% 34% no-repeat,
+    linear-gradient(90deg, var(--ink), transparent) left / 34% 100% no-repeat;
+  mask:
+    linear-gradient(var(--ink), transparent) top / 100% 34% no-repeat,
+    linear-gradient(90deg, var(--ink), transparent) left / 34% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* The sheen: a hairline inside the rim, so the edge has thickness. */
+.theme-blob-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--glass-sheen);
+  pointer-events: none;
+}
+
+.theme-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  box-sizing: border-box;
+  width: 100%;
+  height: 3.5rem;
+  margin: 0;
   padding: 0 var(--s3);
   border: 0;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
   color: var(--ink);
-  cursor: pointer;
   font: inherit;
   font-size: var(--step--1);
   font-weight: 600;
-  box-shadow: none;
-}
-
-.theme-segment input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
+  text-align: left;
   cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
 }
 
-.theme-segment:hover {
-  background: var(--chip);
+.theme-row:hover,
+.theme-row.is-active {
   color: var(--ink);
 }
 
-.theme-segment:has(:checked) {
-  background: transparent;
+.theme-row:focus-visible,
+.theme-row[data-focus-ring="current"] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.theme-row-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.75;
+  color: var(--ink-muted);
+}
+
+.theme-row.is-active .theme-row-icon,
+.theme-row:hover .theme-row-icon {
   color: var(--ink);
 }
 
-.theme-segment:has(:checked):hover {
-  background: transparent;
-  color: var(--ink);
+.theme-row-label {
+  flex: 1 1 auto;
 }
 
-.theme-thumb {
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  box-sizing: border-box;
-  border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
-  border-radius: 0;
-  background: color-mix(in srgb, var(--paper-raised) 55%, transparent);
-  backdrop-filter: blur(14px) saturate(1.7);
-  pointer-events: none;
-  transition:
-    transform var(--dur) var(--ease),
-    width var(--dur) var(--ease);
+/* The active row keeps a mark that does not depend on the blob. */
+.theme-row.is-active .theme-row-label {
+  font-weight: 650;
 }
 
-.theme-thumb.is-moving {
-  will-change: transform;
-}
-
-.theme-thumb::after {
+.theme-row.is-active::after {
   content: "";
   position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 1px;
-  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  top: 50%;
+  right: var(--s3);
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateY(-50%);
 }
 
-.theme-switch-instant .theme-thumb {
-  transition: none;
+.theme-row.is-active[data-value="system"] .theme-row-icon {
+  fill: currentColor;
+  fill-opacity: 0.5;
 }
 
-@supports (-webkit-backdrop-filter: blur(1px)) {
-  .theme-thumb {
-    -webkit-backdrop-filter: blur(14px) saturate(1.7);
+@media (prefers-reduced-motion: reduce) {
+  .theme-popover.is-opening .theme-popover-panel,
+  .theme-popover.is-opening .theme-rows {
+    animation: none;
   }
 }
 
+/* No backdrop-filter: every glass face takes the solid face. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .theme-thumb {
+  .theme-trigger {
     background: var(--ink);
-    border-color: transparent;
+    border-color: var(--ink);
+    box-shadow: none;
+    color: var(--paper);
+  }
+
+  .theme-trigger-glass::before,
+  .theme-popover-glass::before {
+    content: none;
+  }
+
+  .theme-popover-panel {
+    background: var(--paper-raised);
+    border-color: var(--ink);
+  }
+
+  .theme-blob {
+    background: var(--ink);
+    border-color: var(--ink);
+    box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
 
-  .theme-thumb::after {
+  .theme-blob-arc,
+  .theme-blob-sheen {
     content: none;
+    display: none;
   }
 
-  .theme-segment:has(:checked),
-  .theme-segment:has(:checked):hover {
+  .theme-row {
     color: var(--paper);
+  }
+
+  .theme-row.is-active,
+  .theme-row:hover {
+    color: var(--paper);
+  }
+}
+
+/* 620px: the control stays in the header without overflow. */
+@media (max-width: 620px) {
+  .theme-popover-panel {
+    width: min(11.5rem, calc(100vw - 2 * var(--s4)));
   }
 }
