@@ -57,9 +57,10 @@
 
 # --------------------------------------------------------------------- sites
 
-# One backend (127.0.0.1:8083) behind the hostnames below. The size of this file
+# One backend (127.0.0.1:18080) behind the hostnames below. The size of this file
 # is the price of one certificate per name and one upstream per host
-# (ADR-0001). id. is public (ADR-0013): no lan gate.
+# (ADR-0001). This is the greenfield gateway (auth-gateway namespace); the
+# legacy Auth-Service edge on :8083 is retired.
 https://filenkov.store,
 https://storage.filenkov.store,
 https://image.filenkov.store,
@@ -75,7 +76,7 @@ https://id.filenkov.store {
 
 # MVP stand only. The live gateway is :8083.
 https://mvp.filenkov.store {
-	reverse_proxy 127.0.0.1:18080
+	reverse_proxy 127.0.0.1:8083
 
 	import secure
 }
