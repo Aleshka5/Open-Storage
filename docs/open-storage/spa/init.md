@@ -40,6 +40,8 @@ One shared component, `FileManager` (`src/components/FileManager/`), renders Fil
 
 ## Session and identity
 
+Theme and chrome follow the [brand book](../../brand-book/init.md). `theme.preference` on this origin is `light`, `dark`, or `system`. A missing, unreadable, or unknown value paints dark. The header’s `Theme` control changes it without a reload. Palettes live in `src/styles/theme.css`.
+
 The SPA never sees a token.
 
 1. `AppRouter` calls `useAuthStore.fetchMe()` once: `GET /api/auth/me` with credentials.

@@ -1,5 +1,5 @@
 > **ID:** task-01
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-09](../init.md), [brand book §1](../../../brand-book/init.md), [brand book §2](../../../brand-book/init.md)
 
 ## Overview
@@ -21,7 +21,7 @@ The storage SPA resolves `light`, `Dark`, and `System` before first paint, and t
 
 ## Definition of Done
 
-- [ ] `data-theme` and `color-scheme` are set before first paint.
-- [ ] `theme.preference` stores the preference on this origin. An unknown value behaves as `dark`. `system` follows `prefers-color-scheme`.
-- [ ] `filenkov.css` no longer contains a palette hex.
-- [ ] The radiogroup name is `Theme`, and its labels are `light`, `Dark`, and `System`.
+- [x] `data-theme` and `color-scheme` are set before first paint.
+- [x] `theme.preference` stores the preference on this origin. An unknown value behaves as `dark`. `system` follows `prefers-color-scheme`.
+- [x] `filenkov.css` no longer contains a palette hex.
+- [x] The radiogroup name is `Theme`, and its labels are `light`, `Dark`, and `System`.

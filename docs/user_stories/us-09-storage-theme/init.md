@@ -1,5 +1,5 @@
 > **ID:** US-09
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [brand book](../../brand-book/init.md), [ADR-0012](../../auth-gateway/adrs/12-theme-reveal-without-rim.md), [US-03](../us-03-page-brand/init.md), [US-04](../us-04-liquid-glass-theme/init.md), [spa](../../open-storage/spa/init.md)
 
 ## Overview
@@ -50,7 +50,7 @@ Tasks: [theme](tasks/task-01-theme.md), [thumb and circle](tasks/task-02-thumb-c
 
 ## Definition of Done
 
-- [ ] A test locks the unknown-key fallback, the reduced-motion skip, and the same-theme skip, and the SPA test script passes.
-- [ ] `npm run build` in `src/open-storage/spa` passes.
-- [ ] The acceptance items above hold on the storage SPA.
-- [ ] [spa/init.md](../../open-storage/spa/init.md) links the brand book for theme and chrome and does not copy the palettes.
+- [x] A test locks the unknown-key fallback, the reduced-motion skip, and the same-theme skip, and the SPA test script passes.
+- [x] `npm run build` in `src/open-storage/spa` passes.
+- [x] The acceptance items above hold on the storage SPA.
+- [x] [spa/init.md](../../open-storage/spa/init.md) links the brand book for theme and chrome and does not copy the palettes.

@@ -1,5 +1,5 @@
 > **ID:** task-03
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-09](../init.md), [brand book §2](../../../brand-book/init.md), [brand book §4](../../../brand-book/init.md)
 
 ## Overview
@@ -21,6 +21,6 @@ Panels, fields, focus rings, and toasts on the storage SPA are square, set both 
 
 ## Definition of Done
 
-- [ ] Focus rings are square. A search of `src/open-storage/spa` for `box-shadow` in CSS finds none on panels, fields, or toasts.
-- [ ] A control that sets only one face is gone.
-- [ ] Viewport layers still mount on `document.body`.
+- [x] Focus rings are square. A search of `src/open-storage/spa` for `box-shadow` in CSS finds none on panels, fields, or toasts.
+- [x] A control that sets only one face is gone.
+- [x] Viewport layers still mount on `document.body`.
