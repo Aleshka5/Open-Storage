@@ -24,7 +24,7 @@ One upstream for every SSO host and for `id.`: `127.0.0.1:8083`, a host loopback
 
 The gateway is not on a shared network with the proxy and does not need to be: the only link is that port. The proxy does not know route names, policies, or hosts' header settings; it forwards to the same address for the SSO hosts and for `id.`, and lets `Host` decide.
 
-`id.filenkov.store` uses that same port and the `lan` gate. A source outside the list gets `403` and never reaches Keycloak. The certificate stays a public ACME certificate because the name is the issuer URL. Google sign-in finishes only from an allowed source, because the broker redirect lands on this name.
+`id.filenkov.store` uses that same port and has no `lan` gate ([ADR-0013](../adrs/13-idp-host-public.md)). Any source that can open 443 reaches the gateway, which forwards to Keycloak. The certificate is a public ACME certificate because the name is the issuer URL.
 
 `meet.filenkov.store` goes to `127.0.0.1:8000`. It is not an SSO host and not a gateway upstream.
 
@@ -40,7 +40,7 @@ The gateway is not on a shared network with the proxy and does not need to be: t
 
 ## The `lan` gate
 
-One snippet, imported by `id.`, `meet`, and `hermes`. It is an allow-list of source addresses:
+One snippet, imported by `meet` and `hermes`. `id.` does not import it. It is an allow-list of source addresses:
 
 ```text
 @lan remote_ip 10.10.0.1 10.10.0.2 10.10.0.4 192.168.1.0/24 127.0.0.1

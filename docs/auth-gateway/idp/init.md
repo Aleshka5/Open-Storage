@@ -20,7 +20,7 @@ One realm, `filenkov`, for every host. Google is the only login; the Keycloak us
 | Container port | `8080` (HTTP; TLS ends at the proxy) |
 | Compose | `deploy/auth-gateway/docker-compose.yaml`, service `idp` and `idp_db`, network `open_network` |
 
-It reaches nothing outward except Google. The gateway reaches it on `open_network` at `http://idp:8080` and the browser reaches it through the edge at `https://id.filenkov.store`. Caddy admits that name only from the LAN and WireGuard list. `KC_HOSTNAME` stays the public issuer, so the issuer in every answer is the public one.
+It reaches nothing outward except Google. The gateway reaches it on `open_network` at `http://idp:8080` and the browser reaches it through the edge at `https://id.filenkov.store`. The proxy admits that name from any source ([ADR-0013](../adrs/13-idp-host-public.md)). `KC_HOSTNAME` stays the public issuer, so the issuer in every answer is the public one.
 
 ## Realm
 

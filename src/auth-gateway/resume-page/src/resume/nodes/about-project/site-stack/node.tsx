@@ -36,7 +36,7 @@ export default function SiteStackNode() {
             {
               term: 'Caddy',
               detail:
-                'Terminates TLS and redirects HTTP to HTTPS. It does not choose the application. SSO hosts and id.filenkov.store go to the gateway on :8083. id. is limited to the LAN and WireGuard. meet. goes to Jitsi and skips the gateway.',
+                'Terminates TLS and redirects HTTP to HTTPS. It does not choose the application. SSO hosts and id.filenkov.store go to the gateway on :8083. id. is public. meet. goes to Jitsi and skips the gateway.',
             },
             {
               term: 'Gateway',

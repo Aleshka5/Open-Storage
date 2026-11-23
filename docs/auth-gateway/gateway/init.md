@@ -31,7 +31,7 @@ browser --TLS--> proxy --http--> gateway --http--> resume, idp, storage, image, 
                                     +-- chat       --> llm host (OpenAI-compatible, SSE)
 ```
 
-The proxy terminates TLS. Seven SSO hosts and `id.` share `127.0.0.1:8083`. `id.` is admitted only from the LAN and WireGuard list. `mvp.` goes to `127.0.0.1:18080`. `meet.` does not reach the gateway. On the hosts that do, the `Host` header picks the block. Product apps receive the [identity v1](../external-contracts/identity-v1.md) headers and their own `Bearer` access token, and never see a header the client sent.
+The proxy terminates TLS. The SSO hosts and `id.` share `127.0.0.1:8083`. `id.` is public ([ADR-0013](../adrs/13-idp-host-public.md)). `mvp.` goes to `127.0.0.1:18080`. `meet.` does not reach the gateway. On the hosts that do, the `Host` header picks the block. Product apps receive the [identity v1](../external-contracts/identity-v1.md) headers and their own `Bearer` access token, and never see a header the client sent.
 
 ## Configuration
 

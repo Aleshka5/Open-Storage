@@ -44,9 +44,9 @@ function MapBody() {
       </p>
 
       <p>
-        Caddy listens on <code>:80</code> and <code>:443</code>. Seven hosts and <code>id.filenkov.store</code>{' '}
-        go to the gateway on <code>:8083</code>. <code>id.</code> is admitted only from the LAN and the
-        WireGuard tunnel. <code>meet.filenkov.store</code> goes to Jitsi on <code>:8000</code> and never
+        Caddy listens on <code>:80</code> and <code>:443</code>. The SSO hosts and <code>id.filenkov.store</code>{' '}
+        go to the gateway on <code>:8083</code>. <code>id.</code> is public. <code>meet.filenkov.store</code> goes
+        to Jitsi on <code>:8000</code> and never
         reaches the gateway. Hermes does the same kind of bypass, to its own port, and keeps its own login.
       </p>
 

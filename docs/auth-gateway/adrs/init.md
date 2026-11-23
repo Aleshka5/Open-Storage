@@ -10,3 +10,4 @@
 - ([9-owl-chat-in-the-gateway.md](9-owl-chat-in-the-gateway.md)) - The owl chat returns, answered by the gateway itself via `llm:` config and ported `llm`/`tracing`/`chat` packages; supersedes ADR-0006.
 - ([11-theme-reveal-rim.md](11-theme-reveal-rim.md)) - A theme circle refracts only on a 36px rim; the disk interior and the page after the reveal stay unfiltered (superseded by ADR-0012).
 - ([12-theme-reveal-without-rim.md](12-theme-reveal-without-rim.md)) - The theme reveal is one hard-edged circle, with no rim, no displacement filter and no SVG filter; supersedes ADR-0011.
+- ([13-idp-host-public.md](13-idp-host-public.md)) - `id.filenkov.store` is public. The proxy does not apply the LAN / WireGuard gate to it. `meet.` and `hermes.` keep that gate.

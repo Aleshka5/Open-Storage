@@ -31,7 +31,7 @@ export const architectureSolutions: ArchitectureSolution[] = [
     slug: 'idp',
     title: 'Keycloak',
     summary:
-      'id.filenkov.store, from the LAN and WireGuard only. The gateway passes the request through.',
+      'id.filenkov.store, public. The gateway passes the request through.',
   },
   {
     slug: 'hub',

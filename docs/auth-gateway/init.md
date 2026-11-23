@@ -23,7 +23,7 @@ flowchart LR
   PR["product resources<br/>storage image rag audio llm<br/>observer meet switch litellm<br/>not in this repository"]
 
   B -->|"TLS 80/443"| P
-  P -->|"seven hosts and id. → :8083<br/>id. is LAN / WireGuard only<br/>mvp. → :18080"| G
+  P -->|"SSO hosts and id. → :8083<br/>id. is public<br/>mvp. → :18080"| G
   G -->|"strip + inject, then proxy"| R
   G -->|"inject headers + Bearer JWT"| PR
   G -->|"discovery / JWKS / token / revoke, :8080"| I
@@ -54,7 +54,7 @@ flowchart LR
 
 ## Ports
 
-[Compose](../../deploy/auth-gateway/docker-compose.yaml) publishes gateway `127.0.0.1:${GATEWAY_PORT:-8080}:8080` and metrics `127.0.0.1:${METRICS_PORT:-19000}:9000`. The container listens on `:8080` and `:9000`. [`.env.example`](../../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`. The [Caddyfile](../../deploy/auth-gateway/Caddyfile) sends seven SSO hosts and `id.` to `8083`. `id.` is limited to the LAN / WireGuard list before that hop. `mvp.` goes to `18080` (`make up-mvp`). `meet.` goes to `127.0.0.1:8000` and never enters this diagram.
+[Compose](../../deploy/auth-gateway/docker-compose.yaml) publishes gateway `127.0.0.1:${GATEWAY_PORT:-8080}:8080` and metrics `127.0.0.1:${METRICS_PORT:-19000}:9000`. The container listens on `:8080` and `:9000`. [`.env.example`](../../deploy/auth-gateway/.env.example) sets `GATEWAY_PORT=8083`. The [Caddyfile](../../deploy/auth-gateway/Caddyfile) sends the SSO hosts and `id.` to `8083`. `id.` has no source gate ([ADR-0013](adrs/13-idp-host-public.md)). `mvp.` goes to `18080` (`make up-mvp`). `meet.` goes to `127.0.0.1:8000` and never enters this diagram.
 
 Gateway stores nothing. The session cookie holds the Keycloak refresh token. idp remembers users, roles, and sessions.
 
