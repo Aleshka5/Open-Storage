@@ -76,14 +76,17 @@
  * warm fringe there, a cool fringe opposite, and an inset thickness shadow.
  */
 .glass-material {
-  border: 1px solid var(--glass-rim);
+  border: 1px solid transparent;
   background: var(--glass-fill);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
+  box-shadow: none;
+}
+
+.theme-popover-panel.glass-material {
   box-shadow:
-    inset 1px 1px 0 var(--glass-specular),
-    inset -1px -1px 0 var(--glass-fringe-cool),
-    inset 0 -10px 14px var(--glass-thickness);
+    inset 0 10px 16px color-mix(in srgb, var(--glass-specular) 55%, transparent),
+    inset 0 -14px 22px var(--glass-thickness);
 }
 
 .glass-lens {
@@ -121,22 +124,13 @@
   inset: 0;
   z-index: 4;
   border-radius: inherit;
-  padding: 1.5px;
   background: linear-gradient(
     var(--glass-light-angle),
-    var(--glass-fringe-warm) 0%,
-    var(--glass-specular) 18%,
+    color-mix(in srgb, var(--glass-specular) 72%, transparent) 0%,
+    color-mix(in srgb, var(--glass-fringe-warm) 38%, transparent) 16%,
     transparent 46%,
-    var(--glass-fringe-cool) 100%
+    color-mix(in srgb, var(--glass-fringe-cool) 42%, transparent) 100%
   );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
   pointer-events: none;
 }
 
@@ -237,6 +231,7 @@
   width: 11.5rem;
   padding: var(--s2);
   border-radius: 0;
+  border-color: var(--glass-rim);
   color: var(--ink);
 }
 
@@ -285,7 +280,6 @@
   display: block;
   box-sizing: border-box;
   pointer-events: none;
-  will-change: left, top, width, height, border-radius;
 }
 
 .theme-row {

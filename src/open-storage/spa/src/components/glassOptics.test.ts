@@ -4,6 +4,7 @@ import {
   applyDisplacementMap,
   contrastRatio,
   displacementMap,
+  lensCoverage,
   lensOffset,
   mixPaper,
   parseColor,
@@ -128,6 +129,20 @@ describe("refraction", () => {
     const center = out[(16 * dw + 16) * 4];
     const rim = out[(16 * dw + 3) * 4];
     expect(center).toBeGreaterThan(rim);
+  });
+
+  it("is opaque inside the lens and feathered to clear across the rim", () => {
+    const source = scene();
+    const map = displacementMap(dw, dh, 0, 18);
+    const out = applyDisplacementMap(source, sw, sh, map, dw, dh, pad, 0, 0, { washCenter: 0, washEdge: 0 }, paper, 16);
+    const alpha = (x: number, y: number) => out[(y * dw + x) * 4 + 3];
+    expect(alpha(16, 16)).toBe(255);
+    expect(alpha(0, 0)).toBe(0);
+    const rim = alpha(0, 16);
+    expect(rim).toBeGreaterThan(8);
+    expect(rim).toBeLessThan(250);
+    expect(lensCoverage(16, 16, 32, 32, 16)).toBe(1);
+    expect(lensCoverage(0, 0, 32, 32, 16)).toBe(0);
   });
 });
 

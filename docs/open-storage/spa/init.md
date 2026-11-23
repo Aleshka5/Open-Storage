@@ -42,7 +42,7 @@ One shared component, `FileManager` (`src/components/FileManager/`), renders Fil
 
 Theme and chrome follow the [brand book](../../brand-book/init.md). `theme.preference` on this origin is `light`, `dark`, or `system`. A missing, unreadable, or unknown value paints dark. The header’s `Theme` control changes it without a reload. Palettes live in `src/styles/theme.css`.
 
-The control’s face is the glass icon trigger and popover slider of [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md); the material is the refracting glass of [ADR-0005](../../../adrs/5-liquid-glass-is-optical.md). The resume page keeps its segmented control. The brand book keeps the key, the fallback, the palettes, and the circle.
+The control’s face is the glass icon trigger and popover slider of [ADR-0004](../../../adrs/4-liquid-glass-theme-control.md); the material is the refracting glass of [ADR-0005](../../../adrs/5-liquid-glass-is-optical.md). The lens samples the field behind its box and clips that sample to the lens shape. The resume page keeps its segmented control. The brand book keeps the key, the fallback, the palettes, and the circle.
 
 The SPA never sees a token.
 

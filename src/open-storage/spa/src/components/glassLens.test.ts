@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FILTER_AREA_CEILING, mountGlassLens } from "./glassLens";
+import { FILTER_AREA_CEILING, intersectingBackdrop, mountGlassLens } from "./glassLens";
 
 describe("glass lens mount", () => {
   afterEach(() => {
@@ -65,6 +65,49 @@ describe("glass lens mount", () => {
     expect(host.dataset.lens).toBe("clamped");
     expect(host.querySelector("canvas")).toBeNull();
     lens.dispose();
+  });
+});
+
+describe("backdrop sample", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("keeps every stripe that intersects the lens box", () => {
+    const skip = document.createElement("div");
+    skip.dataset.lensHost = "";
+    document.body.append(skip);
+    const box = (left: number) =>
+      ({
+        left,
+        top: 0,
+        width: 12,
+        height: 80,
+        right: left + 12,
+        bottom: 80,
+        x: left,
+        y: 0,
+        toJSON() {},
+      }) as DOMRect;
+    for (let i = 0; i < 60; i += 1) {
+      const stripe = document.createElement("div");
+      stripe.className = "proof-stripe";
+      stripe.style.backgroundColor = i % 2 === 0 ? "rgb(255, 40, 40)" : "rgb(40, 40, 255)";
+      stripe.getBoundingClientRect = () => box(i * 12);
+      document.body.append(stripe);
+    }
+    const label = document.createElement("span");
+    label.className = "theme-row-label";
+    label.textContent = "Light";
+    const popover = document.createElement("div");
+    popover.id = "theme-popover";
+    popover.append(label);
+    label.getBoundingClientRect = () => box(0);
+    popover.getBoundingClientRect = () => box(0);
+    document.body.append(popover);
+    const hits = intersectingBackdrop(skip, 0, 0, 720, 80);
+    expect(hits.filter((node) => node.classList.contains("proof-stripe"))).toHaveLength(60);
+    expect(hits.some((node) => node.classList.contains("theme-row-label"))).toBe(false);
   });
 });
 

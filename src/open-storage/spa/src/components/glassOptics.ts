@@ -120,11 +120,13 @@ export function lensOffset(
   const nx = (x + 0.5 - rx) / rx;
   const ny = (y + 0.5 - ry) / ry;
   const dist = Math.min(1, Math.hypot(nx, ny));
-  if (dist >= 0.995) return { dx: 0, dy: 0, dist };
+  if (dist >= 1) return { dx: 0, dy: 0, dist };
   const z = Math.sqrt(Math.max(0, 1 - dist * dist));
   const falloff = 1 - z;
-  const wobble = turbulence(x * 0.15, y * 0.15) * Math.min(2.4, cap * 0.18) * falloff;
-  const wobbleY = turbulence(x * 0.15 + 19, y * 0.15) * Math.min(2.4, cap * 0.18) * falloff;
+  // A small liquid term. A larger wobble tears the rim into scallops.
+  const wobbleAmp = Math.min(0.2, cap * 0.012);
+  const wobble = turbulence(x * 0.15, y * 0.15) * wobbleAmp * falloff;
+  const wobbleY = turbulence(x * 0.15 + 19, y * 0.15) * wobbleAmp * falloff;
   let dx = (nx / (dist || 1)) * mag * falloff + wobble;
   let dy = (ny / (dist || 1)) * mag * falloff + wobbleY;
   const len = Math.hypot(dx, dy);
@@ -195,11 +197,77 @@ function sample(
 
 export type Paper = { r: number; g: number; b: number };
 
+/** How many samples each output pixel averages. Stairs on a hard edge become a curve. */
+export const SUPERSAMPLE = 2;
+
+/**
+ * Signed distance to a rounded rectangle, in pixels. Negative inside.
+ * `radius` is clamped to the box, so a circle and a capsule are the same call.
+ */
+export function roundedRectSdf(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): number {
+  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  const hx = width / 2;
+  const hy = height / 2;
+  const qx = Math.abs(x - hx) - (hx - r);
+  const qy = Math.abs(y - hy) - (hy - r);
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+}
+
+/**
+ * Coverage of the lens at a dest-pixel centre. 1 inside, 0 outside, and a
+ * ramp about 1.35px wide so the rim is not a stairstep.
+ */
+export function lensCoverage(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): number {
+  const sdf = roundedRectSdf(x, y, width, height, radius);
+  const aa = 2.4;
+  return clamp(0.5 - sdf / (2 * aa), 0, 1);
+}
+
+function mapShift(
+  map: Rgba,
+  dw: number,
+  dh: number,
+  x: number,
+  y: number,
+  scale: number,
+): { dx: number; dy: number } {
+  if (scale === 0 || dw < 1 || dh < 1) return { dx: 0, dy: 0 };
+  const cx = clamp(x, 0, dw - 1);
+  const cy = clamp(y, 0, dh - 1);
+  const x0 = Math.floor(cx);
+  const y0 = Math.floor(cy);
+  const x1 = Math.min(dw - 1, x0 + 1);
+  const y1 = Math.min(dh - 1, y0 + 1);
+  const tx = cx - x0;
+  const ty = cy - y0;
+  const at = (px: number, py: number, channel: number) => map[(py * dw + px) * AXES + channel];
+  const mix = (channel: number) => {
+    const top = at(x0, y0, channel) + (at(x1, y0, channel) - at(x0, y0, channel)) * tx;
+    const bot = at(x0, y1, channel) + (at(x1, y1, channel) - at(x0, y1, channel)) * tx;
+    return top + (bot - top) * ty;
+  };
+  return { dx: ((mix(0) - 128) / 128) * scale, dy: ((mix(1) - 128) / 128) * scale };
+}
+
 /**
  * Displace `source` into a `dw × dh` image. `source` is the backdrop with
  * `pad` pixels of context on every side. `scale` is the feDisplacementMap
- * scale (the ceiling). Dispersion samples red a little further along the
- * bend and blue a little less, and only where the rim is already bending.
+ * scale (the ceiling). Each output pixel is the mean of a 2×2 grid, and the
+ * alpha follows the rounded lens so the rim is a curve rather than a hard
+ * rectangle. Dispersion samples red a little further along the bend and blue
+ * a little less, and only where the rim is already bending.
  */
 export function applyDisplacementMap(
   source: Rgba,
@@ -213,26 +281,45 @@ export function applyDisplacementMap(
   dispersion: number,
   wash: Pick<Optics, "washCenter" | "washEdge">,
   paper: Paper,
+  radius: number = Math.min(Math.max(dw, 0), Math.max(dh, 0)) / 2,
 ): Rgba {
   const out = new Uint8ClampedArray(Math.max(0, dw) * Math.max(0, dh) * AXES);
   const full = Math.max(0, scale);
+  const samples = SUPERSAMPLE * SUPERSAMPLE;
   for (let y = 0; y < dh; y += 1) {
     for (let x = 0; x < dw; x += 1) {
-      const mi = (y * dw + x) * AXES;
-      const dx = full === 0 ? 0 : ((map[mi] - 128) / 128) * full;
-      const dy = full === 0 ? 0 : ((map[mi + 1] - 128) / 128) * full;
-      const dist = Math.min(1, Math.hypot(dx, dy) / (full || 1));
-      const chroma = dispersion * dist;
-      const bend = full === 0 ? 0 : chroma / full;
-      const red = sample(source, sw, sh, x + pad + dx * (1 + bend), y + pad + dy * (1 + bend));
-      const green = sample(source, sw, sh, x + pad + dx, y + pad + dy);
-      const blue = sample(source, sw, sh, x + pad + dx * (1 - bend), y + pad + dy * (1 - bend));
-      const washT = wash.washCenter + (wash.washEdge - wash.washCenter) * dist;
-      const oi = mi;
-      out[oi] = clamp(red[0] * (1 - washT) + paper.r * washT, 0, 255);
-      out[oi + 1] = clamp(green[1] * (1 - washT) + paper.g * washT, 0, 255);
-      out[oi + 2] = clamp(blue[2] * (1 - washT) + paper.b * washT, 0, 255);
-      out[oi + 3] = 255;
+      let accR = 0;
+      let accG = 0;
+      let accB = 0;
+      let accA = 0;
+      for (let oy = 0; oy < SUPERSAMPLE; oy += 1) {
+        for (let ox = 0; ox < SUPERSAMPLE; ox += 1) {
+          const px = x + (ox + 0.5) / SUPERSAMPLE;
+          const py = y + (oy + 0.5) / SUPERSAMPLE;
+          const cover = lensCoverage(px, py, dw, dh, radius);
+          const shift = mapShift(map, dw, dh, px, py, full);
+          const dist = Math.min(1, Math.hypot(shift.dx, shift.dy) / (full || 1));
+          const chroma = dispersion * dist;
+          const bend = full === 0 ? 0 : chroma / full;
+          const red = sample(source, sw, sh, px + pad + shift.dx * (1 + bend), py + pad + shift.dy * (1 + bend));
+          const green = sample(source, sw, sh, px + pad + shift.dx, py + pad + shift.dy);
+          const blue = sample(source, sw, sh, px + pad + shift.dx * (1 - bend), py + pad + shift.dy * (1 - bend));
+          const washT = wash.washCenter + (wash.washEdge - wash.washCenter) * dist;
+          const cr = clamp(red[0] * (1 - washT) + paper.r * washT, 0, 255);
+          const cg = clamp(green[1] * (1 - washT) + paper.g * washT, 0, 255);
+          const cb = clamp(blue[2] * (1 - washT) + paper.b * washT, 0, 255);
+          accR += cr * cover;
+          accG += cg * cover;
+          accB += cb * cover;
+          accA += cover;
+        }
+      }
+      const oi = (y * dw + x) * AXES;
+      const alpha = accA / samples;
+      out[oi] = alpha > 0 ? clamp(accR / accA, 0, 255) : 0;
+      out[oi + 1] = alpha > 0 ? clamp(accG / accA, 0, 255) : 0;
+      out[oi + 2] = alpha > 0 ? clamp(accB / accA, 0, 255) : 0;
+      out[oi + 3] = clamp(alpha * 255, 0, 255);
     }
   }
   return out;

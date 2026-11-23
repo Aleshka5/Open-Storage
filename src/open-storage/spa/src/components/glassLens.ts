@@ -33,6 +33,42 @@ function paperFrom(style: CSSStyleDeclaration): Paper {
   return parseColor(style.getPropertyValue("--paper-raised")) ?? PAPER_FALLBACK;
 }
 
+/** Two box passes. Radius is in source pixels. */
+function soften(data: Uint8ClampedArray, width: number, height: number, radius: number): void {
+  if (radius < 1 || width < 2 || height < 2) return;
+  const tmp = new Uint8ClampedArray(data.length);
+  const blur = (input: Uint8ClampedArray, output: Uint8ClampedArray, horizontal: boolean) => {
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let a = 0;
+        let n = 0;
+        for (let k = -radius; k <= radius; k += 1) {
+          const sx = horizontal ? Math.min(width - 1, Math.max(0, x + k)) : x;
+          const sy = horizontal ? y : Math.min(height - 1, Math.max(0, y + k));
+          const i = (sy * width + sx) * 4;
+          r += input[i];
+          g += input[i + 1];
+          b += input[i + 2];
+          a += input[i + 3];
+          n += 1;
+        }
+        const o = (y * width + x) * 4;
+        output[o] = r / n;
+        output[o + 1] = g / n;
+        output[o + 2] = b / n;
+        output[o + 3] = a / n;
+      }
+    }
+  };
+  blur(data, tmp, true);
+  blur(tmp, data, false);
+  blur(data, tmp, true);
+  blur(tmp, data, false);
+}
+
 function intersects(a: DOMRect, left: number, top: number, right: number, bottom: number): boolean {
   return a.right > left && a.left < right && a.bottom > top && a.top < bottom;
 }
@@ -45,10 +81,41 @@ function ownText(el: Element): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
+const SKIP_BACKDROP = ".theme-control, #theme-popover, [data-lens-host]";
+
 /**
- * Draw whatever is actually behind the lens: fills, text, and the header
- * diamond. The lens host and anything inside it are skipped, so the glass
- * never photographs itself.
+ * Every element that actually intersects the lens box. Nothing is dropped
+ * once it intersects: a cap here is what turned the field into a few
+ * rectangles. The lens, the popover (its labels stay sharp above the
+ * bitmap), and the wordmark are not part of the photograph.
+ */
+export function intersectingBackdrop(
+  skip: Element,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): HTMLElement[] {
+  const found: HTMLElement[] = [];
+  const nodes = document.body.querySelectorAll<HTMLElement>("*");
+  for (const node of nodes) {
+    if (node === skip || skip.contains(node)) continue;
+    if (node.closest(SKIP_BACKDROP)) continue;
+    const style = getComputedStyle(node);
+    if (style.display === "none" || style.visibility === "hidden") continue;
+    const opacity = Number.parseFloat(style.opacity);
+    if (Number.isFinite(opacity) && opacity <= 0) continue;
+    const box = node.getBoundingClientRect();
+    if (box.width < 1 || box.height < 1) continue;
+    if (!intersects(box, left, top, right, bottom)) continue;
+    found.push(node);
+  }
+  return found;
+}
+
+/**
+ * Draw whatever is actually behind the lens: fills and the header diamond.
+ * Labels are not painted into the bitmap.
  */
 export function rasterBackdrop(
   ctx: CanvasRenderingContext2D,
@@ -65,43 +132,29 @@ export function rasterBackdrop(
   ctx.fillStyle = `rgb(${paper.r} ${paper.g} ${paper.b})`;
   ctx.fillRect(0, 0, width, height);
 
-  const left = originX;
-  const top = originY;
-  const right = originX + width;
-  const bottom = originY + height;
-  const nodes = document.body.querySelectorAll<HTMLElement | SVGElement>("*");
-  let painted = 0;
+  const nodes = intersectingBackdrop(skip, originX, originY, originX + width, originY + height);
   for (const node of nodes) {
-    if (node === skip || skip.contains(node)) continue;
-    if (node.closest(".theme-control, #theme-popover, [data-lens-host]")) continue;
     const style = getComputedStyle(node);
-    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") continue;
     const box = node.getBoundingClientRect();
-    if (box.width < 1 || box.height < 1) continue;
-    if (!intersects(box, left, top, right, bottom)) continue;
     const x = box.left - originX;
     const y = box.top - originY;
     const bg = parseColor(style.backgroundColor);
     if (bg && style.backgroundColor !== "rgba(0, 0, 0, 0)") {
       ctx.fillStyle = style.backgroundColor;
       ctx.fillRect(x, y, box.width, box.height);
-      painted += 1;
     }
     if (node.classList.contains("brand-mark") || node.classList.contains("proof-mark")) {
       drawDiamond(ctx, x, y, box.width, box.height, style.color || `rgb(${ink.r} ${ink.g} ${ink.b})`, accent);
-      painted += 1;
     }
+    if (node.closest(".brand-name")) continue;
     const text = ownText(node);
-    const textStartsInside = box.left >= left - 2 && box.left <= right;
-    if (text && textStartsInside) {
-      ctx.fillStyle = style.color;
-      ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-      ctx.textBaseline = "middle";
-      const padX = cssNumber(style.paddingLeft);
-      ctx.fillText(text, x + padX, y + box.height / 2, Math.max(0, box.width - padX));
-      painted += 1;
-    }
-    if (painted >= 48) break;
+    const textStartsInside = box.left >= originX - 2 && box.left <= originX + width;
+    if (!text || !textStartsInside) continue;
+    ctx.fillStyle = style.color;
+    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    ctx.textBaseline = "middle";
+    const padX = cssNumber(style.paddingLeft);
+    ctx.fillText(text, x + padX, y + box.height / 2, Math.max(0, box.width - padX));
   }
 }
 
@@ -194,10 +247,14 @@ export function mountGlassLens(host: HTMLElement, active: () => boolean = () => 
       sampleCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       rasterBackdrop(sampleCtx, rect.left - pad, rect.top - pad, rect.width + pad * 2, rect.height + pad * 2, host);
       const source = sampleCtx.getImageData(0, 0, srcW, srcH);
+      // Hard rect edges become ramps, so the displacement bends them as curves.
+      soften(source.data, srcW, srcH, 2);
 
       const strength = optics.strength * dpr;
       const ceiling = optics.ceiling * dpr;
       const map = displacementMap(destW, destH, strength, ceiling);
+      const radiusCss = Number.parseFloat(getComputedStyle(host).borderRadius);
+      const radius = (Number.isFinite(radiusCss) ? radiusCss : Math.min(rect.width, rect.height) / 2) * dpr;
       const image = applyDisplacementMap(
         source.data,
         srcW,
@@ -210,6 +267,7 @@ export function mountGlassLens(host: HTMLElement, active: () => boolean = () => 
         optics.dispersion * dpr,
         optics,
         paperFrom(style),
+        radius,
       );
       node.width = destW;
       node.height = destH;

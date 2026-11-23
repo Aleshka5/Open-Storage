@@ -20,11 +20,24 @@ body,
 
 .proof-mark {
   position: fixed;
-  top: 78px;
-  right: 28px;
   z-index: 1;
-  width: 64px;
-  height: 64px;
+  pointer-events: none;
+}
+
+/* Behind the closed trigger, clear of the wordmark on the left. */
+.proof-mark-trigger {
+  top: 12px;
+  right: 22px;
+  width: 46px;
+  height: 46px;
+}
+
+/* Right rim of the first two row wells. The labels sit on the left of the panel. */
+.proof-mark-blob {
+  top: 68px;
+  right: 32px;
+  width: 36px;
+  height: 108px;
 }
 
 .header {
