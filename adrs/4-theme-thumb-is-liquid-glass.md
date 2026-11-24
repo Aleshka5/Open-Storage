@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded in part by [ADR-0005](5-glass-thumb-is-a-circle.md). The package and the single thumb stay. The square corners and the thin rim do not.
 
 ## Decision
 

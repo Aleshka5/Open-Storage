@@ -6,7 +6,7 @@ Stack: Vite 8, React 19, TypeScript 6, react-router 7, CSS variables. See [brand
 
 ## Theme and chrome
 
-This page is the hub. It keeps the owl tab icon. Theme, palettes, and chrome follow the [brand book](../../brand-book/init.md). The thumb is the liquid-glass selector in [ADR-0004](../../../adrs/4-theme-thumb-is-liquid-glass.md).
+This page is the hub. It keeps the owl tab icon. Theme, palettes, and chrome follow the [brand book](../../brand-book/init.md). The thumb is one glass circle, [ADR-0005](../../../adrs/5-glass-thumb-is-a-circle.md).
 
 ## Tree
 

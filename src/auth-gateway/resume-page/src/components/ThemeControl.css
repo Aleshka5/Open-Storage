@@ -1,4 +1,4 @@
-/* Selection is one thumb. The segment underneath stays transparent. */
+/* Selection is one circle. The segment underneath stays transparent. */
 
 .theme-switch {
   position: relative;
@@ -8,15 +8,14 @@
   position: absolute;
   z-index: 0;
   top: 0;
-  bottom: 0;
   left: 0;
   box-sizing: border-box;
-  border-radius: 0;
-  background: color-mix(in srgb, var(--paper-raised) 55%, transparent);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper-raised) 18%, transparent);
   pointer-events: none;
-  transition:
-    transform var(--dur) var(--ease),
-    width var(--dur) var(--ease);
+  transition: transform var(--dur) var(--ease);
 }
 
 .theme-thumb-face {

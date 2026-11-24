@@ -5,8 +5,17 @@ import './ThemeControl.css'
 /** Off the initial chunk. The resume page's shell budget is 95 KB gzipped. */
 const Glass = lazy(() => import('@samasante/liquid-glass').then((mod) => ({ default: mod.Glass })))
 
-/** Frosted card. Bend, depth, and strength stay the package material defaults. */
-const THUMB_OPTICS = { frost: 6, dispersion: 0.4 }
+/** One circle. The rim is thick enough to read on a flat header. ADR-0005. */
+const THUMB_OPTICS = {
+  frost: 8,
+  dispersion: 0.7,
+  bend: 0.85,
+  bendWidth: 0.28,
+  depth: 0.45,
+  strength: 0.16,
+  sheen: 0.9,
+  sheenWidth: 8,
+}
 
 const options = [
   { value: 'light', label: 'light' },
@@ -22,7 +31,7 @@ export function ThemeControl({
   onChange: (next: Preference, origin: DOMRect, group: HTMLElement) => void
 }) {
   const groupRef = useRef<HTMLDivElement>(null)
-  const [box, setBox] = useState<{ x: number; w: number } | null>(null)
+  const [box, setBox] = useState<{ x: number; size: number } | null>(null)
   const [seen, setSeen] = useState(preference)
   const [moving, setMoving] = useState(false)
 
@@ -39,7 +48,8 @@ export function ThemeControl({
     const place = () => {
       const selected = group.querySelector<HTMLElement>('.theme-segment:has(:checked)')
       if (!selected) return
-      setBox({ x: selected.offsetLeft, w: selected.offsetWidth })
+      const size = selected.offsetHeight
+      setBox({ x: selected.offsetLeft + (selected.offsetWidth - size) / 2, size })
     }
 
     place()
@@ -67,16 +77,16 @@ export function ThemeControl({
           fallback={
             <span
               className={moving ? 'theme-thumb is-moving' : 'theme-thumb'}
-              style={{ transform: `translate3d(${box.x}px, 0, 0)`, width: box.w }}
+              style={{ transform: `translate3d(${box.x}px, 0, 0)`, width: box.size, height: box.size }}
               aria-hidden="true"
             />
           }
         >
           <Glass
             className={moving ? 'theme-thumb is-moving' : 'theme-thumb'}
-            radius={0}
+            radius={999}
             optics={THUMB_OPTICS}
-            style={{ transform: `translate3d(${box.x}px, 0, 0)`, width: box.w }}
+            style={{ transform: `translate3d(${box.x}px, 0, 0)`, width: box.size, height: box.size }}
             aria-hidden="true"
           >
             <span className="theme-thumb-face" />
