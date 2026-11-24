@@ -1,6 +1,10 @@
+import { Glass } from "@samasante/liquid-glass";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { Preference } from "../theme";
 import "./ThemeControl.css";
+
+/** Frosted card. Bend, depth, and strength stay the package material defaults. */
+const THUMB_OPTICS = { frost: 6, dispersion: 0.4 };
 
 const options = [
   { value: "light", label: "light" },
@@ -57,11 +61,15 @@ export function ThemeControl({
       }}
     >
       {box ? (
-        <span
+        <Glass
           className={moving ? "theme-thumb is-moving" : "theme-thumb"}
+          radius={0}
+          optics={THUMB_OPTICS}
           style={{ transform: `translate3d(${box.x}px, 0, 0)`, width: box.w }}
           aria-hidden="true"
-        />
+        >
+          <span className="theme-thumb-face" />
+        </Glass>
       ) : null}
       {options.map((option) => (
         <label key={option.value} className="theme-segment">
