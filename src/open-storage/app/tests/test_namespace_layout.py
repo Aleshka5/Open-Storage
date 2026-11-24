@@ -92,11 +92,15 @@ def test_compose_joins_only_external_open_network() -> None:
     assert dockerfile.is_file()
 
     services = data["services"]
-    assert set(services) == {"app", "postgres", "minio", "redis"}
+    assert set(services) == {"app", "postgres", "minio", "redis", "rabbitmq", "mongo"}
     for name, service in services.items():
-        assert "ports" not in service
         assert service["container_name"] == f"open-storage-{name}"
         assert list(service["networks"]) == ["open_network"]
+
+    # Only MinIO publishes host ports: consumers reach the S3 API by address.
+    for name in ("app", "postgres", "redis", "rabbitmq", "mongo"):
+        assert "ports" not in services[name]
+    assert set(services["minio"]["ports"]) == {"9000:9000", "9001:9001"}
 
     app_aliases = services["app"]["networks"]["open_network"]["aliases"]
     assert "app" in app_aliases
@@ -111,6 +115,8 @@ def test_compose_joins_only_external_open_network() -> None:
         "open-storage-postgres-data",
         "open-storage-redis-data",
         "open-storage-minio-data",
+        "open-storage-rabbitmq-data",
+        "open-storage-mongo-data",
     }
     for key, spec in volumes.items():
         assert key.startswith("open-storage-")

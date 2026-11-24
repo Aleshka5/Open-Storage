@@ -14,7 +14,7 @@ up: doctor
 	$(COMPOSE) up -d
 
 # Keeps named volumes and the MinIO bind directory. There is no target that
-# removes them: `$(COMPOSE) down -v` is a manual, deliberate act.
+# removes them. Removing volumes stays a manual, deliberate act on the CLI.
 down:
 	$(COMPOSE) down
 

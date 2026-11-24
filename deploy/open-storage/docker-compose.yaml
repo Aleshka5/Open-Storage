@@ -100,8 +100,8 @@ services:
       - open-storage-minio-data:/data
     # The host directory is owned by the deploy user; under rootless podman the
     # container only maps that owner as uid 0, so MinIO runs as root inside the
-    # container. Host-side ownership of /media/aleksey/HardDisk/minio stays the
-    # deploy user's, which is what a host-side backup tool needs.
+    # container. Host-side ownership of the MinIO data root stays the deploy
+    # user's, which is what a host-side backup tool needs.
     user: "0:0"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9000/minio/health/live"]
@@ -149,7 +149,6 @@ services:
       open_network:
         aliases:
           - open-storage-rabbitmq
-          - rabbit
 
   mongo:
     image: docker.io/library/mongo:7

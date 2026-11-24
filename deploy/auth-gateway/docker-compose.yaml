@@ -14,8 +14,6 @@ networks:
     external: true
   rag_edge:
     external: true
-  common_network:
-    external: true
   deploy_auth_network:
     external: true
 
@@ -57,7 +55,6 @@ services:
       - open_network
       - models_network
       - rag_edge
-      - common_network
       - deploy_auth_network
 
   idp:

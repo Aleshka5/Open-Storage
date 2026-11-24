@@ -44,9 +44,9 @@ flowchart TB
 
 | Network | Why | Source |
 |---|---|---|
-| `open_network` (external) | The only network in the compose file. The gateway reaches `app:8000` by name; it is the only inbound path. Postgres, MinIO and Redis are on this network too. The same network is the condition under which the app may trust identity v1 headers. | [ADR 1](adrs/1-own-data-on-open-network.md), [identity v1](../auth-gateway/external-contracts/identity-v1.md), [upstreams](../auth-gateway/external-contracts/upstreams.md) |
+| `open_network` (external) | The only network in the compose file. The gateway reaches `app:8000` by name; it is the only inbound path. Postgres, MinIO, Redis, RabbitMQ and Mongo are on this network too. The same network is the condition under which the app may trust identity v1 headers. | [ADR 1](adrs/1-own-data-on-open-network.md), [identity v1](../auth-gateway/external-contracts/identity-v1.md), [upstreams](../auth-gateway/external-contracts/upstreams.md) |
 
-`RAG_ENABLED=false`. The compose file does not join `rag_edge`, `common_network`, `user_network` or `auth_network`.
+`RAG_ENABLED=false`. The compose file does not join `rag_edge`, `common_network`, `user_network` or `auth_network`. The shared `common_network` data services are gone from this deployment: the namespace runs its own Postgres, MinIO, Redis, RabbitMQ and Mongo (`open-storage-postgres`, `open-storage-minio`, `open-storage-redis`, `open-storage-rabbitmq`, `open-storage-mongo`), each with an `open-storage-*-data` volume. MinIO still publishes host ports 9000 and 9001 because consumers reach the S3 API by address, not by container name.
 
 ## Mismatches
 
