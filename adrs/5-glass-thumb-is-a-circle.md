@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Supersedes the shape and the rim in [ADR-0004](4-theme-thumb-is-liquid-glass.md). The package and the single thumb stay.
+Superseded in part by [ADR-0006](6-glass-thumb-is-a-rounded-square.md). The package and the single thumb stay. The circle and the width that ignores the label do not.
 
 ## Decision
 

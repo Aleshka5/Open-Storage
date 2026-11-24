@@ -1,4 +1,4 @@
-/* Selection is one circle. The segment underneath stays transparent. */
+/* Selection is one rounded square. The label sits under it. The segment stays square. */
 
 .theme-switch {
   position: relative;
@@ -8,7 +8,7 @@
 
 .theme-segment {
   position: relative;
-  z-index: 1;
+  z-index: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -50,16 +50,15 @@
 
 .theme-thumb {
   position: absolute;
-  z-index: 0;
+  z-index: 1;
   top: 0;
   left: 0;
   box-sizing: border-box;
-  width: 2.25rem;
   height: 2.25rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--paper-raised) 18%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--paper-raised) 10%, transparent);
   pointer-events: none;
-  transition: transform var(--dur) var(--ease);
+  transition: transform var(--dur) var(--ease), width var(--dur) var(--ease);
 }
 
 .theme-thumb-face {
@@ -69,7 +68,7 @@
 }
 
 .theme-thumb.is-moving {
-  will-change: transform;
+  will-change: transform, width;
 }
 
 .theme-switch-instant .theme-thumb {
@@ -78,7 +77,12 @@
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .theme-thumb {
+    z-index: 0;
     background: var(--ink);
+  }
+
+  .theme-segment {
+    z-index: 1;
   }
 
   .theme-segment:has(:checked),
