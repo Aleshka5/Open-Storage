@@ -1,5 +1,5 @@
 > **ID:** task-01
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-13](../init.md), [ADR-0003](../../../../adrs/3-one-session-store.md), [US-09](../../us-09-storage-theme/init.md)
 
 ## Overview
@@ -17,6 +17,6 @@ Record the store before either page changes. [US-09](../../us-09-storage-theme/i
 
 ## Definition of Done
 
-- [ ] The ADR is accepted and linked from [adrs/init.md](../../../../adrs/init.md).
-- [ ] It names [ADR-0003](../../../../adrs/3-one-session-store.md) as unchanged.
-- [ ] It records that a leftover `localStorage` key is not read.
+- [x] The ADR is accepted and linked from [adrs/init.md](../../../../adrs/init.md).
+- [x] It names [ADR-0003](../../../../adrs/3-one-session-store.md) as unchanged.
+- [x] It records that a leftover `localStorage` key is not read.

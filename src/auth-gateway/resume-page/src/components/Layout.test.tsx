@@ -216,7 +216,8 @@ describe('Layout', () => {
 
     await userEvent.click(light)
     expect(light).toBeChecked()
-    expect(localStorage.getItem('theme.preference')).toBe('light')
+    expect(document.cookie).toContain('theme.preference=light')
+    expect(localStorage.getItem('theme.preference')).toBeNull()
     expect(document.documentElement.dataset.theme).toBe('light')
     expect(document.documentElement.style.colorScheme).toBe('light')
 
@@ -225,7 +226,8 @@ describe('Layout', () => {
     expect(dark).toBeChecked()
     await userEvent.keyboard('{ArrowRight}')
     expect(system).toBeChecked()
-    expect(localStorage.getItem('theme.preference')).toBe('system')
+    expect(document.cookie).toContain('theme.preference=system')
+    expect(localStorage.getItem('theme.preference')).toBeNull()
     expect(document.documentElement.dataset.theme).not.toBe('system')
   })
 

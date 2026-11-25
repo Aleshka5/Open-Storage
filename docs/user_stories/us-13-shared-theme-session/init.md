@@ -1,6 +1,6 @@
 > **ID:** US-13
-> **Status:** TODO
-> **Specs:** [brand book §1](../../brand-book/init.md), [ADR-0003](../../../adrs/3-one-session-store.md), [ADR-0006](../../../adrs/6-glass-thumb-is-a-rounded-square.md), [US-09](../us-09-storage-theme/init.md), [US-12](../us-12-rounded-glass/init.md), [resume-page design](../../auth-gateway/frontend/design.md), [spa](../../open-storage/spa/init.md)
+> **Status:** DONE
+> **Specs:** [brand book §1](../../brand-book/init.md), [ADR-0007](../../../adrs/7-theme-preference-is-a-session-cookie.md), [ADR-0003](../../../adrs/3-one-session-store.md), [ADR-0006](../../../adrs/6-glass-thumb-is-a-rounded-square.md), [US-09](../us-09-storage-theme/init.md), [US-12](../us-12-rounded-glass/init.md), [resume-page design](../../auth-gateway/frontend/design.md), [spa](../../open-storage/spa/init.md)
 
 ## Overview
 
@@ -46,6 +46,6 @@ Tasks: [decision](tasks/task-01-decision.md), [store](tasks/task-02-store.md), [
 
 ## Definition of Done
 
-- [ ] An ADR records D1–D3 and supersedes the shared-cookie rejection in [US-09](../us-09-storage-theme/init.md) D1. The code change follows that ADR.
-- [ ] `npm test` and `npm run build` pass in `src/auth-gateway/resume-page` and in `src/open-storage/spa`. The resume page’s initial JS stays inside the 95 KB gzip budget.
-- [ ] [brand book §1](../../brand-book/init.md) names this cookie as the store. [spa/init.md](../../open-storage/spa/init.md) and [resume-page design](../../auth-gateway/frontend/design.md) link it in one sentence each and do not copy the attributes.
+- [x] An ADR records D1–D3 and supersedes the shared-cookie rejection in [US-09](../us-09-storage-theme/init.md) D1. The code change follows that ADR.
+- [x] `npm test` and `npm run build` pass in `src/auth-gateway/resume-page` and in `src/open-storage/spa`. The resume page’s initial JS stays inside the 95 KB gzip budget.
+- [x] [brand book §1](../../brand-book/init.md) names this cookie as the store. [spa/init.md](../../open-storage/spa/init.md) and [resume-page design](../../auth-gateway/frontend/design.md) link it in one sentence each and do not copy the attributes.

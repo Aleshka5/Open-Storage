@@ -2,6 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { persist } from './theme'
 import { chooseTheme, durationMs, themeRevealIdle } from './themeReveal'
 
+function storedPreference(): string | null {
+  const prefix = 'theme.preference='
+  for (const part of document.cookie.split(';')) {
+    const entry = part.trim()
+    if (entry.startsWith(prefix)) return entry.slice(prefix.length)
+  }
+  return null
+}
+
 function rect(): DOMRect {
   return new DOMRect(8, 12, 180, 36)
 }
@@ -68,7 +77,8 @@ describe('theme reveal skips', () => {
 
     expect(start).not.toHaveBeenCalled()
     expect(commit).toHaveBeenCalledOnce()
-    expect(localStorage.getItem('theme.preference')).toBe('dark')
+    expect(storedPreference()).toBe('dark')
+    expect(localStorage.getItem('theme.preference')).toBeNull()
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(host.classList.contains('theme-switch-instant')).toBe(false)
   })
@@ -84,7 +94,8 @@ describe('theme reveal skips', () => {
 
     expect(start).not.toHaveBeenCalled()
     expect(commit).toHaveBeenCalledOnce()
-    expect(localStorage.getItem('theme.preference')).toBe('light')
+    expect(storedPreference()).toBe('light')
+    expect(localStorage.getItem('theme.preference')).toBeNull()
     expect(document.documentElement.dataset.theme).toBe('light')
     expect(document.documentElement.style.colorScheme).toBe('light')
   })
@@ -98,7 +109,8 @@ describe('theme reveal skips', () => {
 
     expect(commit).toHaveBeenCalledOnce()
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(localStorage.getItem('theme.preference')).toBe('light')
+    expect(storedPreference()).toBe('light')
+    expect(localStorage.getItem('theme.preference')).toBeNull()
   })
 
   it('plays one circle when a choice flips the resolved theme', async () => {
@@ -111,7 +123,8 @@ describe('theme reveal skips', () => {
 
     expect(start).toHaveBeenCalledOnce()
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(localStorage.getItem('theme.preference')).toBe('light')
+    expect(storedPreference()).toBe('light')
+    expect(localStorage.getItem('theme.preference')).toBeNull()
   })
 
   it('holds a second choice until the running circle finishes', async () => {
@@ -148,7 +161,8 @@ describe('theme reveal skips', () => {
 
     expect(start).toHaveBeenCalledTimes(2)
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(localStorage.getItem('theme.preference')).toBe('dark')
+    expect(storedPreference()).toBe('dark')
+    expect(localStorage.getItem('theme.preference')).toBeNull()
   })
 })
 

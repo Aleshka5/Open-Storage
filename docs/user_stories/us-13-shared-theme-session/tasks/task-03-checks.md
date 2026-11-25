@@ -1,5 +1,5 @@
 > **ID:** task-03
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-13](../init.md)
 
 ## Overview
@@ -18,5 +18,5 @@ Lock the cookie contract in the tests that already cover `theme.preference`.
 
 ## Definition of Done
 
-- [ ] `npm test` passes in both React pages.
-- [ ] `npm run build` passes in both. The resume page’s initial JS stays inside 95 KB gzipped.
+- [x] `npm test` passes in both React pages.
+- [x] `npm run build` passes in both. The resume page’s initial JS stays inside 95 KB gzipped.

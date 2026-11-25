@@ -4,3 +4,4 @@
 - ([4-theme-thumb-is-liquid-glass.md](4-theme-thumb-is-liquid-glass.md)) - The theme thumb is one `Glass` from `@samasante/liquid-glass`, sliding between `light`, `Dark`, and `System`. Its shape is [ADR-0006](6-glass-thumb-is-a-rounded-square.md).
 - ([5-glass-thumb-is-a-circle.md](5-glass-thumb-is-a-circle.md)) - Superseded in part by [ADR-0006](6-glass-thumb-is-a-rounded-square.md). The thumb was a circle that did not follow the label.
 - ([6-glass-thumb-is-a-rounded-square.md](6-glass-thumb-is-a-rounded-square.md)) - The glass thumb is one rounded square, as wide as the selected label. The labels sit under it so the rim refracts them.
+- ([7-theme-preference-is-a-session-cookie.md](7-theme-preference-is-a-session-cookie.md)) - theme.preference is one session cookie, not per-origin localStorage. The attributes are in the brand book.

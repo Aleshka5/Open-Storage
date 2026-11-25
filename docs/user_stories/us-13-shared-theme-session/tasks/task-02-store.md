@@ -1,5 +1,5 @@
 > **ID:** task-02
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-13](../init.md), [brand book §1](../../../brand-book/init.md)
 
 ## Overview
@@ -20,6 +20,6 @@ Both pages read and write the session cookie from [task-01](task-01-decision.md)
 
 ## Definition of Done
 
-- [ ] A choice writes `theme.preference` as a session cookie and does not write `localStorage`.
-- [ ] An unknown cookie value paints dark.
-- [ ] The brand book, [spa/init.md](../../../open-storage/spa/init.md), and [resume-page design](../../../auth-gateway/frontend/design.md) match the store.
+- [x] A choice writes `theme.preference` as a session cookie and does not write `localStorage`.
+- [x] An unknown cookie value paints dark.
+- [x] The brand book, [spa/init.md](../../../open-storage/spa/init.md), and [resume-page design](../../../auth-gateway/frontend/design.md) match the store.
