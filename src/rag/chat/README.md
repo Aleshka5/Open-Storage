@@ -12,7 +12,7 @@ Required environment variables have no defaults: `MONGODB_URI`, `QDRANT_URL`, `E
 python -m chat
 ```
 
-`GET /health` returns `{"status":"ok"}` and does not check dependencies. Every other route requires `X-Auth-User-Id` (UUID). `X-User-Id` is ignored. `X-Auth-Role: BLOCKED` returns 403.
+`GET /health` returns `{"status":"ok"}` and does not check dependencies. Every other route requires `X-Auth-Subject` as a canonical UUID; `X-Auth-Roles` is a space-separated realm-role list and the exact token `svc:rag:blocked` returns 403. The pre-v1 headers `X-Auth-User-Id`, `X-Auth-Role` and `X-User-Id` are not read. Header set: [identity v1](../../../docs/auth-gateway/external-contracts/identity-v1.md).
 
 `POST /api/chats/{chat_id}/messages` responds with `text/event-stream`: `meta`, then `delta`, then `done`. The `meta` event carries the sources that are stored on the assistant message.
 

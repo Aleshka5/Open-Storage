@@ -4,7 +4,7 @@
 
 Контейнер подключается к двум сетям:
 
-- `rag_edge` — единственный участник со стороны RAG. Auth Gateway подключается к этой сети как к external и проксирует на `http://rag-edge:8080`.
+- `rag_network` — the only RAG member. The auth gateway joins this network as external and proxies to `http://rag-edge:8080`; behind that edge the services may trust identity v1 headers.
 - `rag_internal` — отсюда edge ходит к `file-collector`, `chat` и `frontend`.
 
 ## Маршруты
@@ -20,7 +20,7 @@
 
 Ответ `text/event-stream` не буферизуется: байты чата отдаются по мере прихода от Chat. На такой ответ добавляется `X-Accel-Buffering: no`.
 
-Вверх уходят `X-Auth-User-Id`, `X-Auth-Role` и `X-Request-Id`. Если `X-Request-Id` не пришёл или это не UUID, edge создаёт UUID, передаёт его upstream и возвращает в ответе.
+The incoming `X-Auth-Subject`, `X-Auth-Roles` and `X-Request-Id` go upstream. The edge does not verify them and does not mint a user: the gateway sets them. When `X-Request-Id` is absent or is not a UUID the edge creates a UUID, sends it upstream and returns it. Header set: [identity v1](../../../docs/auth-gateway/external-contracts/identity-v1.md).
 
 ## Переменные
 

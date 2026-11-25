@@ -66,7 +66,7 @@ def test_container_config_listens_internally_without_host_publish() -> None:
     assert "-p " not in container
     assert "ports:" not in container.lower()
     readme = (ROOT / "README.md").read_text()
-    assert "rag_edge" in readme
+    assert "rag_network" in readme
     assert "rag_internal" in readme
     assert "file-collector" in readme
     assert "text/event-stream" in readme
