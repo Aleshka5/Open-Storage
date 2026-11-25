@@ -1,16 +1,40 @@
-/** Theme preference. The blocking script in `index.html` is the same contract, run before first paint. */
+/** Theme preference. The blocking script in `index.html` reads the same cookie before first paint. */
 
 export const THEME_KEY = "theme.preference";
 
 export type Preference = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
+const THEME_APEX = "filenkov.store";
+const THEME_DOMAIN = ".filenkov.store";
+
+function sharedDomainAttribute(): string {
+  const host = location.hostname;
+  if (host === THEME_APEX || host.endsWith(THEME_DOMAIN)) return `; Domain=${THEME_DOMAIN}`;
+  return "";
+}
+
+/** Session cookie: no Max-Age, no Expires. Secure only on https. */
+function preferenceCookie(preference: Preference): string {
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  return `${THEME_KEY}=${preference}; Path=/; SameSite=Lax${secure}${sharedDomainAttribute()}`;
+}
+
+function storedPreference(): string | null {
+  const prefix = `${THEME_KEY}=`;
+  for (const part of document.cookie.split(";")) {
+    const entry = part.trim();
+    if (entry.startsWith(prefix)) return entry.slice(prefix.length);
+  }
+  return null;
+}
+
 export function readPreference(): Preference {
   try {
-    const stored = localStorage.getItem(THEME_KEY);
+    const stored = storedPreference();
     if (stored === "light" || stored === "dark" || stored === "system") return stored;
   } catch {
-    // A private-mode or blocked store stays silent and paints dark.
+    // A blocked cookie stays silent and paints dark.
   }
   return "dark";
 }
@@ -33,7 +57,7 @@ export function apply(preference: string): ResolvedTheme {
 /** Persist the choice, never the resolved theme. A write failure still paints. */
 export function persist(preference: Preference): void {
   try {
-    localStorage.setItem(THEME_KEY, preference);
+    document.cookie = preferenceCookie(preference);
   } catch {
     // Silent, same as a blocked read.
   }

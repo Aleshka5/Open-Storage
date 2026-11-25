@@ -5,12 +5,24 @@ export const THEME_KEY = 'theme.preference'
 export type Preference = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
 
+function readCookie(name: string): string | null {
+  const jar = document.cookie
+  if (!jar) return null
+  for (const part of jar.split(';')) {
+    const trimmed = part.trim()
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) continue
+    if (trimmed.slice(0, eq) === name) return trimmed.slice(eq + 1)
+  }
+  return null
+}
+
 export function readPreference(): Preference {
   try {
-    const stored = localStorage.getItem(THEME_KEY)
+    const stored = readCookie(THEME_KEY)
     if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
   } catch {
-    // A private-mode or blocked store stays silent and paints dark.
+    // A blocked cookie stays silent and paints dark.
   }
   return 'dark'
 }
@@ -30,10 +42,19 @@ export function apply(preference: string): ResolvedTheme {
   return theme
 }
 
+/** Session cookie. `Domain` is shared only on filenkov.store. No expiry, so it dies with the browser. */
+function themeCookieAttributes(): string {
+  const parts = ['Path=/', 'SameSite=Lax']
+  if (location.protocol === 'https:') parts.push('Secure')
+  const host = location.hostname
+  if (host === 'filenkov.store' || host.endsWith('.filenkov.store')) parts.push('Domain=.filenkov.store')
+  return parts.join('; ')
+}
+
 /** Persist the choice, never the resolved theme. A write failure still paints. */
 export function persist(preference: Preference): void {
   try {
-    localStorage.setItem(THEME_KEY, preference)
+    document.cookie = `${THEME_KEY}=${preference}; ${themeCookieAttributes()}`
   } catch {
     // Silent, same as a blocked read.
   }

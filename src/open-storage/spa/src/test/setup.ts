@@ -27,6 +27,7 @@ if (typeof window.matchMedia !== 'function') {
 
 afterEach(() => {
   localStorage.clear()
+  document.cookie = 'theme.preference=; Path=/; Max-Age=0'
   document.documentElement.removeAttribute('data-theme')
   document.documentElement.style.colorScheme = ''
 })

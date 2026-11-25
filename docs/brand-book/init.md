@@ -13,7 +13,9 @@ Every page offers **light**, **Dark**, and **System**.
 | Dark | The dark palette below. Ignores the OS. |
 | System | light when `prefers-color-scheme: light` matches. Dark otherwise, including `no-preference`. Keeps listening to that query. |
 
-Store the choice in `localStorage` under `theme.preference`. Allowed values are `light`, `dark`, and `system`. Persist the choice, never the resolved theme. A missing key, an unreadable store, or any other string falls back to `dark`. A private-mode storage failure is silent.
+Store the choice in the session cookie `theme.preference` ([ADR-0007](../../adrs/7-theme-preference-is-a-session-cookie.md)). Allowed values are `light`, `dark`, and `system`. Persist the choice, never the resolved theme. A missing cookie, an unreadable value, or any other string paints dark. Read the cookie only. Ignore a leftover `localStorage` key. No migration. A blocked write is silent and the page still paints.
+
+On hostname `filenkov.store` or `*.filenkov.store`, set `Domain=.filenkov.store`. On every other host, omit `Domain` so the cookie is host-only. `Path=/`. `SameSite=Lax`. `Secure` only when the page is `https`. No `Max-Age`, no `Expires`, not `HttpOnly`, not `Partitioned`.
 
 The resolved theme is `light` or `dark` only. Set it on the document element before first paint:
 
@@ -23,21 +25,42 @@ The resolved theme is `light` or `dark` only. Set it on the document element bef
 
 `color-scheme` is `light` when the resolved theme is light, and `dark` when it is dark. Put the same value in `<meta name="color-scheme">`.
 
-Changing the theme does not reload the page. The key is a UI preference. It is not a credential. The page never stores a session in `localStorage`.
+Changing the theme does not reload the page. The cookie is a UI preference. It is not a credential. The page never stores a session in `localStorage` and does not write the theme there.
 
 The control sits in the header’s right slot. It is a segmented group of three radios, `role="radiogroup"`, accessible name `Theme`. Labels are `light`, `Dark`, and `System`. Each segment is at least `2.25rem` tall, square, with no shadow. Selection is one rounded square, not a glass on each label. It is one `Glass` from `@samasante/liquid-glass`, `2.25rem` tall, corner radius `12px`, as wide as the selected segment. The labels sit under it, so the rim refracts the letters. It translates with `transform`, and its width changes, over `--dur`. Its optics are [ADR-0006](../../adrs/6-glass-thumb-is-a-rounded-square.md). Its fill is `--paper-raised` at 10% opacity. It casts no drop shadow and takes no pointer events. `will-change: transform, width` applies only while that thumb moves. An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`. Without `backdrop-filter`, the thumb’s fill is `--ink`, it sits under the label, and the selected label is `--paper`. Arrow keys move inside the group. At 620px the wordmark hides and this control stays.
 
 Both palettes use the same token names. light copper text is `#8f4128`. Dark copper text is `#e0a181`. Do not mix them.
 
 ```js
-var KEY = 'theme.preference'
+var NAME = 'theme.preference'
 
 function readPreference() {
   try {
-    var stored = localStorage.getItem(KEY)
-    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+    var items = document.cookie ? document.cookie.split(';') : []
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i].trim()
+      var eq = item.indexOf('=')
+      if (eq === -1 || item.slice(0, eq) !== NAME) continue
+      var stored = decodeURIComponent(item.slice(eq + 1))
+      if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+      return 'dark'
+    }
   } catch (e) {}
   return 'dark'
+}
+
+function domainAttribute() {
+  var host = location.hostname
+  if (host === 'filenkov.store' || host.endsWith('.filenkov.store')) return '; Domain=.filenkov.store'
+  return ''
+}
+
+function writePreference(preference) {
+  if (preference !== 'light' && preference !== 'dark' && preference !== 'system') return
+  try {
+    var secure = location.protocol === 'https:' ? '; Secure' : ''
+    document.cookie = NAME + '=' + preference + domainAttribute() + '; Path=/; SameSite=Lax' + secure
+  } catch (e) {}
 }
 
 function resolve(preference) {
@@ -55,7 +78,7 @@ function apply(preference) {
 }
 ```
 
-Run `apply(readPreference())` in a blocking script in `<head>`, before first paint. When the stored value is `system`, subscribe to `prefers-color-scheme` and call `apply` again. On change, write `theme.preference` and call `apply`.
+Run `apply(readPreference())` in a blocking script in `<head>`, before first paint. When the stored value is `system`, subscribe to `prefers-color-scheme` and call `apply` again. On change, call `writePreference` and `apply`.
 
 ---
 

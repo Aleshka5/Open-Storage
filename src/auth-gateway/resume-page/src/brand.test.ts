@@ -105,47 +105,91 @@ function headScript() {
   return { html, head, script: script![1] }
 }
 
+type JsdomWindow = { jsdom?: { reconfigure(settings: { url: string }): void } }
+
+/** Point `location` at one host. jsdom keeps a single document, so this is not a second origin. */
+function useHost(hostname: string, protocol: 'http:' | 'https:') {
+  const dom = (globalThis as JsdomWindow).jsdom
+  if (!dom) throw new Error('jsdom is required to set location.hostname')
+  const scheme = protocol === 'https:' ? 'https' : 'http'
+  dom.reconfigure({ url: `${scheme}://${hostname}/` })
+}
+
+function spyCookie() {
+  const proto = Document.prototype
+  const original = Object.getOwnPropertyDescriptor(proto, 'cookie')
+  if (!original?.get || !original.set) throw new Error('cookie descriptor missing')
+  const writes: string[] = []
+  Object.defineProperty(proto, 'cookie', {
+    configurable: true,
+    enumerable: original.enumerable,
+    get: original.get,
+    set(value: string) {
+      writes.push(String(value))
+      return original.set!.call(this, value)
+    },
+  })
+  return {
+    writes,
+    restore() {
+      Object.defineProperty(proto, 'cookie', original)
+    },
+  }
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
   localStorage.clear()
+  Reflect.deleteProperty(document, 'cookie')
 })
 
 describe('theme preference', () => {
   it('paints dark for a missing, unknown, or unreadable preference', () => {
     ensureMeta()
     installScheme(true)
-
-    localStorage.removeItem('theme.preference')
+    document.cookie = 'theme.preference=; Path=/; Max-Age=0'
+    Storage.prototype.setItem.call(localStorage, 'theme.preference', 'light')
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
     expect(readPreference()).toBe('dark')
     apply(readPreference())
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(document.documentElement.style.colorScheme).toBe('dark')
 
-    localStorage.setItem('theme.preference', 'sepia')
+    document.cookie = 'theme.preference=sepia; Path=/'
     expect(readPreference()).toBe('dark')
     apply(readPreference())
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(document.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe('dark')
+    expect(localStorage.getItem('theme.preference')).toBe('light')
 
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('blocked')
+    const original = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie')
+    Object.defineProperty(document, 'cookie', {
+      configurable: true,
+      get() {
+        throw new Error('blocked')
+      },
+      set() {
+        throw new Error('blocked')
+      },
     })
     expect(readPreference()).toBe('dark')
     expect(() => apply(readPreference())).not.toThrow()
-
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('blocked')
-    })
     expect(() => persist('light')).not.toThrow()
     expect(document.documentElement.dataset.theme).toBe('light')
     expect(document.documentElement.style.colorScheme).toBe('light')
+    expect(setItem).not.toHaveBeenCalled()
+    expect(localStorage.getItem('theme.preference')).toBe('light')
+    if (original) Object.defineProperty(Document.prototype, 'cookie', original)
   })
 
   it('follows prefers-color-scheme only while the preference is system', () => {
     ensureMeta()
     const media = installScheme(false)
-    localStorage.setItem('theme.preference', 'system')
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    document.cookie = 'unrelated=1'
+    document.cookie = 'theme.preference=system; Path=/'
+    expect(readPreference()).toBe('system')
     expect(resolve(readPreference())).toBe('dark')
     const stop = watchSystem(() => apply(readPreference()))
 
@@ -160,8 +204,52 @@ describe('theme preference', () => {
     persist('dark')
     media.emit(true)
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(localStorage.getItem('theme.preference')).toBe('dark')
+    expect(document.cookie).toContain('theme.preference=dark')
+    expect(setItem).not.toHaveBeenCalled()
+    expect(localStorage.getItem('theme.preference')).toBeNull()
     stop()
+  })
+
+  it('writes Domain=.filenkov.store on the hub and on storage', () => {
+    const { writes, restore } = spyCookie()
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    try {
+      useHost('filenkov.store', 'https:')
+      expect(location.hostname).toBe('filenkov.store')
+      expect(location.protocol).toBe('https:')
+      persist('light')
+      expect(writes).toEqual([
+        'theme.preference=light; Path=/; SameSite=Lax; Secure; Domain=.filenkov.store',
+      ])
+      expect(setItem).not.toHaveBeenCalled()
+      expect(readPreference()).toBe('light')
+
+      useHost('storage.filenkov.store', 'https:')
+      expect(location.hostname).toBe('storage.filenkov.store')
+      expect(readPreference()).toBe('light')
+      writes.length = 0
+      persist('dark')
+      expect(writes).toEqual([
+        'theme.preference=dark; Path=/; SameSite=Lax; Secure; Domain=.filenkov.store',
+      ])
+
+      useHost('filenkov.store', 'https:')
+      expect(readPreference()).toBe('dark')
+
+      writes.length = 0
+      useHost('filenkov.store', 'http:')
+      persist('system')
+      expect(writes).toEqual(['theme.preference=system; Path=/; SameSite=Lax; Domain=.filenkov.store'])
+
+      writes.length = 0
+      useHost('localhost', 'http:')
+      expect(location.hostname).toBe('localhost')
+      persist('light')
+      expect(writes).toEqual(['theme.preference=light; Path=/; SameSite=Lax'])
+      expect(setItem).not.toHaveBeenCalled()
+    } finally {
+      restore()
+    }
   })
 
   it('runs readPreference, resolve, and apply from a blocking head script', () => {
@@ -173,25 +261,30 @@ describe('theme preference', () => {
     expect(script).toContain('function apply(preference)')
     expect(script).toContain('apply(readPreference())')
     expect(script).toContain("matchMedia('(prefers-color-scheme: light)')")
+    expect(script).toContain('document.cookie')
+    expect(script).not.toContain('localStorage')
+    expect(script).not.toContain('type="module"')
 
     ensureMeta()
     const media = installScheme(true)
-    localStorage.setItem('theme.preference', 'nope')
+    Storage.prototype.setItem.call(localStorage, 'theme.preference', 'light')
+    document.cookie = 'theme.preference=nope'
     new Function(script)()
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(document.documentElement.style.colorScheme).toBe('dark')
 
-    localStorage.setItem('theme.preference', 'system')
+    document.cookie = 'theme.preference=system'
     new Function(script)()
     expect(document.documentElement.dataset.theme).toBe('light')
     media.emit(false)
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(document.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe('dark')
 
-    localStorage.setItem('theme.preference', 'light')
+    document.cookie = 'theme.preference=light'
     new Function(script)()
     media.emit(false)
     expect(document.documentElement.dataset.theme).toBe('light')
+    expect(localStorage.getItem('theme.preference')).toBe('light')
   })
 
   it('keeps the wordmark in-app only on the hub origin', () => {
@@ -205,8 +298,8 @@ describe('theme preference', () => {
       const text = readFileSync(file, 'utf8')
       for (const write of text.match(/localStorage\.setItem\([^)]*\)/g) ?? []) writes.push(`${file} ${write}`)
     }
-    expect(writes.length).toBeGreaterThan(0)
-    for (const write of writes) expect(write).toMatch(/theme\.preference|THEME_KEY/)
+    expect(writes).toEqual([])
+    expect(readPage('src/theme.ts')).not.toContain('localStorage')
   })
 })
 

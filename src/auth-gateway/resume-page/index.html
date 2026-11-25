@@ -10,8 +10,17 @@
 
       function readPreference() {
         try {
-          var stored = localStorage.getItem(KEY)
-          if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+          var jar = document.cookie || ''
+          var parts = jar.split(';')
+          for (var i = 0; i < parts.length; i++) {
+            var part = parts[i].trim()
+            var eq = part.indexOf('=')
+            if (eq === -1) continue
+            if (part.slice(0, eq) !== KEY) continue
+            var stored = part.slice(eq + 1)
+            if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+            return 'dark'
+          }
         } catch (e) {}
         return 'dark'
       }
