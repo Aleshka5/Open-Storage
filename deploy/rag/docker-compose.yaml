@@ -1,18 +1,12 @@
 name: rag
 
-# The rag namespace. The Makefile in deploy/rag/ is the entry point: it passes
-# RAG_ROOT and RAG_ENV_FILE and runs compose from the repository root. Without
-# RAG_ROOT the file is refused at parse time, before a service is created.
-#   cd deploy/rag && make doctor
+# The rag namespace. Entry point: `cd deploy/rag && make up`.
 # Route, networks and data services: adrs/9-rag-namespace.md.
+# Published image names: docs/images.md. Qdrant stays on its upstream registry.
 #
-# The build context is the repository root, because file-collector, processor and
-# deletion-worker copy src/rag/common beside the service. podman-compose joins
-# `dockerfile` onto the context rather than onto this file, and resolves a
-# context that is not an absolute path against nothing useful, so RAG_ROOT must
-# be an absolute path to the root. The Makefile derives and exports it; without
-# it compose refuses the file at parse time, before any service is created.
-# RAG_ENV_FILE is unset by default, which picks .env beside this file.
+# file-collector, processor and deletion-worker build from the repository root
+# so the image can copy src/rag/common. Their Dockerfile path is relative to
+# that context. The other services build from src/rag/<service>.
 
 networks:
   # Created here. The auth-gateway declares it external to itself, the same way
@@ -47,7 +41,7 @@ services:
   rag-edge:
     build:
       context: ../../src/rag/rag-edge
-    image: rag-rag-edge
+    image: ${REGISTRY:?REGISTRY is required}/rag/rag-edge:${IMAGE_TAG:-latest}
     container_name: rag-rag-edge
     restart: unless-stopped
     env_file:
@@ -73,7 +67,7 @@ services:
     build:
       context: ../../
       dockerfile: deploy/rag/file-collector/Dockerfile
-    image: rag-file-collector
+    image: ${REGISTRY:?REGISTRY is required}/rag/file-collector:${IMAGE_TAG:-latest}
     container_name: rag-file-collector
     restart: unless-stopped
     env_file:
@@ -94,7 +88,7 @@ services:
     build:
       context: ../../
       dockerfile: deploy/rag/processor/Dockerfile
-    image: rag-processor
+    image: ${REGISTRY:?REGISTRY is required}/rag/processor:${IMAGE_TAG:-latest}
     container_name: rag-processor
     restart: unless-stopped
     env_file:
@@ -133,7 +127,7 @@ services:
     build:
       context: ../../
       dockerfile: deploy/rag/deletion-worker/Dockerfile
-    image: rag-deletion-worker
+    image: ${REGISTRY:?REGISTRY is required}/rag/deletion-worker:${IMAGE_TAG:-latest}
     container_name: rag-deletion-worker
     restart: unless-stopped
     env_file:
@@ -157,7 +151,7 @@ services:
   chat:
     build:
       context: ../../src/rag/chat
-    image: rag-chat
+    image: ${REGISTRY:?REGISTRY is required}/rag/chat:${IMAGE_TAG:-latest}
     container_name: rag-chat
     restart: unless-stopped
     env_file:
@@ -192,7 +186,7 @@ services:
   frontend:
     build:
       context: ../../src/rag/frontend
-    image: rag-frontend
+    image: ${REGISTRY:?REGISTRY is required}/rag/frontend:${IMAGE_TAG:-latest}
     container_name: rag-frontend
     restart: unless-stopped
     networks:
@@ -207,7 +201,7 @@ services:
     build:
       context: ../../src/rag/embedding
       target: cpu
-    image: rag-embedding
+    image: ${REGISTRY:?REGISTRY is required}/rag/embedding:${IMAGE_TAG:-latest}
     container_name: rag-embedding
     restart: unless-stopped
     environment:
@@ -239,7 +233,7 @@ services:
     build:
       context: ../../src/rag/ocr
       target: cpu
-    image: rag-ocr
+    image: ${REGISTRY:?REGISTRY is required}/rag/ocr:${IMAGE_TAG:-latest}
     container_name: rag-ocr
     restart: unless-stopped
     environment:

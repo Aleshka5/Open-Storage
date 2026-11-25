@@ -4,6 +4,7 @@ name: open-storage
 # namespace on common_network. See adrs/8-common-data-services.md and
 # docs/open-storage/adrs/3-app-on-common-data.md.
 # open_network is created by the auth-gateway namespace.
+# The app image is published. See docs/images.md.
 
 networks:
   open_network:
@@ -15,6 +16,7 @@ networks:
 
 services:
   app:
+    image: ${REGISTRY:?REGISTRY is required}/open-storage/app:${IMAGE_TAG:-latest}
     build:
       context: ../../src/open-storage
       dockerfile: ../../deploy/open-storage/app/Dockerfile

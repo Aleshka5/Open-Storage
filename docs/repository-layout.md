@@ -29,7 +29,7 @@ Docs Service
 
 Rules Group deploy
  - deploy/<namespace>/.env.example — environment variables for that namespace.
- - deploy/<namespace>/Makefile — up, down, doctor, and the other lifecycle targets.
+ - deploy/<namespace>/Makefile — up, down, doctor, and the other lifecycle targets. Image publish and pull: [images.md](images.md).
  - deploy/<namespace>/docker-compose.yaml — the services of that namespace.
  - deploy/<namespace>/<service>/Dockerfile - service dockerfile if needed
 

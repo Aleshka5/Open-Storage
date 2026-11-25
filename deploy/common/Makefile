@@ -1,4 +1,5 @@
-COMPOSE ?= podman compose -f docker-compose.yaml
+include ../../scripts/engine.mk
+COMPOSE ?= $(ENGINE) compose -f docker-compose.yaml
 
 # Empty or unset values are a failed doctor. Same names as .env.example.
 REQUIRED_ENV = POSTGRES_USER POSTGRES_PASSWORD MINIO_ROOT_USER MINIO_ROOT_PASSWORD

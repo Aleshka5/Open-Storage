@@ -35,7 +35,9 @@ make down
 
 `.env` is not committed. Names are in [.env.example](../../deploy/auth-gateway/.env.example). Shared names are in the repository `.env.example`.
 
-`make doctor` checks compose, the env file, the Caddyfile, and that the gateway builds. `make verify` runs `scripts/golden.sh`: one request per SSO host through the proxy and directly against the gateway, both probes, and the Caddyfile.
+`make release` builds the gateway and the resume page, tags them with the local date and `latest`, and pushes them. `make up` pulls that tag and starts the stack. The two commands can run on different machines. The procedure is [images.md](../images.md).
+
+`make doctor` checks compose, the env file, the Caddyfile, and the image names. The Go compile runs on `make release` and `make rebuild-gateway`. `make verify` runs `scripts/golden.sh`: one request per SSO host through the proxy and directly against the gateway, both probes, and the Caddyfile.
 
 A config change is a restart of gateway, not a reload. A proxy change is `caddy validate`, then `systemctl restart caddy`. The Caddyfile sets `admin off`, so `caddy reload` has no admin API to post to. Restarting gateway does not sign people out.
 

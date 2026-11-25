@@ -4,6 +4,7 @@ name: auth-gateway
 # here on purpose: it runs as the host's systemd Caddy, because its config lives
 # at /etc/caddy/Caddyfile and two of its upstreams are host loopback ports
 # (ADR-0005). This file covers the gateway, the idp, its database, and the page.
+# gateway and resume are published images. See docs/images.md.
 
 networks:
   open_network:
@@ -22,6 +23,7 @@ volumes:
 
 services:
   gateway:
+    image: ${REGISTRY:?REGISTRY is required}/auth-gateway/gateway:${IMAGE_TAG:-latest}
     build:
       context: ../../src/auth-gateway/gateway
     restart: unless-stopped
@@ -111,6 +113,7 @@ services:
       - open_network
 
   resume:
+    image: ${REGISTRY:?REGISTRY is required}/auth-gateway/resume:${IMAGE_TAG:-latest}
     build:
       context: ../../src/auth-gateway/resume-page
     restart: unless-stopped

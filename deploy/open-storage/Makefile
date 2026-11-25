@@ -1,15 +1,19 @@
-COMPOSE ?= podman compose -f docker-compose.yaml
+include ../../scripts/engine.mk
+COMPOSE ?= $(ENGINE) compose -f docker-compose.yaml
 APP_DIR ?= ../../src/open-storage/app
 
 # Empty or unset values are a failed doctor. Compose interpolation uses the same names.
 # MinIO's host path and root credentials live in deploy/common.
-REQUIRED_ENV = POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD S3_ACCESS_KEY S3_SECRET_KEY
+REQUIRED_ENV = REGISTRY POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD S3_ACCESS_KEY S3_SECRET_KEY
 
-.PHONY: up down restart rebuild rebuild-app ps logs doctor test
+BUILT_SERVICES = app
+IMAGE_REPOS = open-storage/app
+
+.PHONY: up down restart rebuild rebuild-app release ps logs doctor test
 
 # Recreates the app when its definition changed. Postgres, MinIO and Redis
 # are the common namespace; this target does not recreate them.
-up: doctor
+up: doctor pull-images
 	$(COMPOSE) up -d
 
 # This compose has no volumes. `down` does not touch the common namespace.
@@ -24,7 +28,9 @@ restart:
 # `up --build` can bake the previous source into a "new" image.
 rebuild: doctor
 	$(COMPOSE) build --no-cache app
-	$(COMPOSE) up -d --no-deps --force-recreate app
+	$(COMPOSE) up -d --no-deps --force-recreate --pull never app
+
+release: doctor publish-images
 
 rebuild-app: rebuild
 
@@ -53,7 +59,10 @@ doctor:
 	done; \
 	if [ $$missing -ne 0 ]; then exit 1; fi
 	$(COMPOSE) config >/dev/null
+	@$(MAKE) --no-print-directory check-images
 	@echo "doctor: ok"
 
 test:
 	cd $(APP_DIR) && uv sync --frozen && uv run --no-sync pytest -q
+
+include ../../scripts/images.mk

@@ -84,4 +84,4 @@ The full path with ports and host classes is ([auth-gateway/init.md](auth-gatewa
 
 ## Decisions that bind the shape
 
-([adrs/init.md](../adrs/init.md)) owns system-wide decisions: one contract version, roles in the token, one session store, shared data services on `common_network`. Namespace decisions for the edge are ([auth-gateway/adrs/init.md](auth-gateway/adrs/init.md)). Namespace decisions for storage are ([open-storage/adrs/init.md](open-storage/adrs/init.md)).
+([adrs/init.md](../adrs/init.md)) owns system-wide decisions: one contract version, roles in the token, one session store, shared data services on `common_network`, published images on `REGISTRY` ([images.md](images.md)). Namespace decisions for the edge are ([auth-gateway/adrs/init.md](auth-gateway/adrs/init.md)). Namespace decisions for storage are ([open-storage/adrs/init.md](open-storage/adrs/init.md)).

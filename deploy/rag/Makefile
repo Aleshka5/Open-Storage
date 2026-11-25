@@ -6,19 +6,23 @@
 # src/rag/common beside the service; their Dockerfile is deploy/rag/<service>/.
 # Mongo, MinIO and RabbitMQ are the common namespace on common_network.
 
-COMPOSE ?= podman compose -f docker-compose.yaml
+include ../../scripts/engine.mk
+COMPOSE ?= $(ENGINE) compose -f docker-compose.yaml
 
 SERVICES = rag-edge file-collector processor deletion-worker chat frontend embedding ocr
 
 # Empty or unset values are a failed doctor. Compose interpolation uses the same
 # names and refuses the whole file on the first empty required key.
-REQUIRED_ENV = MONGODB_URI S3_ACCESS_KEY S3_SECRET_KEY LLM_API_KEY LLM_BASE_URL LLM_MODEL
+REQUIRED_ENV = REGISTRY MONGODB_URI S3_ACCESS_KEY S3_SECRET_KEY LLM_API_KEY LLM_BASE_URL LLM_MODEL
 
-.PHONY: up down restart rebuild rebuild-all ps logs doctor test
+BUILT_SERVICES = $(SERVICES)
+IMAGE_REPOS = rag/rag-edge rag/file-collector rag/processor rag/deletion-worker rag/chat rag/frontend rag/embedding rag/ocr
+
+.PHONY: up down restart rebuild rebuild-all release ps logs doctor test
 
 # Recreates the containers whose definition changed. The common namespace
 # (mongo, minio, rabbitmq) is not this file's to recreate.
-up: doctor
+up: doctor pull-images
 	$(COMPOSE) up -d
 
 # `down` drops the stack and its networks; the qdrant and model-cache volumes stay.
@@ -34,12 +38,14 @@ restart:
 # `rebuild-all` does every service.
 rebuild: doctor
 	$(COMPOSE) build --no-cache rag-edge
-	$(COMPOSE) up -d --no-deps --force-recreate rag-edge
+	$(COMPOSE) up -d --no-deps --force-recreate --pull never rag-edge
 
 # embedding and ocr are slow on the cpu target, which this file wires.
 rebuild-all: doctor
 	$(COMPOSE) build --no-cache $(SERVICES)
-	$(COMPOSE) up -d --force-recreate
+	$(COMPOSE) up -d --force-recreate --pull never
+
+release: doctor publish-images
 
 ps:
 	$(COMPOSE) ps
@@ -65,6 +71,7 @@ doctor:
 	done; \
 	if [ $$missing -ne 0 ]; then exit 1; fi
 	$(COMPOSE) config >/dev/null
+	@$(MAKE) --no-print-directory check-images
 	@echo "doctor: ok"
 
 test:
@@ -73,3 +80,5 @@ test:
 	  echo "== $$service"; \
 	  cd ../../src/rag/$$service && uv run --no-sync pytest -q; \
 	done
+
+include ../../scripts/images.mk
