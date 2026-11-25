@@ -1,0 +1,270 @@
+name: rag
+
+# The rag namespace. The Makefile in deploy/rag/ is the entry point: it passes
+# RAG_ROOT and RAG_ENV_FILE and runs compose from the repository root. Without
+# RAG_ROOT the file is refused at parse time, before a service is created.
+#   cd deploy/rag && make doctor
+# Route, networks and data services: adrs/9-rag-namespace.md.
+#
+# The build context is the repository root, because file-collector, processor and
+# deletion-worker copy src/rag/common beside the service. podman-compose joins
+# `dockerfile` onto the context rather than onto this file, and resolves a
+# context that is not an absolute path against nothing useful, so RAG_ROOT must
+# be an absolute path to the root. The Makefile derives and exports it; without
+# it compose refuses the file at parse time, before any service is created.
+# RAG_ENV_FILE is unset by default, which picks .env beside this file.
+
+networks:
+  # Created here. The auth-gateway declares it external to itself, the same way
+  # it declares open_network.
+  rag_network:
+    name: rag_network
+  # Service-to-service inside the stack.
+  rag_internal:
+    name: rag_internal
+  common_network:
+    external: true
+    name: common_network
+
+volumes:
+  qdrant_data:
+  embedding_cache:
+  ocr_cache:
+
+x-common-env: &common-env
+  MONGODB_URI: mongodb://mongo:27017/rag
+  S3_ENDPOINT: http://minio:9000
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+  S3_BUCKET: ${S3_BUCKET:-storage}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  RABBITMQ_URL: amqp://rabbit:5672/
+  RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-doc_events}
+  RABBITMQ_DLX: ${RABBITMQ_DLX:-doc_events_dlq}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  rag-edge:
+    build:
+      context: ../../src/rag/rag-edge
+    image: rag-rag-edge
+    container_name: rag-rag-edge
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      RAG_EDGE_PORT: ${RAG_EDGE_PORT:-8080}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-524288000}
+      FILE_COLLECTOR_URL: http://file-collector:8081
+      CHAT_URL: http://chat:8082
+      FRONTEND_URL: http://frontend:3000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      - file-collector
+      - chat
+      - frontend
+    networks:
+      rag_network:
+        aliases:
+          - rag-edge
+      rag_internal: {}
+
+  file-collector:
+    build:
+      context: ../../
+      dockerfile: deploy/rag/file-collector/Dockerfile
+    image: rag-file-collector
+    container_name: rag-file-collector
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      <<: *common-env
+      FILE_COLLECTOR_PORT: ${FILE_COLLECTOR_PORT:-8081}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-524288000}
+      STALE_PROCESSING_SECONDS: ${STALE_PROCESSING_SECONDS:-900}
+    networks:
+      rag_internal:
+        aliases:
+          - file-collector
+          - rag-file-collector
+      common_network: {}
+
+  processor:
+    build:
+      context: ../../
+      dockerfile: deploy/rag/processor/Dockerfile
+    image: rag-processor
+    container_name: rag-processor
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      <<: *common-env
+      QDRANT_URL: http://rag-qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-documents}
+      QDRANT_IMAGES_COLLECTION: ${QDRANT_IMAGES_COLLECTION:-images}
+      EMBEDDING_URL: http://embedding:8091
+      OCR_URL: http://ocr:8090
+      PROCESSOR_CONCURRENCY: ${PROCESSOR_CONCURRENCY:-1}
+      CHUNK_TOKENS: ${CHUNK_TOKENS:-512}
+      CHUNK_OVERLAP_TOKENS: ${CHUNK_OVERLAP_TOKENS:-51}
+      MAX_PROCESS_ATTEMPTS: ${MAX_PROCESS_ATTEMPTS:-8}
+      MIN_EXTRACTED_CHARS: ${MIN_EXTRACTED_CHARS:-50}
+      OCR_RENDER_DPI: ${OCR_RENDER_DPI:-300}
+      OCR_TIMEOUT: ${OCR_TIMEOUT:-120}
+      OCR_MAX_ATTEMPTS: ${OCR_MAX_ATTEMPTS:-3}
+      EMBEDDING_TIMEOUT: ${EMBEDDING_TIMEOUT:-30}
+      EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-16}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-768}
+      EMBEDDING_MAX_TOKENS: ${EMBEDDING_MAX_TOKENS:-1024}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-google/embeddinggemma-2}
+      QDRANT_UPSERT_BATCH: ${QDRANT_UPSERT_BATCH:-64}
+      SWEEP_INTERVAL_SECONDS: ${SWEEP_INTERVAL_SECONDS:-60}
+      UPLOAD_REQUEUE_AFTER_SECONDS: ${UPLOAD_REQUEUE_AFTER_SECONDS:-120}
+    networks:
+      rag_internal:
+        aliases:
+          - processor
+          - rag-processor
+      common_network: {}
+
+  deletion-worker:
+    build:
+      context: ../../
+      dockerfile: deploy/rag/deletion-worker/Dockerfile
+    image: rag-deletion-worker
+    container_name: rag-deletion-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      <<: *common-env
+      QDRANT_URL: http://rag-qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-documents}
+      QDRANT_IMAGES_COLLECTION: ${QDRANT_IMAGES_COLLECTION:-images}
+      DELETION_CONCURRENCY: ${DELETION_CONCURRENCY:-1}
+      STALE_PROCESSING_SECONDS: ${STALE_PROCESSING_SECONDS:-900}
+      SWEEP_INTERVAL_SECONDS: ${SWEEP_INTERVAL_SECONDS:-60}
+      DELETE_REQUEUE_AFTER_SECONDS: ${DELETE_REQUEUE_AFTER_SECONDS:-120}
+    networks:
+      rag_internal:
+        aliases:
+          - deletion-worker
+          - rag-deletion-worker
+      common_network: {}
+
+  chat:
+    build:
+      context: ../../src/rag/chat
+    image: rag-chat
+    container_name: rag-chat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      <<: *common-env
+      CHAT_PORT: ${CHAT_PORT:-8082}
+      QDRANT_URL: http://rag-qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-documents}
+      QDRANT_IMAGES_COLLECTION: ${QDRANT_IMAGES_COLLECTION:-images}
+      EMBEDDING_URL: http://embedding:8091
+      EMBEDDING_TIMEOUT: ${CHAT_EMBEDDING_TIMEOUT:-10}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-768}
+      EMBEDDING_MAX_TOKENS: ${EMBEDDING_MAX_TOKENS:-1024}
+      LLM_BASE_URL: ${LLM_BASE_URL:?LLM_BASE_URL is required}
+      LLM_API_KEY: ${LLM_API_KEY:?LLM_API_KEY is required}
+      LLM_MODEL: ${LLM_MODEL:?LLM_MODEL is required}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+      RAG_TOP_K: ${RAG_TOP_K:-5}
+      RAG_MIN_SCORE: ${RAG_MIN_SCORE:-0}
+      RAG_CONTEXT_MESSAGES: ${RAG_CONTEXT_MESSAGES:-10}
+      IMAGE_SEARCH_CACHE_TTL_SECONDS: ${IMAGE_SEARCH_CACHE_TTL_SECONDS:-60}
+      IMAGE_SEARCH_CACHE_SIZE: ${IMAGE_SEARCH_CACHE_SIZE:-256}
+    networks:
+      rag_internal:
+        aliases:
+          - chat
+          - rag-chat
+      common_network: {}
+
+  frontend:
+    build:
+      context: ../../src/rag/frontend
+    image: rag-frontend
+    container_name: rag-frontend
+    restart: unless-stopped
+    networks:
+      rag_internal:
+        aliases:
+          - frontend
+          - rag-frontend
+
+  # cpu target by default. The cuda target is not wired: the GPU on the host is
+  # nearly full, so the stack runs llama.cpp on the CPU.
+  embedding:
+    build:
+      context: ../../src/rag/embedding
+      target: cpu
+    image: rag-embedding
+    container_name: rag-embedding
+    restart: unless-stopped
+    environment:
+      EMBEDDING_PORT: ${EMBEDDING_PORT:-8091}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-google/embeddinggemma-2}
+      EMBEDDING_GGUF: ${EMBEDDING_GGUF:-embeddinggemma-2-Q8_0.gguf}
+      EMBEDDING_MMPROJ: ${EMBEDDING_MMPROJ:-mmproj-embeddinggemma-2-Q8_0.gguf}
+      EMBEDDING_LLAMA_URL: http://127.0.0.1:8092
+      EMBEDDING_LLAMA_NGL: "0"
+      EMBEDDING_CONTEXT: ${EMBEDDING_CONTEXT:-2048}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-768}
+      EMBEDDING_MAX_TOKENS: ${EMBEDDING_MAX_TOKENS:-1024}
+      EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-16}
+      EMBEDDING_MAX_IMAGES: ${EMBEDDING_MAX_IMAGES:-4}
+      EMBEDDING_MAX_IMAGE_BYTES: ${EMBEDDING_MAX_IMAGE_BYTES:-10485760}
+      EMBEDDING_TIMEOUT: ${EMBEDDING_TIMEOUT:-30}
+      HF_TOKEN: ${HF_TOKEN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - embedding_cache:/var/cache/huggingface
+    networks:
+      rag_internal:
+        aliases:
+          - embedding
+          - rag-embedding
+
+  # cpu target by default, for the same reason as embedding.
+  ocr:
+    build:
+      context: ../../src/rag/ocr
+      target: cpu
+    image: rag-ocr
+    container_name: rag-ocr
+    restart: unless-stopped
+    environment:
+      OCR_PORT: ${OCR_PORT:-8090}
+      OCR_MODEL: ${OCR_MODEL:-surya-ocr-2}
+      OCR_TIMEOUT: ${OCR_TIMEOUT:-120}
+      OCR_LLAMA_URL: http://127.0.0.1:8092
+      OCR_LLAMA_NGL: "0"
+      HF_TOKEN: ${HF_TOKEN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - ocr_cache:/var/cache/huggingface
+    networks:
+      rag_internal:
+        aliases:
+          - ocr
+          - rag-ocr
+
+  rag-qdrant:
+    image: docker.io/qdrant/qdrant:v1.13.4
+    container_name: rag-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      rag_internal:
+        aliases:
+          - rag-qdrant
