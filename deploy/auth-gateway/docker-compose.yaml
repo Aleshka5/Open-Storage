@@ -13,8 +13,10 @@ networks:
   # attack surface, so the gateway joins only these.
   models_network:
     external: true
-  rag_edge:
+  # Created by the rag namespace. See ADR-0009 and ADR-0011.
+  rag_network:
     external: true
+    name: rag_network
   deploy_auth_network:
     external: true
 
@@ -56,7 +58,7 @@ services:
     networks:
       - open_network
       - models_network
-      - rag_edge
+      - rag_network
       - deploy_auth_network
 
   idp:

@@ -70,17 +70,19 @@ flowchart TB
 
 | Network | Why | Source |
 |---|---|---|
-| `rag_network` (external to the gateway) | The gateway reaches `rag-edge:8080` by name; it is the only inbound path. The same condition under which the services may trust identity v1 headers. | [ADR-0009](../../adrs/9-rag-namespace.md), [identity v1](../auth-gateway/external-contracts/identity-v1.md) |
+| `rag_network` | The edge hop: the gateway reaches `rag-edge:8080` by name and it is the only inbound path. The services trust identity v1 headers only under this condition. Created by this namespace. | [ADR-0009](../../adrs/9-rag-namespace.md), [identity v1](../auth-gateway/external-contracts/identity-v1.md) |
 | `rag_internal` | Service-to-service inside the stack: edge to collector, chat, frontend; processor and deletion-worker to Qdrant, embedding, OCR. Not reachable from outside. | [ADR-0009](../../adrs/9-rag-namespace.md) |
 | `common_network` (external) | Mongo `mongo:27017`, MinIO `minio:9000`, RabbitMQ `rabbit:5672`. Joined by file-collector, processor, deletion-worker and chat. | [common](../common/init.md), [ADR-0008](../../adrs/8-common-data-services.md) |
 
 No container publishes a host port. No container joins `models_network` or `llm_network`.
 
+The gateway side of the edge hop is declared in `deploy/auth-gateway/docker-compose.yaml` under the same name, `rag_network`, `external: true`: the gateway joins the network this namespace creates. Until `rag-rag-edge` runs on it, `GET https://rag.filenkov.store/health` answers `502 {"error":"bad_gateway"}` because the upstream does not exist yet; that is the expected answer for a host whose upstream is not up, not a mismatch. The decision is [ADR-0011](../../adrs/11-gateway-joins-rag-network.md).
+
 ## Identity this block consumes
 
 The gateway authenticates `rag.filenkov.store` and forwards the request with the caller attached. The edge and every service behind it read `X-Auth-Subject` as the user key and `X-Auth-Roles` for the role family `svc:rag:{admin,family,blocked}`. The header set, the strip list and the header-trust condition are owned by [identity v1](../auth-gateway/external-contracts/identity-v1.md); the host, upstream and policy by [upstreams](../auth-gateway/external-contracts/upstreams.md) and the gateway config.
 
-`X-Auth-Subject` must be a canonical lower-case UUID and stable per person, because `user_id` in Mongo and in Qdrant is that value. This is the external condition recorded in [US-16](../user_stories/us-16-rag-namespace/init.md) D6; the edge as it stands writes the Keycloak `sub`, which is not a UUID.
+`X-Auth-Subject` must be a canonical lower-case UUID and stable per person, because `user_id` in Mongo and in Qdrant is that value. This is the external condition recorded in [US-16](../user_stories/us-16-rag-namespace/init.md) D6. The gateway writes `sub` from the verified token unchanged (`oidc/verifier.go`), and a Keycloak realm created from `src/auth-gateway/idp/realm.json` issues a random UUID as `sub`, so the condition holds on a realm built from that file and not on one whose users were migrated from another idp. `rag_common/auth.py` accepts any UUID text and rejects everything else with `401`.
 
 ## Mismatches
 

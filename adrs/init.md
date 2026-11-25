@@ -8,3 +8,4 @@
 - ([8-common-data-services.md](8-common-data-services.md)) - Postgres, Redis, MinIO, RabbitMQ and Mongo run in the `common` namespace on `common_network`.
 - ([9-rag-namespace.md](9-rag-namespace.md)) - RAG-Chat becomes the `rag` namespace: one network `rag_network`, Mongo and RabbitMQ from `common`, Qdrant local, OCR and embedding inside, and identity v1 at the edge.
 - ([10-published-images.md](10-published-images.md)) - Images this repository builds are published to `REGISTRY` and run from there. A release tags the local date and `latest`.
+- ([11-gateway-joins-rag-network.md](11-gateway-joins-rag-network.md)) - The gateway joins `rag_network`; the legacy `rag_edge` network and the `rag-chat_*` containers are removed.
