@@ -29,7 +29,11 @@ _HOP_BY_HOP = {
     "upgrade",
     "host",
 }
-_REQUEST_DROP = _HOP_BY_HOP | {"content-length"}
+# Dropped on the request because the header is a datagram to one hop, not data
+# the upstream reads: `date` arrives in whatever locale and alphabet the client
+# sent it in, and httpx encodes a forwarded header as ASCII. The edge writes its
+# own `date` and forwards only ASCII header values and names.
+_REQUEST_DROP = _HOP_BY_HOP | {"content-length", "date"}
 
 _FILE_ID = re.compile(r"^/api/files/([^/]+)")
 _CHAT_ID = re.compile(r"^/api/chats/([^/]+)")
@@ -110,6 +114,23 @@ def _decode_raw(raw: Iterable[tuple[bytes, bytes]]) -> list[tuple[str, str]]:
     return [(name.decode("latin-1"), value.decode("latin-1")) for name, value in raw]
 
 
+def _ascii_header(name: str, value: str) -> bool:
+    """True when both sides are ASCII.
+
+    A header that arrived as raw bytes is read as Latin-1 text here, so a value
+    with a non-ASCII character is either a client's own locale text or utf-8 that
+    another hop sent as Latin-1. Forwarding it would make httpx raise, and the
+    request would fail before it reached the upstream. Such a header is dropped;
+    every header identity v1 or a browser needs is ASCII.
+    """
+    try:
+        name.encode("ascii")
+        value.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 def outgoing_request_headers(
     raw_headers: Iterable[tuple[str, str]],
     request_id: str,
@@ -120,6 +141,8 @@ def outgoing_request_headers(
     forwarded: list[tuple[str, str]] = []
     for name, value in headers:
         if name.lower() in drop or name.lower() == "x-request-id":
+            continue
+        if not _ascii_header(name, value):
             continue
         forwarded.append((name, value))
     forwarded.append(("X-Request-Id", request_id))
@@ -151,8 +174,20 @@ def outgoing_response_headers(
     return forwarded
 
 
-def _header_object(pairs: list[tuple[str, str]]) -> Headers:
-    return Headers(raw=[(name.encode("latin-1"), value.encode("latin-1")) for name, value in pairs])
+def _upstream_headers(pairs: list[tuple[str, str]]) -> Headers:
+    """The upstream header pairs as a Starlette ``Headers`` mapping.
+
+    ``init_headers`` calls ``.items()`` and encodes every pair as Latin-1, which is
+    how ``_decode_raw`` read the bytes, so a non-ASCII octet round-trips unchanged.
+    ``httpx.Headers(raw=...)`` is not on that path and does not exist in httpx 0.28.
+    """
+    merged: dict[str, str] = {}
+    for name, value in pairs:
+        key = name.lower()
+        if key == "set-cookie":
+            continue
+        merged[key] = value
+    return Headers(merged)
 
 
 def _has_request_body(request: Request) -> bool:
@@ -238,5 +273,5 @@ async def proxy_request(request: Request) -> Response:
     return StreamingResponse(
         iterate(),
         status_code=upstream.status_code,
-        headers=_header_object(response_headers),
+        headers=_upstream_headers(response_headers),
     )
