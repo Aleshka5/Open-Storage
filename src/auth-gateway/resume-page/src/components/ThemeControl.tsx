@@ -1,6 +1,23 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react'
 import type { Preference } from '../theme'
 import './ThemeControl.css'
+
+/** Off the initial chunk. The resume page's shell budget is 95 KB gzipped. */
+const Glass = lazy(() => import('@samasante/liquid-glass').then((mod) => ({ default: mod.Glass })))
+
+/** One rounded square. The labels sit under it so the rim refracts them. ADR-0006. */
+const THUMB_RADIUS = 12
+const THUMB_OPTICS = {
+  frost: 0,
+  dispersion: 0.8,
+  bend: 1,
+  bendWidth: 0.9,
+  depth: 1,
+  curvature: 0.15,
+  strength: 0.18,
+  sheen: 0.45,
+  sheenWidth: 4,
+}
 
 const options = [
   { value: 'light', label: 'light' },
@@ -16,7 +33,7 @@ export function ThemeControl({
   onChange: (next: Preference, origin: DOMRect, group: HTMLElement) => void
 }) {
   const groupRef = useRef<HTMLDivElement>(null)
-  const [box, setBox] = useState<{ x: number; w: number } | null>(null)
+  const [box, setBox] = useState<{ x: number; width: number; height: number } | null>(null)
   const [seen, setSeen] = useState(preference)
   const [moving, setMoving] = useState(false)
 
@@ -33,7 +50,7 @@ export function ThemeControl({
     const place = () => {
       const selected = group.querySelector<HTMLElement>('.theme-segment:has(:checked)')
       if (!selected) return
-      setBox({ x: selected.offsetLeft, w: selected.offsetWidth })
+      setBox({ x: selected.offsetLeft, width: selected.offsetWidth, height: selected.offsetHeight })
     }
 
     place()
@@ -57,11 +74,25 @@ export function ThemeControl({
       }}
     >
       {box ? (
-        <span
-          className={moving ? 'theme-thumb is-moving' : 'theme-thumb'}
-          style={{ transform: `translate3d(${box.x}px, 0, 0)`, width: box.w }}
-          aria-hidden="true"
-        />
+        <Suspense
+          fallback={
+            <span
+              className={moving ? 'theme-thumb is-moving' : 'theme-thumb'}
+              style={{ transform: `translate3d(${box.x}px, 0, 0)`, width: box.width, height: box.height }}
+              aria-hidden="true"
+            />
+          }
+        >
+          <Glass
+            className={moving ? 'theme-thumb is-moving' : 'theme-thumb'}
+            radius={THUMB_RADIUS}
+            optics={THUMB_OPTICS}
+            style={{ transform: `translate3d(${box.x}px, 0, 0)`, width: box.width, height: box.height }}
+            aria-hidden="true"
+          >
+            <span className="theme-thumb-face" />
+          </Glass>
+        </Suspense>
       ) : null}
       {options.map((option) => (
         <label key={option.value} className="theme-segment">

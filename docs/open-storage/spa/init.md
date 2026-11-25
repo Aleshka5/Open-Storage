@@ -40,7 +40,7 @@ One shared component, `FileManager` (`src/components/FileManager/`), renders Fil
 
 ## Session and identity
 
-Theme and chrome follow the [brand book](../../brand-book/init.md). `theme.preference` on this origin is `light`, `dark`, or `system`. A missing, unreadable, or unknown value paints dark. The header’s `Theme` control changes it without a reload. Palettes live in `src/styles/theme.css`.
+Theme and chrome follow the [brand book](../../brand-book/init.md). `theme.preference` on this origin is `light`, `dark`, or `system`. A missing, unreadable, or unknown value paints dark. The header’s `Theme` control changes it without a reload. The thumb is one rounded glass square, [ADR-0006](../../../adrs/6-glass-thumb-is-a-rounded-square.md). Palettes live in `src/styles/theme.css`.
 
 The SPA never sees a token.
 

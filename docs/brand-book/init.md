@@ -1,5 +1,5 @@
 Shared visual contract for every page.
-The interface language is English. Corners are square. A service page has no drop shadow.
+The interface language is English. Corners are square. A glass element is a rounded square. A service page has no drop shadow.
 
 ---
 
@@ -25,7 +25,7 @@ The resolved theme is `light` or `dark` only. Set it on the document element bef
 
 Changing the theme does not reload the page. The key is a UI preference. It is not a credential. The page never stores a session in `localStorage`.
 
-The control sits in the header’s right slot. It is a segmented group of three radios, `role="radiogroup"`, accessible name `Theme`. Labels are `light`, `Dark`, and `System`. Each segment is at least `2.25rem` tall, square, with no shadow. Selection is one thumb. It translates with `transform` over `--dur`. Its fill is `--paper-raised` at 55% opacity, with `backdrop-filter: blur(14px) saturate(1.7)`, a 1px translucent edge, and a 1px inset top hairline. `will-change: transform` applies only while that thumb moves. An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`. Without `backdrop-filter`, the thumb’s fill is `--ink` and its label is `--paper`. Arrow keys move inside the group. At 620px the wordmark hides and this control stays.
+The control sits in the header’s right slot. It is a segmented group of three radios, `role="radiogroup"`, accessible name `Theme`. Labels are `light`, `Dark`, and `System`. Each segment is at least `2.25rem` tall, square, with no shadow. Selection is one rounded square, not a glass on each label. It is one `Glass` from `@samasante/liquid-glass`, `2.25rem` tall, corner radius `12px`, as wide as the selected segment. The labels sit under it, so the rim refracts the letters. It translates with `transform`, and its width changes, over `--dur`. Its optics are [ADR-0006](../../adrs/6-glass-thumb-is-a-rounded-square.md). Its fill is `--paper-raised` at 10% opacity. It casts no drop shadow and takes no pointer events. `will-change: transform, width` applies only while that thumb moves. An unselected segment is transparent, its label is `--ink`, and its hover fill is `--chip`. Without `backdrop-filter`, the thumb’s fill is `--ink`, it sits under the label, and the selected label is `--paper`. Arrow keys move inside the group. At 620px the wordmark hides and this control stays.
 
 Both palettes use the same token names. light copper text is `#8f4128`. Dark copper text is `#e0a181`. Do not mix them.
 

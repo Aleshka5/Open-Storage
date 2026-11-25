@@ -1,5 +1,14 @@
 import { afterEach } from 'vitest'
 
+if (typeof ResizeObserver === 'undefined') {
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  globalThis.ResizeObserver = ResizeObserverStub as typeof ResizeObserver
+}
+
 if (typeof window.matchMedia !== 'function') {
   window.matchMedia = (query: string) =>
     ({
