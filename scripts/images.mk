@@ -28,9 +28,9 @@ check-images:
 	@test -f .env || { echo "doctor: .env is missing" >&2; exit 1; }
 	@test -n "$(REGISTRY)" || { echo "doctor: REGISTRY is missing or empty" >&2; exit 1; }
 	@set -eu; \
-	images=$$(IMAGE_TAG="$(IMAGE_TAG)" REGISTRY="$(REGISTRY)" $(COMPOSE) config --images); \
+	cfg=$$(IMAGE_TAG="$(IMAGE_TAG)" REGISTRY="$(REGISTRY)" $(COMPOSE) config); \
 	for repo in $(IMAGE_REPOS); do \
-	  printf '%s\n' "$$images" | grep -F -x "$(REGISTRY)/$$repo:$(IMAGE_TAG)" >/dev/null || { \
+	  printf '%s\n' "$$cfg" | grep -F "$(REGISTRY)/$$repo:$(IMAGE_TAG)" >/dev/null || { \
 	    echo "doctor: missing image $(REGISTRY)/$$repo:$(IMAGE_TAG)" >&2; \
 	    exit 1; \
 	  }; \
