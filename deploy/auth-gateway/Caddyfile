@@ -53,6 +53,19 @@
 
 # --------------------------------------------------------------------- sites
 
+https://registry.filenkov.store {
+	tls internal
+
+        import lan
+        handle @lan {
+                reverse_proxy 127.0.0.1:42653
+        }
+        handle {
+                respond "Access is limited to the LAN and the WireGuard tunnel" 403
+        }
+
+        import secure
+}
 # One backend (127.0.0.1:18080) behind the hostnames below. The size of this file
 # is the price of one certificate per name and one upstream per host
 # (ADR-0001). This is the greenfield gateway (auth-gateway namespace); the
