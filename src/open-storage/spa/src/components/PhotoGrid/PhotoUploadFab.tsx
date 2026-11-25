@@ -1,21 +1,17 @@
-import { Plus, X } from "lucide-react";
-import { useCallback, useRef } from "react";
+import { Plus } from "lucide-react";
+import { useCallback, useMemo, useRef } from "react";
 import type { PhotoUploadState } from "../../hooks/usePhotoUpload";
-import { ErrorMessage } from "../ui/ErrorMessage";
+import { photoBatchPercent } from "../../utils/photoUploadBatch";
 import { ViewportPortal } from "../ui/ViewportPortal";
 
 interface PhotoUploadFabProps {
   uploads: PhotoUploadState[];
   onFilesSelected: (files: File[]) => void;
-  onClearFinished: () => void;
 }
 
-export function PhotoUploadFab({
-  uploads,
-  onFilesSelected,
-  onClearFinished,
-}: PhotoUploadFabProps) {
+export function PhotoUploadFab({ uploads, onFilesSelected }: PhotoUploadFabProps) {
   const isProcessingRef = useRef(false);
+  const batch = useMemo(() => photoBatchPercent(uploads), [uploads]);
 
   const handleFiles = useCallback(
     (input: HTMLInputElement) => {
@@ -59,35 +55,18 @@ export function PhotoUploadFab({
         </label>
       </div>
 
-      {uploads.length > 0 && (
+      {batch.isUploading && (
         <div className="upload-dock surface">
-          <div className="toolbar">
-            <p>Uploading photos</p>
-            <button type="button" onClick={onClearFinished} className="icon-btn" aria-label="Hide completed">
-              <X size={16} />
-            </button>
+          <div
+            className="meter"
+            role="progressbar"
+            aria-label="Uploading photos"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={batch.percent}
+          >
+            <span style={{ width: `${batch.percent}%` }} />
           </div>
-          <ul className="stack-tight">
-            {uploads.map((upload) => (
-              <li key={upload.id}>
-                <div className="toolbar">
-                  <span>{upload.name}</span>
-                  <span className="muted nowrap">
-                    {upload.status === "uploading" &&
-                      (upload.progress >= 100 ? "Saving…" : `${upload.progress}%`)}
-                    {upload.status === "done" && "Done"}
-                    {upload.status === "error" && "Error"}
-                  </span>
-                </div>
-                {upload.status === "uploading" && (
-                  <div className="meter" aria-hidden="true">
-                    <span style={{ width: `${upload.progress}%` }} />
-                  </div>
-                )}
-                {upload.status === "error" && <ErrorMessage errorCode={upload.error_code} />}
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </ViewportPortal>

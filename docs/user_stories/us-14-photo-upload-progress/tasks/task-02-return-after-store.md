@@ -1,5 +1,5 @@
 > **ID:** task-02
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-14](../init.md), [photos API](../../../open-storage/app/api-contract.md)
 
 ## Overview
@@ -18,5 +18,5 @@
 
 ## Definition of Done
 
-- [ ] A blocking notify does not delay the upload response. The status stays `201`.
-- [ ] The photos row in the API contract matches D3.
+- [x] A blocking notify does not delay the upload response. The status stays `201`.
+- [x] The photos row in the API contract matches D3.

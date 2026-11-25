@@ -80,7 +80,7 @@ Section root `users/{user_id}/photos`, section `PHOTOS`. Extensions `.jpg .jpeg 
 | Method | Path | Does | Request | Success | Non-happy |
 |---|---|---|---|---|---|
 | `GET` | `""` | Page of the caller's photos, newest first | Query `page` ≥ 1 (default 1), `limit` ≥ 1 (default `PHOTO_BATCH_SIZE` 30) | `200 {items: [PhotoItem], total, has_next}` | `400 UNSUPPORTED_FORMAT` |
-| `POST` | `/upload` | Store a photo, make its JPEG preview | Multipart `file` | `201 PhotoItem` | `400 UNSUPPORTED_FORMAT` (extension), `400 PATH_TRAVERSAL_DETECTED`, `413 QUOTA_EXCEEDED` |
+| `POST` | `/upload` | Store the original; the 201 follows that commit, and the JPEG preview and index notify are not on that wait | Multipart `file` | `201 PhotoItem` | `400 UNSUPPORTED_FORMAT` (extension), `400 PATH_TRAVERSAL_DETECTED`, `413 QUOTA_EXCEEDED` |
 | `GET` | `{photo_id}/preview` | JPEG preview (generated on first read if absent) | Path `photo_id` (UUID) | `200 image/jpeg` | `404 FILE_NOT_FOUND`, `400 UNSUPPORTED_FORMAT` |
 | `GET` | `{photo_id}/original` | Stream the original | Path `photo_id` | `200` stream with original mime | `404 FILE_NOT_FOUND` |
 | `DELETE` | `{photo_id}` | Delete original, preview, row, quota | Path `photo_id` | `204` | `404 FILE_NOT_FOUND` |

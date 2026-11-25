@@ -1,5 +1,5 @@
 > **ID:** task-01
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [US-14](../init.md)
 
 ## Overview
@@ -18,6 +18,6 @@ The photos page reports one batch meter and sends at most two uploads at a time.
 
 ## Definition of Done
 
-- [ ] `usePhotoUpload` no longer toasts progress or success.
-- [ ] `PhotoUploadFab` renders one bar for the active pick.
-- [ ] A test locks the batch percent and the cap of two in flight.
+- [x] `usePhotoUpload` no longer toasts progress or success.
+- [x] `PhotoUploadFab` renders one bar for the active pick.
+- [x] A test locks the batch percent and the cap of two in flight.

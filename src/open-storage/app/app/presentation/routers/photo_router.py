@@ -1,4 +1,5 @@
-from collections.abc import AsyncIterator
+import asyncio
+from collections.abc import AsyncIterator, Sequence
 from pathlib import PurePosixPath
 from uuid import UUID
 
@@ -24,6 +25,32 @@ from app.presentation.utils.content_disposition import build_attachment_content_
 from config import get_settings
 
 router = APIRouter(prefix="/api/photos", tags=["photos"])
+
+# The event loop keeps only a weak reference to a task. Dropping this set
+# would let a photo-upload notify be collected before RAG is called.
+_photo_upload_notify_tasks: set[asyncio.Task[None]] = set()
+
+
+def _release_photo_upload_notify(task: asyncio.Task[None]) -> None:
+    _photo_upload_notify_tasks.discard(task)
+    if task.cancelled():
+        return
+    error = task.exception()
+    if error is not None:
+        logger.warning(
+            "Photo upload index notify task failed error_type={}",
+            type(error).__name__,
+        )
+
+
+def _schedule_photo_upload_index_notify(file_record_ids: Sequence[UUID]) -> None:
+    """Notify after the 201. The held task still runs and still cannot fail the upload."""
+    task = asyncio.create_task(
+        deliver_immediate_index_notifications(list(file_record_ids)),
+        name="photo-upload-index-notify",
+    )
+    _photo_upload_notify_tasks.add(task)
+    task.add_done_callback(_release_photo_upload_notify)
 
 
 def _photo_item_response(item: PhotoItem) -> PhotoItemResponse:
@@ -141,7 +168,7 @@ async def upload_photo(
             await session.rollback()
             _raise_http_for_photo_error(exc)
 
-    await deliver_immediate_index_notifications(queued_ids)
+    _schedule_photo_upload_index_notify(queued_ids)
 
     item = PhotoItem(
         id=record.id,

@@ -1,5 +1,5 @@
 > **ID:** US-14
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [photos API](../../open-storage/app/api-contract.md), [spa](../../open-storage/spa/init.md)
 
 ## Overview
@@ -47,6 +47,6 @@ Tasks: [one bar](tasks/task-01-one-bar.md), [return after store](tasks/task-02-r
 
 ## Definition of Done
 
-- [ ] `npm test` and `npm run build` pass in `src/open-storage/spa`.
-- [ ] An app test locks that a blocking index notify does not delay `POST /api/photos/upload`.
-- [ ] [API contract](../../open-storage/app/api-contract.md) says the upload `201` follows the stored original, and that preview and index notify are not on that wait. [spa/init.md](../../open-storage/spa/init.md) names the one bar in the `/photos` row and does not restate the rules above.
+- [x] `npm test` and `npm run build` pass in `src/open-storage/spa`.
+- [x] An app test locks that a blocking index notify does not delay `POST /api/photos/upload`.
+- [x] [API contract](../../open-storage/app/api-contract.md) says the upload `201` follows the stored original, and that preview and index notify are not on that wait. [spa/init.md](../../open-storage/spa/init.md) names the one bar in the `/photos` row and does not restate the rules above.
