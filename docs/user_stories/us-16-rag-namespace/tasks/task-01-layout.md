@@ -1,5 +1,5 @@
 > **ID:** US-16 task-01
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [ADR-0009](../../../../adrs/9-rag-namespace.md), [repository layout](../../../repository-layout.md), [US-16](../init.md)
 
 ## Overview

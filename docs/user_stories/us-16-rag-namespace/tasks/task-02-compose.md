@@ -1,5 +1,5 @@
 > **ID:** US-16 task-02
-> **Status:** TODO
+> **Status:** REVIEW
 > **Specs:** [ADR-0009](../../../../adrs/9-rag-namespace.md), [common](../../../common/init.md), [US-16](../init.md)
 
 ## Overview

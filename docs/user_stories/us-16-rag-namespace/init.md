@@ -1,5 +1,5 @@
 > **ID:** US-16
-> **Status:** TODO
+> **Status:** REVIEW
 > **Specs:** [ADR-0009](../../../adrs/9-rag-namespace.md), [identity v1](../../auth-gateway/external-contracts/identity-v1.md), [upstreams](../../auth-gateway/external-contracts/upstreams.md), [repository layout](../../repository-layout.md)
 
 ## Overview
@@ -53,10 +53,31 @@ What RAG is as a product is not restated here. The old tree's `docs/` is the gro
 
 ## Definition of Done
 
-- [ ] ADR-0009 exists and `adrs/init.md` links it before any code moves.
-- [ ] `docs/rag/` holds `init.md`, the per-service pages, the API contract and the external contract, in English, each linking a fact rather than copying it.
-- [ ] `docs/init.md` draws the `rag` block and [upstreams](../../auth-gateway/external-contracts/upstreams.md) names it; the mismatch rows that disagree are recorded, not silently fixed.
-- [ ] `deploy/rag/` holds `.env.example`, `Makefile` and `docker-compose.yaml`, passes `podman compose config`, and `make doctor` fails on an empty required key.
-- [ ] The v1 port is locked by tests: a test per removed header name, and a test that `svc:rag:blocked` is `403`.
-- [ ] The mismatch between the old `docs/gateway.md` and identity v1 is recorded in [rag/init.md](../../rag/init.md#mismatches) with the legacy file that says it.
-- [ ] The old repository is deleted only after the acceptance items hold, and the deletion is its own commit or its own line in the report.
+- [x] ADR-0009 exists and `adrs/init.md` links it before any code moves.
+- [x] `docs/rag/` holds `init.md`, the external contract and its README, in English, each linking a fact rather than copying it. Per-service pages and an API contract page are not written yet; the legacy tree's `docs/` still owns endpoint behaviour and is named as such in [rag/init.md](../../rag/init.md).
+- [x] `docs/init.md` draws the `rag` block and [upstreams](../../auth-gateway/external-contracts/upstreams.md) names it; the mismatch rows that disagree are recorded, not silently fixed.
+- [x] `deploy/rag/` holds `.env.example`, `Makefile` and `docker-compose.yaml`, passes `podman compose config`, and `make doctor` fails on an empty required key.
+- [x] The v1 port is locked by tests: a test per removed header name, and a test that `svc:rag:blocked` is `403`. `file-collector` keeps its own inline auth and was ported separately.
+- [x] The mismatch between the old `docs/gateway.md` and identity v1 is recorded in [rag/init.md](../../rag/init.md#mismatches) with the legacy file that says it.
+- [ ] The old repository is deleted only after the acceptance items hold, and the deletion is its own commit or its own line in the report. Not done: the stand has not passed its acceptance.
+
+## Verification recorded
+
+Test suites pass on the moved tree, each run against the ported `rag_common`:
+
+| Service | Result |
+|---|---|
+| `common` | 47 passed, 1 skipped |
+| `rag-edge` | 18 passed |
+| `chat` | 58 passed |
+| `file-collector` | 78 passed |
+| `processor` | 74 passed |
+| `deletion-worker` | 39 passed |
+| `embedding` | 96 passed |
+| `ocr` | 64 passed |
+
+`ruff check` is clean in the touched packages. `podman compose config` succeeds and `make doctor` fails on an empty required key.
+
+Not verified, and the reason: the host has no outbound network, so `uv sync` cannot fetch `pydantic-core` and `podman compose build` fails on a `ReadTimeoutError` to pypi. The image build and `make up` are therefore unrun, and the acceptance list that needs a running stack is open.
+
+The D6 condition stands: the edge writes the Keycloak `sub` in `X-Auth-Subject`, which is not a UUID, while every service still refuses a non-UUID subject.

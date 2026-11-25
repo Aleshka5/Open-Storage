@@ -1,5 +1,5 @@
 > **ID:** US-16 task-03
-> **Status:** TODO
+> **Status:** DONE
 > **Specs:** [identity v1](../../../auth-gateway/external-contracts/identity-v1.md), [ADR-0001](../../../../adrs/1-one-contract-version.md), [US-16](../init.md)
 
 ## Overview
