@@ -17,6 +17,7 @@ The engine is `podman` when `podman` is on `PATH`, otherwise `docker`. `ENGINE=d
 | auth-gateway | `auth-gateway/gateway`, `auth-gateway/resume` |
 | open-storage | `open-storage/app` |
 | rag | `rag/rag-edge`, `rag/file-collector`, `rag/processor`, `rag/deletion-worker`, `rag/chat`, `rag/frontend`, `rag/embedding`, `rag/ocr` |
+| audio | `audio/audio-api`, `audio/diarizer`, `audio/asr-worker`, `audio/frontend` |
 
 `common` publishes nothing. Postgres, Redis, MinIO, RabbitMQ, Mongo, Keycloak and Qdrant stay on their upstream registries.
 

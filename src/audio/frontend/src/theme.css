@@ -1,0 +1,72 @@
+/* Audio host palette. Token names and roles are service-design-language.md;
+   the dark values and the control rules are section 16 of that file.
+   Public Sans + Fraunces, square corners, a shadow only on the active phrase tile. */
+
+:root {
+  /* Surfaces */
+  --paper: #1c1b19;
+  --paper-raised: #2a2824;
+  --surface-raised: #33312c;
+
+  /* Text */
+  --ink: #f4efe6;
+  --ink-muted: #a8a096;
+
+  /* Rules/borders */
+  --rule: #45423c;
+  --rule-strong: #6b655c;
+
+  /* Accent */
+  --accent: #c9794f;
+  --accent-text: #e0a181;
+
+  /* Chips/background */
+  --chip: #33302a;
+
+  /* Danger */
+  --danger: #ff9a8a;
+  --danger-wash: #3a2522;
+
+  --serif: 'Fraunces', 'Fraunces Fallback', 'Iowan Old Style', 'Palatino Linotype',
+    serif;
+  --sans: 'Public Sans', 'Public Sans Fallback', system-ui, 'Segoe UI', sans-serif;
+
+  /* Type scale — from the design language */
+  --step--1: 0.8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.25rem;
+  --step-2: 1.5rem;
+  --step-3: 1.9rem;
+  --step-4: clamp(2.2rem, 4.5vw, 3.1rem);
+
+  --measure: 34rem;
+
+  /* Space */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+  --s8: 4.5rem;
+
+  /* Motion */
+  --dur-fast: 140ms;
+  --dur: 240ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --header-h: 4.5rem;
+  --header-h-c: 3.5rem;
+
+  /* Player and the recordings column. Collapsed, the column is removed (section 16). */
+  --player-h: 5.5rem;
+  --sidebar-w: 18rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur: 1ms;
+  }
+}

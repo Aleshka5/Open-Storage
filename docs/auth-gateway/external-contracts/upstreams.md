@@ -7,8 +7,8 @@ Applications outside this namespace. Gateway reaches them by the upstream name. 
 | storage | `app:8000` | `storage.filenkov.store` | `service(storage, family, admin)` except `/health` |
 | image | `qwen-image:8000` | `image.filenkov.store` | `service(image, family, admin)` except `/healthz` |
 | rag | `rag-edge:8080` on `rag_network` | `rag.filenkov.store` | `service(rag, family, admin)` except `/health`. Namespace [rag/init.md](../../rag/init.md) |
-| audio API | `audio-api:8000` | `audio.filenkov.store` `/api/**` and `/health` | service role, health public |
-| audio UI | `frontend:80` | `audio.filenkov.store` other paths | `session` |
+| audio API | `audio-api:8000` on `audio_network` | `audio.filenkov.store` `/api/**` and `/health` | service role, health public. Namespace [audio/init.md](../../audio/init.md) |
+| audio UI | `frontend:80` on `audio_network` | `audio.filenkov.store` other paths | `session`. Namespace [audio/init.md](../../audio/init.md) |
 | llm | `qwen38:4001` | `llm.filenkov.store` | `admin` |
 | observer | `grafana:3000` | `observer.filenkov.store` | `session`, plus Grafana's own login. `/api/health` public |
 | meet | `127.0.0.1:8000` from Caddy | `meet.filenkov.store` | Not a gateway host. No SSO. LAN / WireGuard gate is in Caddy. |
@@ -17,4 +17,4 @@ Applications outside this namespace. Gateway reaches them by the upstream name. 
 
 `hermes.filenkov.store` and `lite-llm.filenkov.store` are not in this table. Proxy forwards them to local ports. They keep their own authentication.
 
-Consumers that still read `X-User-Id`, `X-Storage-Role`, `X-Auth-User-Id`, or `X-Auth-Role` have to move to v1 in the same release as this namespace. Known consumers: WebStorage, RAG-Chat (moves in as the [rag](../../rag/init.md) namespace by US-16), ASR-Service, qwen-image-service. Switch-Service already takes `X-Service-Token` from the edge.
+Consumers that still read `X-User-Id`, `X-Storage-Role`, `X-Auth-User-Id`, or `X-Auth-Role` have to move to v1 in the same release as this namespace. Known consumers: WebStorage, RAG-Chat (moves in as the [rag](../../rag/init.md) namespace by US-16), ASR-Service (moves in as the [audio](../../audio/init.md) namespace by US-18), qwen-image-service. Switch-Service already takes `X-Service-Token` from the edge.

@@ -1,0 +1,69 @@
+[project]
+name = "diarizer"
+version = "0.1.0"
+description = "diarizer — GPU diarization worker (US-02: Pyannote + GPU lease)"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic-settings>=2.6",
+    "pika>=1.3",
+    "pymongo>=4.10",
+    "boto3>=1.35",
+    "redis>=5.0",
+]
+
+[project.optional-dependencies]
+# Heavy GPU dependencies: fp16 weights on CUDA (V100 sm_70). Installed separately
+# (`--extra gpu`) — unit tests and ruff work without them.
+# IMPORTANT: torch must be cu126 (not the default cu13x): the default has no sm_70 kernels.
+# Install from `--index-url https://download.pytorch.org/whl/cu126` (see models/hf.md).
+gpu = [
+    # torch and torchaudio are pinned as a PAIR: torchaudio publishes no cu126 build above
+    # 2.11.0, so an unconstrained `torchaudio` resolves from PyPI to a cu13 wheel that needs
+    # libcudart.so.13 and kills the import (`Could not load this library: .../_torchaudio.so`)
+    # while torch itself is a cu126 build. 2.11.0 is the newest cu126 pair (pyannote.audio
+    # needs torch>=2.8.0 — satisfied).
+    "torch==2.11.0",
+    "torchaudio==2.11.0",
+    "pyannote.audio>=3.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+# V100 = sm_70: the default torch (cu13x) has no kernels for sm_70 (models/hf.md).
+# Entry pinned to the cu126 index — reproducible and with no manual `uv pip install`.
+torch = { index = "pytorch-cu126" }
+torchaudio = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

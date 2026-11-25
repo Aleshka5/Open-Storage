@@ -1,0 +1,1 @@
+"""diarizer — GPU diarization worker."""

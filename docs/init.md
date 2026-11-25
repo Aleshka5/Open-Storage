@@ -18,6 +18,9 @@ Every host on `filenkov.store` enters through the proxy. The gateway authenticat
  - rag: RAG-Chat (rag-edge, file-collector, processor, deletion-worker, chat, frontend, embedding, ocr, qdrant)
     - Description: The retrieval-augmented chat product over a user's own documents. `rag-edge` is the only inbound path and joins `rag_network`. Its documents, objects and queues are the [common](common/init.md) services; Qdrant stays here.
     - Detail inside the block: [rag/init.md](rag/init.md).
+ - audio: audio-api, diarizer, asr-worker, frontend, qdrant
+    - Description: A recording becomes a phrase chat, and a voice note is recognized as speech happens. The gateway is the only inbound path and joins `audio_network`. Mongo, MinIO, RabbitMQ and the Redis GPU lease are the [common](common/init.md) services; Qdrant stays here.
+    - Detail inside the block: [audio/init.md](audio/init.md). The host and the upstreams are [upstreams](auth-gateway/external-contracts/upstreams.md).
 
 A namespace gets a directory when its first service exists. The shape is ([repository-layout.md](repository-layout.md)).
 
@@ -33,6 +36,8 @@ flowchart TB
   DS["api.deepseek.com"]
   AG["auth-gateway:<br/>proxy, gateway, idp, idp_db, resume-page"]
   OS["open-storage:<br/>app"]
+  RG["rag:<br/>rag-edge and the stack behind it"]
+  AU["audio:<br/>audio-api, frontend, workers, qdrant"]
   CM["common:<br/>postgres, redis, minio, rabbitmq, mongo"]
   HM("hermes<br/>host 127.0.0.1:9119<br/>no SSO, LAN only")
 
@@ -42,7 +47,11 @@ flowchart TB
   AG -->|"discovery JWKS token revoke<br/>Admin API for /admin"| G
   AG -->|"chat: true, OpenAI-compatible"| DS
   AG -->|"storage host, app:8000"| OS
+  AG -->|"rag host, rag-edge:8080"| RG
+  AG -->|"audio host, audio-api:8000 and frontend:80"| AU
   OS -->|"SQL :5432, redis :6379, S3 :9000"| CM
+  RG -->|"mongo, minio, rabbit"| CM
+  AU -->|"mongo, minio, rabbit, redis"| CM
   G -->|"redirect_uri"| AG
 ```
 
@@ -80,6 +89,7 @@ The full path with ports and host classes is ([auth-gateway/init.md](auth-gatewa
 ## What is not here
 
 - Storage runs in this repository: [open-storage/init.md](open-storage/init.md). Its Postgres, MinIO and Redis are [common](common/init.md). Which names the gateway proxies, and which the proxy serves itself, are in [upstreams](auth-gateway/external-contracts/upstreams.md).
+- Audio runs in this repository: [audio/init.md](audio/init.md). Its Mongo, MinIO, RabbitMQ and Redis are [common](common/init.md). The host enters through the gateway.
 - `docs/init.md` draws the map. A service's own behaviour is never restated here — it is linked.
 
 ## Decisions that bind the shape

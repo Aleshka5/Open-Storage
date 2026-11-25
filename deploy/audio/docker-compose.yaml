@@ -1,0 +1,211 @@
+name: audio
+
+# The audio namespace. Entry point: `cd deploy/audio && make up`.
+# Decision: adrs/12-audio-namespace.md.
+# Published image names: docs/images.md. Qdrant stays on its upstream registry.
+#
+# Volumes qdrant_storage and hf_home are new and empty. Their names are not the
+# old project volumes audio_qdrant_storage and audio_hf_home. This file does not
+# mount those, and it does not dump Mongo database `audio` or MinIO bucket `audio`.
+
+networks:
+  # Created here. The auth-gateway declares it external and joins it.
+  audio_network:
+    name: audio_network
+  # Service-to-service: audio-api, workers, qdrant. Not external.
+  audio_internal:
+    name: audio_internal
+  common_network:
+    external: true
+    name: common_network
+
+volumes:
+  qdrant_storage:
+    name: audio_ns_qdrant
+  hf_home:
+    name: audio_ns_hf
+
+x-data-env: &data-env
+  MONGO_URL: mongodb://mongo:27017
+  MONGO_DB: audio
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_BUCKET: audio
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_USE_PATH_STYLE: ${S3_USE_PATH_STYLE:-true}
+  RABBITMQ_URL: ${RABBITMQ_URL:?RABBITMQ_URL is required}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  qdrant:
+    image: docker.io/qdrant/qdrant:v1.13.4
+    container_name: audio-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      audio_internal: {}
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333' 2>/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ../../src/audio/frontend
+    image: ${REGISTRY:?REGISTRY is required}/audio/frontend:${IMAGE_TAG:-latest}
+    container_name: audio-frontend
+    restart: unless-stopped
+    networks:
+      audio_network: {}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+
+  audio-api:
+    build:
+      context: ../../src/audio/audio-api
+    image: ${REGISTRY:?REGISTRY is required}/audio/audio-api:${IMAGE_TAG:-latest}
+    container_name: audio-audio-api
+    restart: unless-stopped
+    environment:
+      <<: *data-env
+      MONGO_MAX_POOL_SIZE: ${MONGO_MAX_POOL_SIZE:-20}
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-audio_voices}
+      SUGGESTION_LIMIT: ${SUGGESTION_LIMIT:-5}
+      VOICE_EMBEDDING_SIZE: ${VOICE_EMBEDDING_SIZE:-256}
+      RABBITMQ_PREFETCH: ${RABBITMQ_PREFETCH:-20}
+      ASR_STREAM_URL: ws://asr-worker:8020/v1/stream
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-2147483648}
+      PROCESSING_STALL_SECONDS: ${PROCESSING_STALL_SECONDS:-900}
+      POLL_HINT_MS: ${POLL_HINT_MS:-1500}
+      POLL_BUDGET_PER_MINUTE: ${POLL_BUDGET_PER_MINUTE:-0}
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      diarizer:
+        condition: service_healthy
+      asr-worker:
+        condition: service_healthy
+    networks:
+      audio_network: {}
+      audio_internal: {}
+      common_network: {}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import sys, urllib.request;
+          sys.exit(0 if urllib.request.urlopen(
+          'http://127.0.0.1:8000/health', timeout=5).status == 200 else 1)
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  diarizer:
+    build:
+      context: ../../src/audio/diarizer
+    image: ${REGISTRY:?REGISTRY is required}/audio/diarizer:${IMAGE_TAG:-latest}
+    container_name: audio-diarizer
+    restart: unless-stopped
+    environment:
+      <<: *data-env
+      HF_TOKEN: ${HF_TOKEN:?HF_TOKEN is required}
+      HF_HOME: /models/hf
+      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+      DIARIZATION_MODEL: ${DIARIZATION_MODEL:-pyannote/speaker-diarization-community-1}
+      DIARIZATION_REVISION: ${DIARIZATION_REVISION:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+      EMBEDDING_REVISION: ${EMBEDDING_REVISION:-}
+      DEVICE: ${DEVICE:-cuda}
+      GPU_LEASE_URL: redis://redis:6379
+      GPU_LEASE_TTL_MS: ${GPU_LEASE_TTL_MS:-30000}
+      GPU_LEASE_HEARTBEAT_MS: ${GPU_LEASE_HEARTBEAT_MS:-5000}
+      SCRATCH_DIR: ${SCRATCH_DIR:-/tmp/audio}
+      SCRATCH_CLEANUP_MINUTES: ${SCRATCH_CLEANUP_MINUTES:-120}
+      MIN_EMBED_SECONDS: ${MIN_EMBED_SECONDS:-1.0}
+      RABBITMQ_PREFETCH: ${RABBITMQ_PREFETCH_WORKERS:-1}
+    volumes:
+      - hf_home:/models/hf
+    networks:
+      audio_internal: {}
+      common_network: {}
+    devices:
+      - nvidia.com/gpu=0
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import sys, urllib.request;
+          sys.exit(0 if urllib.request.urlopen(
+          'http://127.0.0.1:8000/health', timeout=5).status == 200 else 1)
+      interval: 20s
+      timeout: 10s
+      retries: 60
+      start_period: 120s
+
+  asr-worker:
+    build:
+      context: ../../src/audio/asr-worker
+    image: ${REGISTRY:?REGISTRY is required}/audio/asr-worker:${IMAGE_TAG:-latest}
+    container_name: audio-asr-worker
+    restart: unless-stopped
+    environment:
+      <<: *data-env
+      HF_TOKEN: ${HF_TOKEN:?HF_TOKEN is required}
+      HF_HOME: /models/hf
+      ASR_MODEL: ${ASR_MODEL:-nvidia/parakeet-tdt-0.6b-v3}
+      ASR_REVISION: ${ASR_REVISION:-541d1f99c6b0c3cd0b11a95167540bb8edefd82b}
+      DEVICE: ${DEVICE:-cuda}
+      GPU_LEASE_URL: redis://redis:6379
+      GPU_LEASE_TTL_MS: ${GPU_LEASE_TTL_MS:-30000}
+      STREAM_URL_BIND: ${STREAM_URL_BIND:-0.0.0.0:8020}
+      MAX_STREAM_SESSIONS: ${MAX_STREAM_SESSIONS:-1}
+      BATCH_MAX_TURNS: ${BATCH_MAX_TURNS:-8}
+      BATCH_MAX_SECONDS: ${BATCH_MAX_SECONDS:-60}
+      ASR_GPU_BATCH_SIZE: ${ASR_GPU_BATCH_SIZE:-8}
+      RABBITMQ_PREFETCH: ${RABBITMQ_PREFETCH_WORKERS:-1}
+    volumes:
+      - hf_home:/models/hf
+    networks:
+      audio_internal: {}
+      common_network: {}
+    devices:
+      - nvidia.com/gpu=0
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import sys, urllib.request;
+          sys.exit(0 if urllib.request.urlopen(
+          'http://127.0.0.1:8020/health', timeout=5).status == 200 else 1)
+      interval: 15s
+      timeout: 10s
+      retries: 60
+      start_period: 120s
+    command:
+      [
+        "/srv/.venv/bin/uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8020",
+        "--ws",
+        "websockets-sansio",
+      ]

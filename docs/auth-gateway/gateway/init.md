@@ -72,7 +72,7 @@ Named in `upstreams`, reached by container name on a shared Docker/podman networ
 | `switch` | `192.168.1.102:8095` | apex `/api/services` | `X-Service-Token` injected by the gateway |
 | `litellm` | `litellm-proxy-server:4000` | apex `POST /api/chat` | not used: the chat goes through the `llm` block, not this upstream ([ADR-0009](../adrs/9-owl-chat-in-the-gateway.md)) |
 
-Networks: `open_network` for the namespace's own services, plus `models_network`, `rag_network`, `deploy_auth_network` — only those the `upstreams` table actually names. An extra network is extra attack surface. The gateway does not join `common_network`. Postgres, Redis, MinIO, RabbitMQ and Mongo run in the [common](../../common/init.md) namespace. The storage app joins that network itself ([open-storage init](../../open-storage/init.md)).
+Networks: `open_network` for the namespace's own services, plus `models_network`, `rag_network`, `audio_network`, `deploy_auth_network` — only those the `upstreams` table actually names. An extra network is extra attack surface. The gateway does not join `common_network`. `audio_network` is created by the [audio](../../audio/init.md) namespace and declared external here, the same attachment as `rag_network` ([ADR-0011](../../../adrs/11-gateway-joins-rag-network.md)). Postgres, Redis, MinIO, RabbitMQ and Mongo run in the [common](../../common/init.md) namespace. The storage app joins that network itself ([open-storage init](../../open-storage/init.md)).
 Adding a host is one change in four places: `upstreams` and a `hosts` block here, a `services` entry when it has roles, a proxy site block, and a DNS name. A service with roles also needs `svc:<name>:{admin,family,blocked}` in the realm ([idp init](../idp/init.md)).
 
 ## Identity

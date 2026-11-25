@@ -17,6 +17,9 @@ networks:
   rag_network:
     external: true
     name: rag_network
+  # Created by deploy/audio. The gateway reaches audio-api:8000 and frontend:80 here.
+  audio_network:
+    external: true
   deploy_auth_network:
     external: true
 
@@ -59,6 +62,7 @@ services:
       - open_network
       - models_network
       - rag_network
+      - audio_network
       - deploy_auth_network
 
   idp:

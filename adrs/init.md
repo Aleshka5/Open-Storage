@@ -9,3 +9,4 @@
 - ([9-rag-namespace.md](9-rag-namespace.md)) - RAG-Chat becomes the `rag` namespace: one network `rag_network`, Mongo and RabbitMQ from `common`, Qdrant local, OCR and embedding inside, and identity v1 at the edge.
 - ([10-published-images.md](10-published-images.md)) - Images this repository builds are published to `REGISTRY` and run from there. A release tags the local date and `latest`.
 - ([11-gateway-joins-rag-network.md](11-gateway-joins-rag-network.md)) - The gateway joins `rag_network`; the legacy `rag_edge` network and the `rag-chat_*` containers are removed.
+- ([12-audio-namespace.md](12-audio-namespace.md)) - ASR-Service becomes the `audio` namespace: `audio_network` for the gateway hop, Qdrant and workers on `audio_internal`, Mongo, MinIO, RabbitMQ and Redis from `common`, empty Qdrant and weight volumes, and identity v1 (`X-Auth-Subject` as a lower-case UUID) at the edge.
