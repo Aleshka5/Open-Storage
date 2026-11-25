@@ -151,6 +151,8 @@ activemq-data/
 
 # Environments
 .env
+# A copy kept beside .env when a value is edited. Never a tracked file.
+.env.bak.*
 .envrc
 .venv
 env/
