@@ -15,6 +15,9 @@ Every host on `filenkov.store` enters through the proxy. The gateway authenticat
  - common: Postgres, Redis, MinIO, RabbitMQ, Mongo
     - Description: Shared data services on `common_network`. Other products join that network and use the service names.
     - Detail inside the block: [common/init.md](common/init.md).
+ - rag: RAG-Chat (rag-edge, file-collector, processor, deletion-worker, chat, frontend, embedding, ocr, qdrant)
+    - Description: The retrieval-augmented chat product over a user's own documents. `rag-edge` is the only inbound path and joins `rag_network`. Its documents, objects and queues are the [common](common/init.md) services; Qdrant stays here.
+    - Detail inside the block: [rag/init.md](rag/init.md).
 
 A namespace gets a directory when its first service exists. The shape is ([repository-layout.md](repository-layout.md)).
 

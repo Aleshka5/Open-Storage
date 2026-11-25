@@ -6,3 +6,4 @@
 - ([6-glass-thumb-is-a-rounded-square.md](6-glass-thumb-is-a-rounded-square.md)) - The glass thumb is one rounded square, as wide as the selected label. The labels sit under it so the rim refracts them.
 - ([7-theme-preference-is-a-session-cookie.md](7-theme-preference-is-a-session-cookie.md)) - theme.preference is one session cookie, not per-origin localStorage. The attributes are in the brand book.
 - ([8-common-data-services.md](8-common-data-services.md)) - Postgres, Redis, MinIO, RabbitMQ and Mongo run in the `common` namespace on `common_network`.
+- ([9-rag-namespace.md](9-rag-namespace.md)) - RAG-Chat becomes the `rag` namespace: one network `rag_network`, Mongo and RabbitMQ from `common`, Qdrant local, OCR and embedding inside, and identity v1 at the edge.
