@@ -1,6 +1,6 @@
 ## Status
 
-Accepted
+Superseded in part by [ADR 3](3-app-on-common-data.md). The SPA image and the `app` name on `open_network` still hold. This namespace no longer runs Postgres, MinIO or Redis.
 
 ## Decision
 

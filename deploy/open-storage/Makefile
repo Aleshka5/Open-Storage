@@ -2,19 +2,17 @@ COMPOSE ?= podman compose -f docker-compose.yaml
 APP_DIR ?= ../../src/open-storage/app
 
 # Empty or unset values are a failed doctor. Compose interpolation uses the same names.
-REQUIRED_ENV = POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD S3_ACCESS_KEY S3_SECRET_KEY MINIO_DATA_PATH
+# MinIO's host path and root credentials live in deploy/common.
+REQUIRED_ENV = POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD S3_ACCESS_KEY S3_SECRET_KEY
 
 .PHONY: up down restart rebuild rebuild-app ps logs doctor test
 
-# Recreates containers whose definition changed. Postgres, MinIO and Redis are
-# data services: a recreated MinIO or Postgres is an outage with a bind-mounted
-# directory behind it, not a rollout. A code change in the app goes through
-# `rebuild`, which recreates the app alone.
+# Recreates the app when its definition changed. Postgres, MinIO and Redis
+# are the common namespace; this target does not recreate them.
 up: doctor
 	$(COMPOSE) up -d
 
-# Keeps named volumes and the MinIO bind directory. There is no target that
-# removes them. Removing volumes stays a manual, deliberate act on the CLI.
+# This compose has no volumes. `down` does not touch the common namespace.
 down:
 	$(COMPOSE) down
 

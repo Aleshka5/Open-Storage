@@ -29,6 +29,10 @@ _COMPOSE = _DEPLOY / "docker-compose.yaml"
 _DOCKERFILE = _DEPLOY / "app" / "Dockerfile"
 _ENV_EXAMPLE = _DEPLOY / ".env.example"
 _MAKEFILE = _DEPLOY / "Makefile"
+_COMMON = _REPO / "deploy" / "common"
+_COMMON_COMPOSE = _COMMON / "docker-compose.yaml"
+_COMMON_ENV = _COMMON / ".env.example"
+_COMMON_MAKEFILE = _COMMON / "Makefile"
 
 _OMITTED_FROM_EXAMPLE = {
     "USER_SERVICE_URL",
@@ -71,19 +75,31 @@ def test_env_example_lists_settings_aliases_and_omits_identity_era_names() -> No
     for name in _OMITTED_FROM_EXAMPLE:
         assert name not in example
     assert "RAG_ENABLED=false" in example
-    assert "MINIO_DATA_PATH=" in example
+    assert "MINIO_DATA_PATH" not in example
     assert "changeme" not in example
+    assert "@postgres:5432/" in example
+    assert "redis://redis:6379" in example
+    assert "http://minio:9000" in example
 
 
-def test_compose_joins_only_external_open_network() -> None:
+def _network_names(service: dict) -> list[str]:
+    networks = service["networks"]
+    if isinstance(networks, list):
+        return list(networks)
+    return list(networks)
+
+
+def test_compose_app_joins_open_and_common_networks() -> None:
     text = _COMPOSE.read_text()
-    for banned in ("common_network", "user_network", "auth_network", "rag_edge", "nginx"):
+    for banned in ("user_network", "auth_network", "rag_edge", "nginx", "open-storage-postgres"):
         assert banned not in text
     data = yaml.safe_load(text)
-    assert list(data["networks"]) == ["open_network"]
-    network = data["networks"]["open_network"]
-    assert network["external"] is True
-    assert network["name"] == "open_network"
+    assert set(data["networks"]) == {"open_network", "common_network"}
+    for name in ("open_network", "common_network"):
+        network = data["networks"][name]
+        assert network["external"] is True
+        assert network["name"] == name
+    assert "volumes" not in data
 
     build = data["services"]["app"]["build"]
     context = (_DEPLOY / build["context"]).resolve()
@@ -92,38 +108,60 @@ def test_compose_joins_only_external_open_network() -> None:
     assert dockerfile.is_file()
 
     services = data["services"]
-    assert set(services) == {"app", "postgres", "minio", "redis", "rabbitmq", "mongo"}
-    for name, service in services.items():
-        assert service["container_name"] == f"open-storage-{name}"
-        assert list(service["networks"]) == ["open_network"]
+    assert set(services) == {"app"}
+    app = services["app"]
+    assert app["container_name"] == "open-storage-app"
+    assert set(_network_names(app)) == {"open_network", "common_network"}
+    assert "ports" not in app
 
-    # Only MinIO publishes host ports: consumers reach the S3 API by address.
-    for name in ("app", "postgres", "redis", "rabbitmq", "mongo"):
-        assert "ports" not in services[name]
-    assert set(services["minio"]["ports"]) == {"9000:9000", "9001:9001"}
-
-    app_aliases = services["app"]["networks"]["open_network"]["aliases"]
+    app_aliases = app["networks"]["open_network"]["aliases"]
     assert "app" in app_aliases
-    environment = services["app"]["environment"]
-    assert "open-storage-postgres" in environment["DATABASE_URL"]
-    assert environment["REDIS_URL"] == "redis://open-storage-redis:6379"
-    assert environment["S3_ENDPOINT_URL"] == "http://open-storage-minio:9000"
+    environment = app["environment"]
+    assert "@postgres:5432/" in environment["DATABASE_URL"]
+    assert environment["REDIS_URL"] == "redis://redis:6379"
+    assert environment["S3_ENDPOINT_URL"] == "http://minio:9000"
     assert environment["SPA_STATIC_DIR"] == "/opt/spa"
 
-    volumes = data["volumes"]
-    assert set(volumes) == {
-        "open-storage-postgres-data",
-        "open-storage-redis-data",
-        "open-storage-minio-data",
-        "open-storage-rabbitmq-data",
-        "open-storage-mongo-data",
+
+def test_common_compose_matches_shared_service_names() -> None:
+    text = _COMMON_COMPOSE.read_text()
+    data = yaml.safe_load(text)
+    assert data["name"] == "common"
+    assert list(data["networks"]) == ["common_network"]
+    assert data["networks"]["common_network"]["name"] == "common_network"
+    assert "external" not in data["networks"]["common_network"]
+
+    services = data["services"]
+    assert set(services) == {"postgres", "redis", "minio", "rabbitmq", "mongo"}
+    for name, service in services.items():
+        assert service["container_name"] == name
+        assert _network_names(service) == ["common_network"]
+
+    for name in ("postgres", "redis", "rabbitmq", "mongo"):
+        assert "ports" not in services[name]
+    assert set(services["minio"]["ports"]) == {"9000:9000", "9001:9001"}
+    assert services["rabbitmq"]["networks"]["common_network"]["aliases"] == ["rabbit"]
+    assert services["minio"]["volumes"] == ["/media/aleksey/HardDisk/minio:/data"]
+    assert services["postgres"]["env_file"] == [".env"]
+    assert services["minio"]["env_file"] == [".env"]
+
+    assert set(data["volumes"]) == {
+        "postgres_data",
+        "redis_data",
+        "rabbitmq_data",
+        "mongo_data",
     }
-    for key, spec in volumes.items():
-        assert key.startswith("open-storage-")
-        assert spec["name"] == key
-    device = volumes["open-storage-minio-data"]["driver_opts"]["device"]
-    assert "MINIO_DATA_PATH" in device
-    assert "/media/" not in text
+    assert "open-storage-" not in text
+    assert "open_network" not in text
+
+    example = _COMMON_ENV.read_text()
+    for key in ("POSTGRES_USER=", "POSTGRES_PASSWORD=", "MINIO_ROOT_USER=", "MINIO_ROOT_PASSWORD="):
+        assert key in example
+    assert "POSTGRES_DB=" not in example
+
+    makefile = _COMMON_MAKEFILE.read_text()
+    assert "down:\n\t$(COMPOSE) down\n" in makefile
+    assert "--volumes" not in makefile
 
 
 def test_make_down_keeps_volumes() -> None:
@@ -136,9 +174,9 @@ def test_make_down_keeps_volumes() -> None:
         "POSTGRES_PASSWORD",
         "S3_ACCESS_KEY",
         "S3_SECRET_KEY",
-        "MINIO_DATA_PATH",
     ):
         assert key in text
+    assert "MINIO_DATA_PATH" not in text
 
 
 def test_dockerfile_builds_spa_into_the_app_image() -> None:

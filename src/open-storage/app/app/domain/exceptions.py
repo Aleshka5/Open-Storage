@@ -69,6 +69,10 @@ class AuthMisconfiguredError(Exception):
     """Raised when an identity header cannot be mapped (invalid role string)."""
 
 
+class IdentityProjectionError(Exception):
+    """Raised when a trusted subject cannot be mapped onto exactly one local user."""
+
+
 class KeysValidationError(Exception):
     """Raised when a keys-registry payload fails name/value validation."""
 

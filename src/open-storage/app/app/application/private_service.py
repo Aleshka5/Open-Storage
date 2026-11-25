@@ -40,13 +40,21 @@ class PrivateService:
     def private_session_ttl_seconds(self) -> int:
         return self._settings.auth.private_session_ttl_hours * 3600
 
-    async def unlock(self, user_id: UUID, session_id: str, passphrase: str) -> bool:
-        key = derive_encryption_key(passphrase, user_id)
+    async def unlock(
+        self,
+        user_id: UUID,
+        session_id: str,
+        passphrase: str,
+        *,
+        storage_id: UUID | None = None,
+    ) -> bool:
+        prefix_id = storage_id or user_id
+        key = derive_encryption_key(passphrase, prefix_id)
         logger.info("Private unlock attempt for user {}", user_id)
 
         try:
             disk_id = await self._resolve_user_disk_id(user_id)
-            root_prefix = user_private_root_prefix(user_id)
+            root_prefix = user_private_root_prefix(prefix_id)
             inner = await build_section_adapter(
                 disk_id,
                 root_prefix,
@@ -91,13 +99,20 @@ class PrivateService:
         await self._session_store.delete_private_key(session_id)
         logger.info("Private section locked for session {}", session_id)
 
-    async def reset_storage(self, user_id: UUID, session_id: str) -> None:
+    async def reset_storage(
+        self,
+        user_id: UUID,
+        session_id: str,
+        *,
+        storage_id: UUID | None = None,
+    ) -> None:
+        prefix_id = storage_id or user_id
         logger.info("Resetting private storage for user {}", user_id)
 
         await self._session_store.delete_private_key(session_id)
 
         disk_id = await self._resolve_user_disk_id(user_id)
-        root_prefix = user_private_root_prefix(user_id)
+        root_prefix = user_private_root_prefix(prefix_id)
         inner = await build_section_adapter(
             disk_id,
             root_prefix,
@@ -137,7 +152,14 @@ class PrivateService:
             deleted_records,
         )
 
-    async def get_file_service(self, user_id: UUID, session_id: str) -> FileService:
+    async def get_file_service(
+        self,
+        user_id: UUID,
+        session_id: str,
+        *,
+        storage_id: UUID | None = None,
+    ) -> FileService:
+        prefix_id = storage_id or user_id
         encoded_key = await self._session_store.get_private_key(session_id)
         if not encoded_key:
             logger.warning("Private session expired for user {}", user_id)
@@ -145,7 +167,7 @@ class PrivateService:
 
         key = base64.urlsafe_b64decode(encoded_key.encode(_KEY_ENCODING))
         disk_id = await self._resolve_user_disk_id(user_id)
-        root_prefix = user_private_root_prefix(user_id)
+        root_prefix = user_private_root_prefix(prefix_id)
         inner = await build_section_adapter(
             disk_id,
             root_prefix,

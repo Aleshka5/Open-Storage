@@ -1,2 +1,3 @@
-- ([1-own-data-on-open-network.md](1-own-data-on-open-network.md)) - Own Postgres, MinIO and Redis; join the existing `open_network`; containers `open-storage-*`; SPA built into the app image.
+- ([1-own-data-on-open-network.md](1-own-data-on-open-network.md)) - Superseded in part by [ADR 3](3-app-on-common-data.md). Still holds: join `open_network`, container `open-storage-app`, SPA built into the app image.
 - ([2-trust-v1-headers.md](2-trust-v1-headers.md)) - Trust the five identity v1 headers; the User-Service client is gone; `users.id` stays a UUID column.
+- ([3-app-on-common-data.md](3-app-on-common-data.md)) - The app joins `common_network` and uses `postgres`, `redis` and `minio`. This namespace does not run those services.

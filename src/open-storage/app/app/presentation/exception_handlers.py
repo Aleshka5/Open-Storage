@@ -11,6 +11,7 @@ from app.domain.exceptions import (
     FileNotFoundError,
     GeneratedMetaInvalidError,
     GeneratedValidationError,
+    IdentityProjectionError,
     KeysValidationError,
     KeysYamlInvalidError,
     PathTraversalError,
@@ -293,6 +294,20 @@ def register_exception_handlers(app: FastAPI) -> None:
             {
                 "error_code": ErrorCode.INDEXING_UNAVAILABLE,
                 "message": str(exc) or "Search is unavailable right now",
+            },
+        )
+
+    @app.exception_handler(IdentityProjectionError)
+    async def identity_projection_handler(
+        _request: Request,
+        exc: IdentityProjectionError,
+    ) -> JSONResponse:
+        logger.error("Identity projection refused: {}", exc)
+        return _error_response(
+            status.HTTP_409_CONFLICT,
+            {
+                "error_code": ErrorCode.IDENTITY_CONFLICT,
+                "message": "This sign-in cannot be matched to a single archive",
             },
         )
 

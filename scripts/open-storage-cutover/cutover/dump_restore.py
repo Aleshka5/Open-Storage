@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from cutover.errors import CutoverRefused
 
 SOURCE_DATABASE = "db_storage"
-TARGET_HOST = "open-storage-postgres"
+TARGET_HOST = "postgres"
 TARGET_DATABASE = "db_storage"
 EMPTY_TABLE = "upload_sessions"
 TRUNCATE_UPLOAD_SESSIONS = "TRUNCATE TABLE upload_sessions;"
@@ -93,7 +93,7 @@ def validate_dump_restore_plan(plan: DumpRestorePlan) -> None:
     if restore_command[0] != "pg_restore":
         raise CutoverRefused("restore must be pg_restore")
     if plan.target_host != TARGET_HOST or TARGET_HOST not in restore_command:
-        raise CutoverRefused("pg_restore target host is open-storage-postgres")
+        raise CutoverRefused("pg_restore target host is postgres")
     if plan.target_database != TARGET_DATABASE or TARGET_DATABASE not in restore_command:
         raise CutoverRefused("pg_restore target database is the namespace database")
     if empty_command[:5] != ("psql", "-h", TARGET_HOST, "-d", TARGET_DATABASE):

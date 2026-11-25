@@ -13,7 +13,7 @@ from cutover.errors import CutoverRefused
 def test_mirror_plan_preserves_between_endpoints() -> None:
     plan = plan_mirror(
         source_endpoint="http://minio:9000",
-        target_endpoint="http://open-storage-minio:9000",
+        target_endpoint="http://minio:9000",
     )
 
     assert plan.command[:3] == ("mc", "mirror", "--preserve")
@@ -29,7 +29,7 @@ def test_host_directory_is_refused() -> None:
     with pytest.raises(CutoverRefused, match="host-directory"):
         plan_mirror(
             source_endpoint="/media/aleksey/HardDisk/minio/storage",
-            target_endpoint="http://open-storage-minio:9000",
+            target_endpoint="http://minio:9000",
         )
 
 

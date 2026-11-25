@@ -8,7 +8,7 @@ Run a plan with `PYTHONPATH=scripts/open-storage-cutover python -m cutover.cli <
 
 ## Dump and restore
 
-`plan-dump` prints three commands, in order: `pg_dump -Fc -d db_storage`, `pg_restore` into database `db_storage` on host `open-storage-postgres`, then `TRUNCATE TABLE upload_sessions`. It refuses the plan when the legacy app is not stopped. `upload_sessions` is restored empty: the table stays, its rows are not carried. The baseline queries name `users`, `file_records` (by `status` and `section`), `user_quota_usage`, `file_index_links` (by `state`), and `upload_sessions`. They are printed, not executed.
+`plan-dump` prints three commands, in order: `pg_dump -Fc -d db_storage`, `pg_restore` into database `db_storage` on host `postgres`, then `TRUNCATE TABLE upload_sessions`. It refuses the plan when the legacy app is not stopped. `upload_sessions` is restored empty: the table stays, its rows are not carried. The baseline queries name `users`, `file_records` (by `status` and `section`), `user_quota_usage`, `file_index_links` (by `state`), and `upload_sessions`. They are printed, not executed.
 
 ## Bucket
 
@@ -48,4 +48,4 @@ The old stack's volumes stay. The proxy block and the gateway host block are rev
 
 ## Decommission review
 
-Not a command. The checklist is the story's [decommission task](../user_stories/us-08-data-cutover/tasks/task-08-decommission.md): the rollback window has passed, the dump and the bucket copy are still readable, and only then are the old containers and volumes removed. `~/projects/WebStorage` is archived or removed with a pointer at this repository. The shared `common_network` `storage` database and bucket are dropped only after that check. `mlflow` and the other buckets stay.
+Not a command. The checklist is the story's [decommission task](../user_stories/us-08-data-cutover/tasks/task-08-decommission.md): the rollback window has passed, the dump and the bucket copy are still readable, and only then are the old containers and volumes removed. `~/projects/WebStorage` is archived or removed with a pointer at this repository. The live database and bucket are the [common](../common/init.md) services (`postgres`, bucket `storage` on `minio`). They stay. `mlflow` and the other buckets stay.

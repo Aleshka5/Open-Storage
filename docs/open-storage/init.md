@@ -1,16 +1,15 @@
 # open-storage
 
-Storage product: files, photos, an encrypted private vault, uploaded resumes, generated-image history, quotas and admin. `app`, `postgres`, `minio` and `redis` share `open_network` and one env file. The SPA source is built into the app image and is not a running service. The namespace decision is [ADR 1](adrs/1-own-data-on-open-network.md). The story that brought the tree here is [US-05](../user_stories/us-05-storage-namespace/init.md). This page is service-level only. What a service does is linked.
+Storage product: files, photos, an encrypted private vault, uploaded resumes, generated-image history, quotas and admin. This namespace runs `app`. Postgres, Redis and MinIO are the [common](../common/init.md) services on `common_network`. The SPA source is built into the app image and is not a running service. The network decision is [ADR 3](adrs/3-app-on-common-data.md). The story that brought the tree here is [US-05](../user_stories/us-05-storage-namespace/init.md); the move onto `common_network` is [US-15](../user_stories/us-15-common-network/init.md). This page is service-level only. What a service does is linked.
 
 ## Services
 
 | Service | Code | Role in the block | Does not |
 |---|---|---|---|
-| `app` | [app/init.md](app/init.md) | Owns every byte and every row of this namespace. Answers `/api/**`, `/health`, and the SPA shell. | Issue, verify or revoke identity; route hosts; terminate TLS |
-| `postgres` | [docker-compose.yaml](../../deploy/open-storage/docker-compose.yaml) | Database `db_storage` for the app | Serve objects or sessions |
-| `minio` | [docker-compose.yaml](../../deploy/open-storage/docker-compose.yaml) | Bucket `storage` on `MINIO_DATA_PATH` | Serve SQL or sessions |
-| `redis` | [docker-compose.yaml](../../deploy/open-storage/docker-compose.yaml) | Vault key, counters and limits | Serve SQL or objects |
+| `app` | [app/init.md](app/init.md) | Owns every byte and every row of this product. Answers `/api/**`, `/health`, and the SPA shell. | Issue, verify or revoke identity; route hosts; terminate TLS; run Postgres, MinIO or Redis |
 | SPA | [spa/init.md](spa/init.md) | The React front end, built into the `app` image and served from `/opt/spa` | Keep a session, hold a secret, or call anything but `app` on its own origin |
+
+Database `db_storage`, bucket `storage`, and the vault key live in [common](../common/init.md): `postgres:5432`, `minio:9000`, `redis:6379`.
 
 Contracts: [API](app/api-contract.md), [external calls](app/external-contract.md).
 
@@ -24,34 +23,37 @@ flowchart TB
 
   subgraph NS["open-storage namespace - open_network"]
     A(["app FastAPI :8000<br/>API + /opt/spa"])
-    PG[("postgres")]
-    MN[("minio")]
-    RD[("redis")]
   end
 
   subgraph NE["auth-gateway owns - open_network"]
     G["Gateway"]
   end
 
+  subgraph CM["common namespace - common_network"]
+    PG[("postgres :5432")]
+    MN[("minio :9000")]
+    RD[("redis :6379")]
+  end
+
   B -->|"TLS 443, one cookie on .filenkov.store"| G
   G -->|"proxy, port 8000, identity v1 headers"| A
-  A -->|"lookup, :5432"| PG
-  A -->|"S3 API, :9000"| MN
-  A -->|"vault key, counters, limits, :6379"| RD
+  A -->|"lookup"| PG
+  A -->|"S3 API"| MN
+  A -->|"vault key, counters, limits"| RD
 ```
 
 ## Networks
 
 | Network | Why | Source |
 |---|---|---|
-| `open_network` (external) | The only network in the compose file. The gateway reaches `app:8000` by name; it is the only inbound path. Postgres, MinIO, Redis, RabbitMQ and Mongo are on this network too. The same network is the condition under which the app may trust identity v1 headers. | [ADR 1](adrs/1-own-data-on-open-network.md), [identity v1](../auth-gateway/external-contracts/identity-v1.md), [upstreams](../auth-gateway/external-contracts/upstreams.md) |
+| `open_network` (external) | The gateway reaches `app:8000` by name; it is the only inbound path. The same network is the condition under which the app may trust identity v1 headers. | [ADR 1](adrs/1-own-data-on-open-network.md), [identity v1](../auth-gateway/external-contracts/identity-v1.md), [upstreams](../auth-gateway/external-contracts/upstreams.md) |
+| `common_network` (external) | The app reaches `postgres:5432`, `redis:6379` and `minio:9000`. RabbitMQ and Mongo are on this network; this app does not call them. | [ADR 3](adrs/3-app-on-common-data.md), [common](../common/init.md) |
 
-`RAG_ENABLED=false`. The compose file does not join `rag_edge`, `common_network`, `user_network` or `auth_network`. The shared `common_network` data services are gone from this deployment: the namespace runs its own Postgres, MinIO, Redis, RabbitMQ and Mongo (`open-storage-postgres`, `open-storage-minio`, `open-storage-redis`, `open-storage-rabbitmq`, `open-storage-mongo`), each with an `open-storage-*-data` volume. MinIO still publishes host ports 9000 and 9001 because consumers reach the S3 API by address, not by container name.
+`RAG_ENABLED=false`. The compose file does not join `rag_edge`, `user_network` or `auth_network`. It does not publish a host port. MinIO's host ports 9000 and 9001 are published by the common namespace.
 
 ## Mismatches
 
 - [US-05](../user_stories/us-05-storage-namespace/init.md) task-02 and its Definition of Done say the compose file names no external network. The file follows [ADR 1](adrs/1-own-data-on-open-network.md) and task-04: `open_network` is `external: true`, and `app` joins only that network.
-- [external calls](app/external-contract.md) still lists an own bridge and `rag_edge` for the app. The compose file joins only `open_network`.
 - [spa/init.md](spa/init.md) still names `frontend/` paths. The source tree is `src/open-storage/spa`.
 
 ## Identity this block consumes

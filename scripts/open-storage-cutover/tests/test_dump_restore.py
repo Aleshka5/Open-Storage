@@ -13,7 +13,7 @@ def test_plan_is_pg_dump_fc_then_restore_then_empty_upload_sessions() -> None:
     assert plan.steps[0][:4] == ("pg_dump", "-Fc", "-d", "db_storage")
     assert plan.steps[0][-2:] == ("-f", "/tmp/db_storage.dump")
     assert plan.steps[1][0] == "pg_restore"
-    assert "-h" in plan.steps[1] and "open-storage-postgres" in plan.steps[1]
+    assert "-h" in plan.steps[1] and "postgres" in plan.steps[1]
     assert "-d" in plan.steps[1] and "db_storage" in plan.steps[1]
     assert plan.steps[2][-1] == "TRUNCATE TABLE upload_sessions;"
     assert plan.empty_tables == ("upload_sessions",)

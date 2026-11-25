@@ -3,13 +3,15 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from loguru import logger
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.domain.entities.auth_principal import AuthPrincipal
 from app.domain.entities.user import User as UserEntity
+from app.domain.exceptions import IdentityProjectionError
 from app.domain.value_objects.role import Role
+from app.infrastructure.database.models import FileIndexLink
 from app.infrastructure.database.models import User as UserModel
 from app.infrastructure.database.models import UserQuotaUsage
 from config import get_settings
@@ -53,33 +55,58 @@ class UserRepository:
         return self._to_entity(model)
 
     async def upsert_from_principal(self, principal: AuthPrincipal) -> UserEntity | None:
-        """Project the request subject into the local users table (id + email only).
+        """Project the request subject into the local users table.
 
-        Authorization must use ``principal.role``. Returns None when the subject
-        cannot be stored in ``users.id``, or when the email belongs to a different id.
+        A subject that is not yet a ``users.id``, whose trusted email matches
+        exactly one local user, re-keys that row (and every ``user_id`` that
+        points at it) inside this transaction. Object keys stay on
+        ``object_prefix_id``.
+
+        Authorization must use ``principal.role``. Returns None when the
+        subject cannot be stored in ``users.id``. Raises
+        ``IdentityProjectionError`` when the email matches more than one row,
+        or the subject already belongs to someone other than the email owner.
         """
         user_id = stored_user_id(principal.id)
         if user_id is None:
             logger.error("Identity subject cannot be stored in users.id")
             return None
 
-        existing = await self.get_by_id(user_id)
+        existing = await self._session.get(UserModel, user_id)
+        matches = await self._users_for_email(principal.email)
+
         if existing is not None:
+            others = [row.id for row in matches if row.id != existing.id]
+            if others:
+                logger.error(
+                    "Identity subject user_id={} already exists and email is owned by {}",
+                    user_id,
+                    others,
+                )
+                raise IdentityProjectionError(
+                    "Identity subject cannot be mapped onto a single local user"
+                )
             return await self._sync_projection(principal)
 
-        email_owner = await self.get_by_email(principal.email)
-        if email_owner is not None:
+        if len(matches) > 1:
             logger.error(
-                "Identity subject user_id={} email conflicts with local user_id={}",
+                "Identity subject user_id={} email matches {} local users: {}",
                 user_id,
-                email_owner.id,
+                len(matches),
+                [row.id for row in matches],
             )
-            return None
+            raise IdentityProjectionError(
+                "Identity subject cannot be mapped onto a single local user"
+            )
+
+        if len(matches) == 1:
+            return await self._rekey_user(matches[0].id, user_id, principal)
 
         model = UserModel(
             id=user_id,
             email=principal.email,
             is_active=True,
+            object_prefix_id=user_id,
         )
         try:
             async with self._session.begin_nested():
@@ -94,6 +121,79 @@ class UserRepository:
 
         await self._session.refresh(model)
         logger.info("Created local user projection user_id={}", model.id)
+        return self._to_entity(model, role=principal.role)
+
+    async def _users_for_email(self, email: str) -> list[UserModel]:
+        """Local rows whose email matches the trusted identity, case-insensitively.
+
+        A blank email matches nobody. Two rows that differ only by case are
+        ambiguous and must not be re-keyed.
+        """
+        normalized = email.strip().lower()
+        if not normalized:
+            return []
+        result = await self._session.execute(
+            select(UserModel).where(func.lower(UserModel.email) == normalized)
+        )
+        return list(result.scalars().all())
+
+    async def _rekey_user(
+        self,
+        old_id: UUID,
+        new_id: UUID,
+        principal: AuthPrincipal,
+    ) -> UserEntity:
+        """Point ``users.id`` at the subject and follow every ``user_id`` column.
+
+        ``ON UPDATE CASCADE`` moves ``file_records``, ``user_quota_usage`` and
+        ``upload_sessions``. ``file_index_links.user_id`` has no foreign key,
+        so it is updated here. ``object_prefix_id``, ``relative_path`` and
+        ``s3_key`` stay on the pre-cutover id: those are object locations.
+        """
+        self._session.expunge_all()
+        rekeyed = await self._session.execute(
+            update(UserModel)
+            .where(UserModel.id == old_id)
+            .values(id=new_id)
+            .returning(UserModel.id),
+            execution_options={"synchronize_session": False},
+        )
+        if rekeyed.scalar_one_or_none() is None:
+            logger.error(
+                "Identity re-key matched no row old_user_id={} subject_id={}",
+                old_id,
+                new_id,
+            )
+            raise IdentityProjectionError(
+                "Identity subject cannot be mapped onto a single local user"
+            )
+
+        await self._session.execute(
+            update(FileIndexLink)
+            .where(FileIndexLink.user_id == old_id)
+            .values(user_id=new_id),
+            execution_options={"synchronize_session": False},
+        )
+        self._session.expire_all()
+
+        model = await self._session.get(UserModel, new_id)
+        if model is None:
+            logger.error("Identity re-key lost subject_id={}", new_id)
+            raise IdentityProjectionError(
+                "Identity subject cannot be mapped onto a single local user"
+            )
+        if principal.email and model.email != principal.email:
+            model.email = principal.email
+        if not model.is_active:
+            model.is_active = True
+        await self._session.flush()
+        await self._session.refresh(model)
+        logger.info(
+            "Re-keyed local user old_user_id={} subject_id={} object_prefix_id={}",
+            old_id,
+            new_id,
+            model.object_prefix_id,
+        )
         return self._to_entity(model, role=principal.role)
 
     async def _sync_projection(self, principal: AuthPrincipal) -> UserEntity:
@@ -183,4 +283,5 @@ class UserRepository:
             role=role,
             is_active=model.is_active,
             created_at=created_at,
+            object_prefix_id=model.object_prefix_id,
         )

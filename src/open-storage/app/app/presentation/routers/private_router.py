@@ -145,7 +145,12 @@ async def unlock_private_section(
             },
         )
 
-    success = await private_service.unlock(current_user.id, session_id, body.passphrase)
+    success = await private_service.unlock(
+        current_user.id,
+        session_id,
+        body.passphrase,
+        storage_id=current_user.storage_id,
+    )
     if success:
         await session_store.reset_unlock_attempts(str(current_user.id), client_ip)
         logger.info("Private section unlocked for user {}", current_user.id)
@@ -204,7 +209,11 @@ async def reset_private_storage(
         )
 
     try:
-        await private_service.reset_storage(current_user.id, session_id)
+        await private_service.reset_storage(
+            current_user.id,
+            session_id,
+            storage_id=current_user.storage_id,
+        )
         await session_store.reset_unlock_attempts(str(current_user.id), client_ip)
         await session.commit()
     except Exception:

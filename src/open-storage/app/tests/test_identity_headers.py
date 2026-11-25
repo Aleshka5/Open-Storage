@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 
 from app.domain.entities.auth_principal import AuthPrincipal
 from app.domain.entities.user import User
+from app.domain.exceptions import IdentityProjectionError
 from app.domain.value_objects.error_codes import ErrorCode
 from app.domain.value_objects.role import Role
 from app.infrastructure.database.session import get_async_session
@@ -245,6 +246,24 @@ def test_app_does_not_rewrite_a_body_it_did_not_produce() -> None:
 
     assert response.status_code == 401
     assert response.json() == {"error": "unauthorized"}
+
+
+def test_identity_conflict_is_a_client_error() -> None:
+    class ConflictRepository(FakeUserRepository):
+        async def upsert_from_principal(self, principal: AuthPrincipal) -> User | None:
+            raise IdentityProjectionError(
+                "Identity subject cannot be mapped onto a single local user"
+            )
+
+    client = TestClient(_build_app(ConflictRepository()))
+
+    response = client.get(FILES, headers=_v1_headers())
+
+    assert response.status_code == 409
+    assert _error_code(response) == ErrorCode.IDENTITY_CONFLICT
+    assert response.json()["detail"]["message"] == (
+        "This sign-in cannot be matched to a single archive"
+    )
 
 
 def test_settings_cache_still_clears() -> None:

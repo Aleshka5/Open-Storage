@@ -25,7 +25,7 @@ def test_plan_dump_cli_prints_commands_only_when_stopped(capsys: pytest.CaptureF
     stdout = capsys.readouterr().out
     assert "pg_dump -Fc -d db_storage -f /tmp/db_storage.dump" in stdout
     assert "pg_restore" in stdout
-    assert "open-storage-postgres" in stdout
+    assert "postgres" in stdout
     assert "TRUNCATE TABLE upload_sessions;" in stdout
 
 
@@ -37,7 +37,7 @@ def test_plan_mirror_cli_refuses_a_directory(capsys: pytest.CaptureFixture[str])
                 "--source-endpoint",
                 "/media/aleksey/HardDisk/minio",
                 "--target-endpoint",
-                "http://open-storage-minio:9000",
+                "http://minio:9000",
             ]
         )
         == 2

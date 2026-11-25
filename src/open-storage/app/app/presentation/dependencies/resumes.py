@@ -43,7 +43,7 @@ async def get_resumes_file_service(
 ) -> FileService:
     try:
         disk_id = await _resolve_resumes_disk_id(current_user.id, file_repo)
-        root_prefix = user_resumes_root_prefix(current_user.id)
+        root_prefix = user_resumes_root_prefix(current_user.storage_id)
         adapter = await build_section_adapter(
             disk_id,
             root_prefix,

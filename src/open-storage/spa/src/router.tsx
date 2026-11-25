@@ -98,6 +98,7 @@ export function AppRouter() {
   const fetchMe = useAuthStore((state) => state.fetchMe);
   const userServiceUnavailable = useAuthStore((state) => state.userServiceUnavailable);
   const unauthorized = useAuthStore((state) => state.unauthorized);
+  const sessionError = useAuthStore((state) => state.sessionError);
   const [sessionReady, setSessionReady] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
 
@@ -120,6 +121,24 @@ export function AppRouter() {
     return (
       <Shell>
         <SessionBootstrap />
+      </Shell>
+    );
+  }
+
+  if (sessionError) {
+    return (
+      <Shell>
+        <div className="error-block">
+          <ErrorMessage errorCode="INTERNAL_ERROR" />
+          <Button
+            type="button"
+            onClick={() => {
+              setRetryNonce((value) => value + 1);
+            }}
+          >
+            Reload
+          </Button>
+        </div>
       </Shell>
     );
   }

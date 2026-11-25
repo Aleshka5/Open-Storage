@@ -24,7 +24,7 @@ The app's own identity failures answer in its own envelope (`401 {"detail":{"err
 
 | Call | Used for | Contract |
 |---|---|---|
-| `asyncpg` over `DATABASE_URL`, database `db_storage`, role `storage` | All metadata: `users`, `file_records`, `user_quota_usage`, `file_index_links` | PostgreSQL with the native enums `file_section`, `file_status`; `timestamp with time zone`; `alembic upgrade head` runs at container start and must succeed or the container stops |
+| `asyncpg` over `DATABASE_URL`, host `postgres:5432`, database `db_storage`, role `POSTGRES_USER` | All metadata: `users`, `file_records`, `user_quota_usage`, `file_index_links` | The common Postgres ([common](../../common/init.md)). Native enums `file_section`, `file_status`; `timestamp with time zone`. Database `db_storage` already exists. `alembic upgrade head` runs at container start and must succeed or the container stops |
 | `pg_dump` (external binary, installed in the image with `postgresql-client`) | `GET /api/admin/backup/run` | `pg_dump` accepts the DSN after `+asyncpg` is stripped, and its version is at least the server's |
 
 Schema and ownership: [app/init.md](init.md#database).
@@ -49,7 +49,7 @@ Key layout: [app/init.md](init.md#storage-layout-in-minio). The RAG side of the 
 | `auth_rate:<path>:<ip>` | Rate limit on `/api/auth/login` and `/api/auth/register` | Same | 60 s |
 | `oauth_state:<state>`, `oauth_ticket:<ticket>` | Written and consumed by routes that answer `410` | — | 600 s / 120 s |
 
-`REDIS_URL`, default `redis://redis:6379`. Redis is not a cache and not a session store for identity: the only durable thing in it is the vault key, and its loss locks every vault (the data stays).
+`REDIS_URL` is `redis://redis:6379` on `common_network`. Redis is not a cache and not a session store for identity: the only durable thing in it is the vault key, and its loss locks every vault (the data stays).
 
 The app makes no identity HTTP call. Role and subject come from the headers in [identity v1](../../auth-gateway/external-contracts/identity-v1.md). The admin user list is the local `users` table.
 
@@ -74,7 +74,7 @@ The manifest the app sends is `{s3_key, file_name, content_sha256, file_size, co
 | Call | Network |
 |---|---|
 | gateway → app | `open_network` |
-| app → postgres, minio, redis | the namespace's own bridge |
-| app → rag-edge | `rag_edge` |
+| app → `postgres:5432`, `redis:6379`, `minio:9000` | `common_network` |
+| app → rag-edge | not attached. `RAG_ENABLED=false` |
 
 See the [namespace page](../init.md#networks) for why each exists.

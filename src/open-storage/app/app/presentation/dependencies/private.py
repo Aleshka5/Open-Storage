@@ -56,7 +56,11 @@ async def get_private_file_service(
     private_service: PrivateService = Depends(get_private_service),
 ) -> FileService:
     session_id = _get_session_id(request)
-    return await private_service.get_file_service(current_user.id, session_id)
+    return await private_service.get_file_service(
+        current_user.id,
+        session_id,
+        storage_id=current_user.storage_id,
+    )
 
 
 def get_keys_registry_service(

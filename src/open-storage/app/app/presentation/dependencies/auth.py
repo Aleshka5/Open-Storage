@@ -44,6 +44,7 @@ def _user_from_principal(principal: AuthPrincipal, local: User) -> User:
         role=principal.role,
         is_active=local.is_active,
         created_at=local.created_at,
+        object_prefix_id=local.object_prefix_id,
     )
 
 

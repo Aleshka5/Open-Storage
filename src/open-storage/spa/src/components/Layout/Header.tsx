@@ -9,10 +9,11 @@ import { ThemeControl } from "../ThemeControl";
 export function Header() {
   const user = useAuthStore((state) => state.user);
   const sessionChecked = useAuthStore((state) => state.sessionChecked);
+  const sessionError = useAuthStore((state) => state.sessionError);
   const [signingOut, setSigningOut] = useState(false);
   const [preference, setPreference] = useState<Preference>(() => readPreference());
 
-  const isGuest = sessionChecked && user === null;
+  const isGuest = sessionChecked && user === null && !sessionError;
 
   useEffect(() => {
     apply(readPreference());
@@ -52,6 +53,9 @@ export function Header() {
       <div className="header-right">
         <ThemeControl preference={preference} onChange={onTheme} />
         {!sessionChecked ? <span className="muted">Checking sign-in…</span> : null}
+        {sessionError ? (
+          <span className="muted">Storage could not open this sign-in</span>
+        ) : null}
         {isGuest ? (
           <a className="btn btn-small" href={signInHref()}>
             Sign in

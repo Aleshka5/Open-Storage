@@ -14,6 +14,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -47,6 +48,12 @@ class User(Base):
         primary_key=True,
         default=uuid.uuid4,
     )
+    # Frozen at first insert. Identity cutover changes ``id`` and leaves this
+    # value so object keys and the vault key salt still resolve.
+    object_prefix_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=False,
+    )
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -74,6 +81,15 @@ class User(Base):
     )
 
 
+@event.listens_for(User, "before_insert")
+def _assign_object_prefix_id(_mapper, _connection, target: User) -> None:
+    """New projections store objects under their own id until a re-key."""
+    if target.object_prefix_id is None:
+        if target.id is None:
+            target.id = uuid.uuid4()
+        target.object_prefix_id = target.id
+
+
 class FileRecord(Base):
     __tablename__ = "file_records"
     __table_args__ = (Index("ix_file_records_user_id", "user_id"),)
@@ -85,7 +101,7 @@ class FileRecord(Base):
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
     )
     disk_id: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -123,7 +139,7 @@ class UserQuotaUsage(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"),
         primary_key=True,
     )
     total_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
@@ -156,7 +172,7 @@ class UploadSession(Base):
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
     )
     target_path: Mapped[str] = mapped_column(Text, nullable=False)

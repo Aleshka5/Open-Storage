@@ -6,6 +6,8 @@
 
 The storage product becomes a namespace of this repository: one network, one env file, one compose file, its own Postgres, MinIO and Redis. Today it is a separate repository whose compose borrows `common_network` for postgres, minio and redis and joins three other projects' networks to reach them. This story moves it in and takes back what it owns. Identity is not touched here — that is [US-06](../us-06-identity-v1/init.md); routing is [US-07](../us-07-edge-host/init.md); the data is [US-08](../us-08-data-cutover/init.md).
 
+Mismatch: D2 and the acceptance lines that name `open-storage-postgres`, `open-storage-minio` and `open-storage-redis` are not the running layout. [US-15](../us-15-common-network/init.md) and [ADR 3](../../open-storage/adrs/3-app-on-common-data.md) put those services in the `common` namespace.
+
 Tasks: [repository layout](tasks/task-01-layout.md), [own data services](tasks/task-02-compose-data.md), [env and Makefile](tasks/task-03-env-makefile.md), [network](tasks/task-04-network.md), [volumes](tasks/task-05-volumes.md), [SPA in the image](tasks/task-06-spa-image.md), [suite from the new location](tasks/task-07-suite.md).
 
 ## Locked decisions

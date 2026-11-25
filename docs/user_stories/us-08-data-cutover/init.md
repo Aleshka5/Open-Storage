@@ -4,7 +4,9 @@
 
 ## Overview
 
-The data moves from the shared stack into the namespace's own postgres and minio, and users switch to the new host. The legacy database is `db_storage` owned by role `storage`; the tables are `users`, `file_records`, `user_quota_usage`, `upload_sessions`, `file_index_links`. The blobs are one bucket `storage` with keys `users/<uid>/<section>/…`, `shared/…`, `files/…` and `_meta/…`, on the host path `/media/aleksey/HardDisk/minio`. RAG indexing is the hazard: a due-queue predicate that silently excludes rows empties a page while the bytes survive, so RAG runs off until a separate re-queue proves the rows come back.
+The data moves from the shared stack into the namespace's own postgres and minio, and users switch to the new host.
+
+Mismatch: [ADR-0008](../../../adrs/8-common-data-services.md) puts Postgres and MinIO back on `common_network`. The live hosts are `postgres` and `minio`. D1's "no shared database" and the tasks that name `open-storage-postgres` / `open-storage-minio` are not the running layout. The planner in [cutover.md](../../open-storage/cutover.md) targets `postgres`. The legacy database is `db_storage` owned by role `storage`; the tables are `users`, `file_records`, `user_quota_usage`, `upload_sessions`, `file_index_links`. The blobs are one bucket `storage` with keys `users/<uid>/<section>/…`, `shared/…`, `files/…` and `_meta/…`, on the host path `/media/aleksey/HardDisk/minio`. RAG indexing is the hazard: a due-queue predicate that silently excludes rows empties a page while the bytes survive, so RAG runs off until a separate re-queue proves the rows come back.
 
 Tasks: [dump](tasks/task-01-dump.md), [restore](tasks/task-02-restore.md), [copy the bucket](tasks/task-03-bucket.md), [verify](tasks/task-04-verify.md), [quotas](tasks/task-05-quotas.md), [switch users](tasks/task-06-switch.md), [re-queue RAG](tasks/task-07-rag-requeue.md), [decommission](tasks/task-08-decommission.md).
 
