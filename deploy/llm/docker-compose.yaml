@@ -35,6 +35,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 120s
+    ports:
+      - 4001:4001
 
   # OpenAI-compatible router. Reads config.yaml beside this file.
   litellm-proxy:
@@ -48,6 +50,8 @@ services:
       - ./config.yaml:/app/config.yaml:ro
     networks:
       - common_network
+    ports:
+      - 4000:4000
 
 networks:
   common_network:
