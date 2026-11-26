@@ -12,6 +12,8 @@ Shared data services for every product that joins `common_network`. One network,
 | `rabbitmq` | `rabbitmq`, alias `rabbit` | 5672 AMQP, 15672 management | no | volume `rabbitmq_data` |
 | `mongo` | `mongo` | 27017 | no | volume `mongo_data` |
 
+The `llm` namespace reads this Postgres: database `db_litellm`, reached as `postgres:5432` on `common_network`. See [llm](../llm/init.md).
+
 Postgres and MinIO read [`.env`](../../deploy/common/.env.example): `POSTGRES_USER`, `POSTGRES_PASSWORD`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`. The compose file does not set `POSTGRES_DB`. The image creates one database named after `POSTGRES_USER`. Each product creates its own database in this server. Mongo is one server; each product uses its own database inside it.
 
 `open-storage` calls `postgres:5432`, `redis:6379` and `minio:9000`. It does not open RabbitMQ or Mongo. Those two stay here so another product can. See [open-storage](../open-storage/init.md).
@@ -29,8 +31,10 @@ flowchart TB
   end
 
   OS["open-storage app"]
+  LM["llm router"]
 
   OS -->|"SQL"| PG
   OS -->|"vault key, counters"| RD
   OS -->|"S3 API"| MN
+  LM -->|"db_litellm"| PG
 ```

@@ -21,6 +21,9 @@ Every host on `filenkov.store` enters through the proxy. The gateway authenticat
  - audio: audio-api, diarizer, asr-worker, frontend, qdrant
     - Description: A recording becomes a phrase chat, and a voice note is recognized as speech happens. The gateway is the only inbound path and joins `audio_network`. Mongo, MinIO, RabbitMQ and the Redis GPU lease are the [common](common/init.md) services; Qdrant stays here.
     - Detail inside the block: [audio/init.md](audio/init.md). The host and the upstreams are [upstreams](auth-gateway/external-contracts/upstreams.md).
+ - llm: qwen38 (llama.cpp), litellm-proxy-server
+    - Description: The chat model tandem. The router answers OpenAI-compatible calls and forwards to the server by name on `common_network`. Its bookkeeping is the `common` Postgres (`db_litellm`). The gateway reaches the router as `litellm-proxy-server:4000`; the proxy serves `lite-llm.` itself.
+    - Detail inside the block: [llm/init.md](llm/init.md).
 
 A namespace gets a directory when its first service exists. The shape is ([repository-layout.md](repository-layout.md)).
 
@@ -38,6 +41,7 @@ flowchart TB
   OS["open-storage:<br/>app"]
   RG["rag:<br/>rag-edge and the stack behind it"]
   AU["audio:<br/>audio-api, frontend, workers, qdrant"]
+  LM["llm:<br/>qwen38, litellm-proxy-server"]
   CM["common:<br/>postgres, redis, minio, rabbitmq, mongo"]
   HM("hermes<br/>host 127.0.0.1:9119<br/>no SSO, LAN only")
 
@@ -52,6 +56,9 @@ flowchart TB
   OS -->|"SQL :5432, redis :6379, S3 :9000"| CM
   RG -->|"mongo, minio, rabbit"| CM
   AU -->|"mongo, minio, rabbit, redis"| CM
+  AG -->|"llm host, litellm-proxy-server:4000"| LM
+  LM -->|"api_base qwen38:4001"| LM
+  LM -->|"db_litellm"| CM
   G -->|"redirect_uri"| AG
 ```
 
@@ -66,7 +73,8 @@ The internals of `auth-gateway` — proxy, gateway, idp, idp_db, resume-page, th
 | product resources | resource | Reachable only from `open_network` plus the named product network; identity arrives in headers, never from the client |
 | storage | resource | `app:8000` on `open_network`. The namespace is [open-storage/init.md](open-storage/init.md) |
 | common data | resource | `postgres:5432`, `redis:6379`, `minio:9000` on `common_network`. RabbitMQ (`rabbitmq`, alias `rabbit`) and `mongo:27017` are on that network for other products. The namespace is [common/init.md](common/init.md) |
-| hermes, lite-llm | resource | Forwarded by proxy, never reach gateway, keep their own authentication |
+| hermes | resource | Forwarded by proxy, never reach gateway, keeps its own authentication |
+| llm router | resource | `litellm-proxy-server:4000` on `common_network`. The namespace is [llm/init.md](llm/init.md) |
 | deepseek | resource | `POST /api/chat` on the apex host, served by the gateway itself |
 
 Upstream names, hosts and per-host policy rows are owned by ([upstreams](auth-gateway/external-contracts/upstreams.md)). The consumer-side obligations are ([identity v1](auth-gateway/external-contracts/identity-v1.md)).
@@ -76,7 +84,7 @@ Upstream names, hosts and per-host policy rows are owned by ([upstreams](auth-ga
 1. Proxy terminates TLS and sets HSTS. It does not use one backend. The classes are in [deploy/auth-gateway/Caddyfile](../deploy/auth-gateway/Caddyfile):
    - `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `id.` → `127.0.0.1:8083`. `id.` is public ([ADR-0013](auth-gateway/adrs/13-idp-host-public.md))
    - `meet.filenkov.store` → `127.0.0.1:8000`, no SSO and not the gateway, LAN / WireGuard only
-   - `hermes.` → `127.0.0.1:9119`, `lite-llm.` → `127.0.0.1:4000`
+   - `hermes.` → `127.0.0.1:9119`, `lite-llm.` → `127.0.0.1:4000` (the `llm` router's published port, [llm/init.md](llm/init.md))
 2. When the request reaches the gateway, it matches host, then path, then method. First match wins. Each host has exactly one `/**`, last.
 3. Anonymous browser navigation becomes `302 /auth/login?return_to=…`. Anonymous `/api/*` becomes `401`. A wrong role becomes `403`. `deny` answers `404`.
 4. Gateway strips every inbound identity header, verifies the access token, and injects `X-Auth-*` plus a `Bearer` the client cannot have written.
@@ -90,6 +98,7 @@ The full path with ports and host classes is ([auth-gateway/init.md](auth-gatewa
 
 - Storage runs in this repository: [open-storage/init.md](open-storage/init.md). Its Postgres, MinIO and Redis are [common](common/init.md). Which names the gateway proxies, and which the proxy serves itself, are in [upstreams](auth-gateway/external-contracts/upstreams.md).
 - Audio runs in this repository: [audio/init.md](audio/init.md). Its Mongo, MinIO, RabbitMQ and Redis are [common](common/init.md). The host enters through the gateway.
+- The LLM tandem runs in this repository: [llm/init.md](llm/init.md). The old `llama.cpp` startup script and `llama_proxy_lite/` are no longer authoritative.
 - `docs/init.md` draws the map. A service's own behaviour is never restated here — it is linked.
 
 ## Decisions that bind the shape

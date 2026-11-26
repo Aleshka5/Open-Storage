@@ -1,0 +1,55 @@
+name: llm
+
+# LLM tandem: llama.cpp server and the LiteLLM router in front of it.
+# Decision: adrs/13-llm-namespace.md.
+#
+# Moved from llama_proxy_lite/ (LiteLLM) and llama.cpp/startup_qwen3.8_work_instance_podman.sh
+# (llama.cpp). Both scripts published no host port and joined no shared
+# network, so the router could not resolve the server. Here the server
+# starts on common_network and the router joins common_network to reach it.
+
+services:
+  # llama.cpp server. The model file is a bind on the model disk; no image build.
+  qwen38:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda12
+    container_name: qwen38
+    restart: unless-stopped
+    devices:
+      - nvidia.com/gpu=all
+    # Inline array, one token per element: podman-compose 1.5 collapses a
+    # block list into a single argv string and llama.cpp rejects it.
+    command: ["--model", "/models/HuiHui/qwen3.8/model_q8.gguf",
+              "--reasoning", "off",
+              "--ctx-size", "128000",
+              "--port", "4001",
+              "--host", "0.0.0.0",
+              "--api-key", "${LLM_API_KEY}",
+              "-ngl", "-1"]
+    volumes:
+      - /media/aleksey/HardDisk/gguf_models:/models:ro
+    networks:
+      - common_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:4001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+
+  # OpenAI-compatible router. Reads config.yaml beside this file.
+  litellm-proxy:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm-proxy-server
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    env_file:
+      - .env
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    networks:
+      - common_network
+
+networks:
+  common_network:
+    external: true
+    name: common_network
