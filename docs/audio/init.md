@@ -9,7 +9,7 @@ A recording becomes a chronological chat of phrases. A voice note is recognized 
 | `audio-api` | `audio-api` | The HTTP and WebSocket API. Upload, phrases, Range audio, voice notes, nicks, the voice index. | Run a model, check a role, verify a JWT |
 | `diarizer` | `diarizer` | Consumes diarization and embedding messages. Writes `norm.wav`, speaker rows, the note embedding. | Serve a public route, read an identity header |
 | `asr-worker` | `asr-worker` | Consumes transcription messages and the note PCM stream. Writes phrase text. | Serve a public route, read an identity header |
-| `frontend` | `frontend` | The Vite React UI, served by nginx. | Hold a session, call anything but its own origin |
+| `frontend` | `frontend` | The Vite React UI, served by nginx. Shell and calls: [frontend/design.md](frontend/design.md). | Hold a session, call anything but its own origin |
 | `qdrant` | — | Qdrant `v1.13.4`, collection `audio_voices`. | Leave `audio_internal`, join `common_network` |
 
 Endpoint behaviour is still owned by `../ASR-Service/docs/backend/audio-api/api.md`. This page does not copy it.
@@ -102,6 +102,7 @@ The gateway compose joins `audio_network` as `external: true`, the same attachme
 
 ## What this page does not own
 
+- The page shell and its calls: [frontend/design.md](frontend/design.md).
 - A service's endpoints: the legacy `docs/backend/audio-api/api.md` until this namespace has its own API contract page.
 - Where a request enters: [docs/init.md](../init.md), [upstreams](../auth-gateway/external-contracts/upstreams.md).
 - The header names: [identity v1](../auth-gateway/external-contracts/identity-v1.md).

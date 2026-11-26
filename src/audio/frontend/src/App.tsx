@@ -242,23 +242,7 @@ export function App() {
       : null;
 
   return (
-    <div className={`shell${collapsed ? ' sidebar-collapsed' : ''}`}>
-      <header className="header">
-        <a className="brand" href="https://filenkov.store">
-          <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-            <path
-              d="M16 3 L29 16 L16 29 L3 16 Z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-            />
-            <circle cx="16" cy="16" r="3.2" fill="var(--accent)" />
-          </svg>
-          <span className="brand-name">Filenkov</span>
-        </a>
-        <span className="collapsed-label">Audio</span>
-      </header>
-
+    <div className={`stage${collapsed ? ' sidebar-collapsed' : ''}`}>
       <Sidebar
         recordings={recordings}
         activeId={activeId}

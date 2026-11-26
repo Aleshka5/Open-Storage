@@ -1,16 +1,17 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import './fonts.css';
 import './theme.css';
 import './app.css';
-import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AppRouter } from './router';
 
-// The boundary is outside App: a render error anywhere in the tree must show a message,
+// The boundary is outside the router: a render error anywhere in the tree must show a message,
 // not a blank page.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <AppRouter />
     </ErrorBoundary>
   </StrictMode>,
 );

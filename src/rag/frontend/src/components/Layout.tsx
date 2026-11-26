@@ -1,67 +1,26 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { NavLink, useLocation } from "react-router-dom";
-
-const JITTER_FLOOR = 6;
-const TRAVEL_THRESHOLD = 24;
-const TOP_AT = 8;
-const HIDE_BELOW = 96;
+import { apply, readPreference, watchSystem, type Preference } from "../theme";
+import { chooseTheme } from "../themeReveal";
+import { hubHref, signInHref } from "../utils/hub";
+import { ThemeControl } from "./ThemeControl";
 
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const previousPath = useRef<string | null>(null);
+  const [preference, setPreference] = useState<Preference>(() => readPreference());
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.dataset.header = "top";
-
-    let last = Math.max(0, window.scrollY);
-    let acc = 0;
-    let frame = 0;
-
-    function headerHasFocus(): boolean {
-      const active = document.activeElement;
-      if (!active) return false;
-      const header = document.querySelector(".header");
-      return header !== null && header.contains(active);
-    }
-
-    function apply(): void {
-      frame = 0;
-      const y = Math.max(0, window.scrollY);
-
-      if (y < TOP_AT) {
-        root.dataset.header = "top";
-        last = y;
-        acc = 0;
-        return;
-      }
-      if (headerHasFocus()) {
-        root.dataset.header = "condensed";
-        last = y;
-        acc = 0;
-        return;
-      }
-
-      const delta = y - last;
-      if (Math.abs(delta) < JITTER_FLOOR) return;
-      acc = Math.sign(delta) === Math.sign(acc) ? acc + delta : delta;
-      last = y;
-
-      if (acc > TRAVEL_THRESHOLD && y > HIDE_BELOW) root.dataset.header = "hidden";
-      else if (acc < -TRAVEL_THRESHOLD) root.dataset.header = "condensed";
-    }
-
-    function onScroll(): void {
-      if (frame === 0) frame = window.requestAnimationFrame(apply);
-    }
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
-      delete root.dataset.header;
-    };
+    apply(readPreference());
+    return watchSystem(() => apply(readPreference()));
   }, []);
+
+  function onTheme(next: Preference, origin: DOMRect, group: HTMLElement) {
+    chooseTheme(next, origin, group, () => {
+      flushSync(() => setPreference(next));
+    });
+  }
 
   useEffect(() => {
     const main = document.getElementById("main");
@@ -80,9 +39,8 @@ export function Layout({ children }: { children: ReactNode }) {
       <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <p id="route-announcer" className="sr-only" aria-live="polite" />
       <header className="header">
-        <a className="brand" href="https://filenkov.store">
+        <a className="brand" href={hubHref()}>
           <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
             <path
               d="M16 3 L29 16 L16 29 L3 16 Z"
@@ -94,18 +52,28 @@ export function Layout({ children }: { children: ReactNode }) {
           </svg>
           <span className="brand-name">Filenkov</span>
         </a>
+        <nav className="service-nav" aria-label="Primary">
+          <span aria-current="page">Documents</span>
+        </nav>
         <nav className="service-nav" aria-label="Sections">
           <NavLink to="/files">Files</NavLink>
           <NavLink to="/chat">Chat</NavLink>
         </nav>
+        <div className="header-right">
+          <ThemeControl preference={preference} onChange={onTheme} />
+          <a className="btn btn-small" href={signInHref()}>
+            Sign in
+          </a>
+        </div>
       </header>
       <main className="main" id="main" tabIndex={-1}>
         {children}
       </main>
       <footer className="footer">
         <span>Filenkov · Documents</span>
-        <span>Sign in with Google · httpOnly cookie on .filenkov.store</span>
+        <span>Google sign-in · httpOnly cookies on .filenkov.store</span>
       </footer>
+      <p id="route-announcer" className="sr-only" aria-live="polite" />
     </div>
   );
 }

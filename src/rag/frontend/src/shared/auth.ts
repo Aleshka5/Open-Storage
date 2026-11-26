@@ -1,3 +1,5 @@
+import { signInHref } from "../utils/hub";
+
 export function isGatewayUnauthorized(body: unknown): boolean {
   if (!body || typeof body !== "object") return false;
   return (body as { error?: unknown }).error === "unauthorized";
@@ -13,12 +15,8 @@ export function isAccessBlocked(body: unknown): boolean {
   return false;
 }
 
-export function loginUrl(returnTo: string, publicOrigin?: string): string {
-  const configured = (publicOrigin ?? import.meta.env.VITE_PUBLIC_ORIGIN ?? "").trim().replace(/\/$/, "");
-  const origin = configured || (typeof window !== "undefined" ? window.location.origin : "http://localhost");
-  const url = new URL("/auth", `${origin}/`);
-  url.searchParams.set("return_to", returnTo);
-  return url.toString();
+export function loginUrl(returnTo: string): string {
+  return signInHref(returnTo);
 }
 
 export const navigation = {

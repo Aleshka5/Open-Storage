@@ -1,16 +1,61 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark" style="color-scheme: dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
-    <title>Documents · Filenkov</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <script>
+      var KEY = 'theme.preference'
+
+      function readPreference() {
+        try {
+          var parts = document.cookie ? document.cookie.split(';') : []
+          var stored = ''
+          var prefix = KEY + '='
+          for (var i = 0; i < parts.length; i++) {
+            var entry = parts[i].replace(/^\s+/, '')
+            if (entry.indexOf(prefix) === 0) {
+              stored = entry.substring(prefix.length)
+              break
+            }
+          }
+          if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+        } catch (e) {}
+        return 'dark'
+      }
+
+      function resolve(preference) {
+        if (preference === 'light' || preference === 'dark') return preference
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+      }
+
+      function apply(preference) {
+        var theme = resolve(preference)
+        var root = document.documentElement
+        root.dataset.theme = theme
+        root.style.colorScheme = theme === 'light' ? 'light' : 'dark'
+        var meta = document.querySelector('meta[name="color-scheme"]')
+        if (meta) meta.content = root.style.colorScheme
+      }
+
+      apply(readPreference())
+
+      var schemeMedia = window.matchMedia('(prefers-color-scheme: light)')
+      function onSchemeChange() {
+        if (readPreference() === 'system') apply(readPreference())
+      }
+      if (schemeMedia.addEventListener) schemeMedia.addEventListener('change', onSchemeChange)
+      else if (schemeMedia.addListener) schemeMedia.addListener(onSchemeChange)
+    </script>
+    <title>Documents · Filenkov</title>
+    <meta name="description" content="Documents and answers for a Filenkov account." />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/fraunces-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/public-sans-latin.woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>
+    <script src="/header.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

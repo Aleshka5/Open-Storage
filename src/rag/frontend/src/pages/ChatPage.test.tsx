@@ -16,7 +16,7 @@ describe("ChatPage", () => {
   beforeEach(() => {
     resetChatStore();
     resetSessionStore();
-    vi.spyOn(Storage.prototype, "setItem");
+    vi.spyOn(window.localStorage, "setItem");
   });
 
   it("loads chat history from the server rather than local storage", async () => {
@@ -64,7 +64,7 @@ describe("ChatPage", () => {
     expect(screen.getByText("Не найдено в документах.")).toBeTruthy();
     expect(screen.queryByText("The model is unavailable. Showing the passages that were found.")).toBeNull();
     expect(fetchMock.mock.calls.some((call) => String(call[0]).startsWith("/api/chats"))).toBe(true);
-    expect(localStorage.setItem).not.toHaveBeenCalled();
+    expect(window.localStorage.setItem).not.toHaveBeenCalled();
   });
 
   it("shows the retrieval-only notice above source cards after reload", async () => {

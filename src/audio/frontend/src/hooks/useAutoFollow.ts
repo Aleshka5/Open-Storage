@@ -34,7 +34,7 @@ interface TrackedPhrase {
 
 /** How much of the scrollport's bottom the player covers, in px. */
 export function occludedByPlayer(container: HTMLElement): number {
-  const player = container.closest('.shell')?.querySelector('.player');
+  const player = container.closest('.stage')?.querySelector('.player');
   if (!(player instanceof HTMLElement)) return 0;
   const c = container.getBoundingClientRect();
   const p = player.getBoundingClientRect();
@@ -195,7 +195,7 @@ export function useAutoFollow(
     if (typeof ResizeObserver !== 'function') return;
     const ro = new ResizeObserver(() => apply());
     ro.observe(container);
-    const player = container.closest('.shell')?.querySelector('.player');
+    const player = container.closest('.stage')?.querySelector('.player');
     if (player instanceof HTMLElement) ro.observe(player);
     return () => ro.disconnect();
   }, []);

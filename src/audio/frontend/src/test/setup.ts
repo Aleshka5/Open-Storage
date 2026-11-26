@@ -27,6 +27,16 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
 
+// jsdom 25 has no ResizeObserver. The theme thumb and liquid-glass both construct one.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  class ResizeObserverStub implements ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  globalThis.ResizeObserver = ResizeObserverStub;
+}
+
 // matchMedia for the prefers-reduced-motion utilities.
 if (!window.matchMedia) {
   window.matchMedia = (query: string) =>

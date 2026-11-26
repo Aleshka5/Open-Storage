@@ -2,13 +2,14 @@
 // `X-Auth-Subject` header (a canonical lower-case UUID); the client does NOT hold owner_id (constitution §2). Self-contained
 // module — does not touch api/client.ts from the US-04 branch.
 
+import { apiUrl } from '../api/base';
 import type {
   AssignResponse,
   NickAssignment,
   SuggestionsResponse,
 } from './types';
 
-const BASE = '/api';
+const BASE = apiUrl('/api');
 
 async function handleError(res: Response): Promise<never> {
   let code = 'INTERNAL';
@@ -37,7 +38,7 @@ export async function fetchSuggestions(
 ): Promise<SuggestionsResponse> {
   const res = await fetch(
     `${BASE}/recordings/${recordingId}/speakers/${speakerId}/suggestions`,
-    { headers: { Accept: 'application/json' } },
+    { credentials: 'include', headers: { Accept: 'application/json' } },
   );
   if (!res.ok) await handleError(res);
   return (await res.json()) as SuggestionsResponse;
@@ -53,6 +54,7 @@ export async function assignNick(
     `${BASE}/recordings/${recordingId}/speakers/${speakerId}/nick`,
     {
       method: 'POST',
+      credentials: 'include',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     },

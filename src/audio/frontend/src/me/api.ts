@@ -2,6 +2,8 @@
 // §PUT /api/me/voice). Identity is set by the gateway via the `X-Auth-Subject` header (a canonical
 // lower-case UUID); the client does NOT hold owner_id (constitution §2). Self-contained module — does not touch api/client.ts.
 
+import { apiUrl } from '../api/base';
+
 export interface MeVoiceResponse {
   label: 'Me';
   has_default_voice: boolean;
@@ -39,8 +41,9 @@ async function handleError(res: Response): Promise<never> {
 
 /** Replace the "Me" voice: from a note (`speaker_id: null`) or from a recording's speaker. */
 export async function setMeVoice(body: MeVoiceRequest): Promise<MeVoiceResponse> {
-  const res = await fetch('/api/me/voice', {
+  const res = await fetch(apiUrl('/api/me/voice'), {
     method: 'PUT',
+    credentials: 'include',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });

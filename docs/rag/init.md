@@ -11,7 +11,7 @@ Retrieval-augmented chat over a user's own documents: upload, OCR, chunk, embed,
 | `processor` | `processor` | Consumes the document event: extract text, OCR a scan, chunk, embed, upsert into Qdrant, mark `ready`. | Serve HTTP, decide identity |
 | `deletion-worker` | `deletion-worker` | Consumes the delete event: Qdrant points, the object, the rows. | Serve HTTP |
 | `chat` | `chat` | Retrieve, call the model, stream SSE, keep the chat. `GET /api/chats/image-search` also lives here. | Write or delete a document |
-| `frontend` | `frontend` | The Vite React UI, served by nginx. | Hold a session, call anything but its own origin |
+| `frontend` | `frontend` | The Vite React UI, served by nginx. Shell and theme: [frontend design](frontend/design.md). | Hold a session, call anything but its own origin |
 | `embedding` | `embedding` | `POST /embed` and `POST /embed/image` over `llama-server` in the same container. Batch 16, dimension 768. | Publish a port, know a user |
 | `ocr` | `ocr` | `POST /ocr` over `llama-server` with the OCR model, one image at a time. | Publish a port, know a user |
 | `rag-qdrant` | — | Qdrant `v1.13.4`, two collections (`QDRANT_COLLECTION`, `QDRANT_IMAGES_COLLECTION`). | Leave this namespace |

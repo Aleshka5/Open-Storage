@@ -2,6 +2,7 @@
 // `X-Auth-Subject` header (a canonical lower-case UUID); the client does NOT store and does NOT send owner_id (constitution §2,
 // ADR-001). In dev mode the path is proxied by Vite to audio-api.
 
+import { apiUrl } from './base';
 import {
   ApiError,
   type ApiErrorDetail,
@@ -12,7 +13,7 @@ import {
   type VoiceNoteCreated,
 } from './types';
 
-const BASE = '/api';
+const BASE = apiUrl('/api');
 
 async function parseError(res: Response): Promise<ApiError> {
   let errorCode = 'INTERNAL';
@@ -31,8 +32,9 @@ async function parseError(res: Response): Promise<ApiError> {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
-    headers: { Accept: 'application/json', ...(init?.headers ?? {}) },
     ...init,
+    credentials: 'include',
+    headers: { Accept: 'application/json', ...(init?.headers ?? {}) },
   });
   if (!res.ok) throw await parseError(res);
   return (await res.json()) as T;
@@ -86,6 +88,7 @@ export async function uploadRecording(file: File): Promise<RecordingDetail> {
 
   const res = await fetch(`${BASE}/recordings`, {
     method: 'POST',
+    credentials: 'include',
     headers: { Accept: 'application/json' },
     body: form,
   });
@@ -105,6 +108,7 @@ export function uploadRecordingWithProgress(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${BASE}/recordings`);
+    xhr.withCredentials = true;
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.responseType = 'json';
 

@@ -11,7 +11,7 @@ describe("gateway auth", () => {
   });
 
   it("builds the login URL with the current address", () => {
-    expect(loginUrl("https://rag.filenkov.store/files", "https://filenkov.store")).toBe(
+    expect(loginUrl("https://rag.filenkov.store/files")).toBe(
       "https://filenkov.store/auth?return_to=https%3A%2F%2Frag.filenkov.store%2Ffiles",
     );
   });
