@@ -44,6 +44,7 @@ upstreams:
   rag: "rag-edge:8080"
   audio: "audio-api:8000"
   audio_web: "frontend:80"
+  demo: "demo:80"
   grafana: "grafana:3000"
   # The control plane runs on the host and needs nvidia-smi, so it is reached on
   # the LAN address. host.docker.internal resolves to 169.254.1.2 under rootless
@@ -141,4 +142,10 @@ hosts:
     timeouts: { response_header: 5m }
     routes:
       - { path: /api/health, policy: public }
+      - { path: /**, policy: session }
+
+  - host: demo.filenkov.store
+    upstream: demo
+    routes:
+      - { path: /health, policy: public }
       - { path: /**, policy: session }

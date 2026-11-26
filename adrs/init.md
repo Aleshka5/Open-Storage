@@ -11,3 +11,4 @@
 - ([11-gateway-joins-rag-network.md](11-gateway-joins-rag-network.md)) - The gateway joins `rag_network`; the legacy `rag_edge` network and the `rag-chat_*` containers are removed.
 - ([12-audio-namespace.md](12-audio-namespace.md)) - ASR-Service becomes the `audio` namespace: `audio_network` for the gateway hop, Qdrant and workers on `audio_internal`, Mongo, MinIO, RabbitMQ and Redis from `common`, empty Qdrant and weight volumes, and identity v1 (`X-Auth-Subject` as a lower-case UUID) at the edge.
 - ([13-llm-namespace.md](13-llm-namespace.md)) - LiteLLM and llama.cpp become the `llm` namespace: both on `common_network`, DNS `qwen38:4001` and `litellm-proxy-server:4000`, `db_litellm` from `common`, no host publish.
+- ([14-demo-namespace.md](14-demo-namespace.md)) - The infrastructure map is the `demo` namespace: one static page on `demo_network`, host `demo.filenkov.store`, session at the gateway.

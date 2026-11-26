@@ -21,6 +21,9 @@ Every host on `filenkov.store` enters through the proxy. The gateway authenticat
  - audio: audio-api, diarizer, asr-worker, frontend, qdrant
     - Description: A recording becomes a phrase chat, and a voice note is recognized as speech happens. The gateway is the only inbound path and joins `audio_network`. Mongo, MinIO, RabbitMQ and the Redis GPU lease are the [common](common/init.md) services; Qdrant stays here.
     - Detail inside the block: [audio/init.md](audio/init.md). The host and the upstreams are [upstreams](auth-gateway/external-contracts/upstreams.md).
+ - demo: frontend
+    - Description: The infrastructure map. One static page on `demo_network`. The gateway is the only inbound path.
+    - Detail inside the block: [demo/init.md](demo/init.md).
  - llm: qwen38 (llama.cpp), litellm-proxy-server
     - Description: The chat model tandem. The router answers OpenAI-compatible calls and forwards to the server by name on `common_network`. Its bookkeeping is the `common` Postgres (`db_litellm`). The gateway reaches the router as `litellm-proxy-server:4000`; the proxy serves `lite-llm.` itself.
     - Detail inside the block: [llm/init.md](llm/init.md).
@@ -41,6 +44,7 @@ flowchart TB
   OS["open-storage:<br/>app"]
   RG["rag:<br/>rag-edge and the stack behind it"]
   AU["audio:<br/>audio-api, frontend, workers, qdrant"]
+  DM["demo:<br/>frontend"]
   LM["llm:<br/>qwen38, litellm-proxy-server"]
   CM["common:<br/>postgres, redis, minio, rabbitmq, mongo"]
   HM("hermes<br/>host 127.0.0.1:9119<br/>no SSO, LAN only")
@@ -53,6 +57,7 @@ flowchart TB
   AG -->|"storage host, app:8000"| OS
   AG -->|"rag host, rag-edge:8080"| RG
   AG -->|"audio host, audio-api:8000 and frontend:80"| AU
+  AG -->|"demo host, demo:80"| DM
   OS -->|"SQL :5432, redis :6379, S3 :9000"| CM
   RG -->|"mongo, minio, rabbit"| CM
   AU -->|"mongo, minio, rabbit, redis"| CM
@@ -82,7 +87,7 @@ Upstream names, hosts and per-host policy rows are owned by ([upstreams](auth-ga
 ## Where a request goes
 
 1. Proxy terminates TLS and sets HSTS. It does not use one backend. The classes are in [deploy/auth-gateway/Caddyfile](../deploy/auth-gateway/Caddyfile):
-   - `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `id.` → `127.0.0.1:8083`. `id.` is public ([ADR-0013](auth-gateway/adrs/13-idp-host-public.md))
+   - `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `id.`, `demo.` → `127.0.0.1:8083`. `id.` is public ([ADR-0013](auth-gateway/adrs/13-idp-host-public.md)). `demo.` is the infrastructure map ([demo/init.md](demo/init.md))
    - `meet.filenkov.store` → `127.0.0.1:8000`, no SSO and not the gateway, LAN / WireGuard only
    - `hermes.` → `127.0.0.1:9119`, `lite-llm.` → `127.0.0.1:4000` (the `llm` router's published port, [llm/init.md](llm/init.md))
 2. When the request reaches the gateway, it matches host, then path, then method. First match wins. Each host has exactly one `/**`, last.

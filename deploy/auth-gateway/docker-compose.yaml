@@ -20,6 +20,10 @@ networks:
   # Created by deploy/audio. The gateway reaches audio-api:8000 and frontend:80 here.
   audio_network:
     external: true
+  # Created by deploy/demo. The gateway reaches demo:80 here.
+  demo_network:
+    external: true
+    name: demo_network
   deploy_auth_network:
     external: true
 
@@ -63,6 +67,7 @@ services:
       - models_network
       - rag_network
       - audio_network
+      - demo_network
       - deploy_auth_network
 
   idp:

@@ -6,7 +6,7 @@
 # header and does not route by application — that is the gateway's job, and
 # a duplicated header is a defect (browsers intersect the policies).
 #
-#   filenkov.store, storage. image. rag. audio. llm. observer. id.
+#   filenkov.store, storage. image. rag. audio. llm. observer. id. demo.
 #                        -> 127.0.0.1:8083  gateway
 #   id.filenkov.store is public (ADR-0013). meet. and hermes. keep the lan gate.
 #   meet.filenkov.store  -> 127.0.0.1:8000  Jitsi web, no SSO (LAN / WireGuard only)
@@ -77,7 +77,8 @@ https://rag.filenkov.store,
 https://audio.filenkov.store,
 https://llm.filenkov.store,
 https://observer.filenkov.store,
-https://id.filenkov.store {
+https://id.filenkov.store,
+https://demo.filenkov.store {
 	reverse_proxy 127.0.0.1:8083
 
 	import secure
@@ -145,6 +146,7 @@ http://audio.filenkov.store,
 http://llm.filenkov.store,
 http://observer.filenkov.store,
 http://id.filenkov.store,
+http://demo.filenkov.store,
 http://meet.filenkov.store,
 http://hermes.filenkov.store,
 http://lite-llm.filenkov.store {

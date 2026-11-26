@@ -1,0 +1,167 @@
+:root {
+  color-scheme: dark;
+  --paper: #1c1b19;
+  --paper-raised: #2a2824;
+  --ink: #f4efe6;
+  --ink-muted: #a8a096;
+  --rule: #45423c;
+  --rule-strong: #6b655c;
+  --accent: #c9794f;
+  --accent-text: #e0a181;
+  --chip: #33302a;
+  --dur-fast: 140ms;
+  --dur: 240ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --paper: #f4efe6;
+  --paper-raised: #fffdf8;
+  --ink: #1a1612;
+  --ink-muted: #5c5348;
+  --rule: #d9d1c3;
+  --rule-strong: #b9ae9c;
+  --accent: #b85c38;
+  --accent-text: #8f4128;
+  --chip: #e6ddd0;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; background: var(--paper); color: var(--ink); }
+button, input { font: inherit; }
+button { border-radius: 0; }
+
+.page { min-height: 100vh; }
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 4rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+}
+
+.brand { display: flex; align-items: baseline; gap: 0.75rem; }
+.word { color: var(--ink); text-decoration: none; font-size: 1.25rem; }
+.service { color: var(--accent-text); letter-spacing: 0.04em; }
+
+.theme { display: flex; border: 1px solid var(--rule); }
+.segment {
+  position: relative;
+  min-height: 2.25rem;
+  min-width: 4.5rem;
+  display: grid;
+  place-items: center;
+  padding: 0 0.75rem;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+.segment input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.segment.on { background: var(--ink); color: var(--paper); }
+.segment:hover { background: var(--chip); color: var(--ink); }
+.segment.on:hover { background: var(--accent-text); color: var(--paper); }
+
+.stage {
+  width: min(1080px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.5rem 0 4rem;
+}
+
+.crumbs { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.crumb button {
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+.crumb button[aria-current="page"] { color: var(--accent-text); }
+.sep { color: var(--ink-muted); margin-right: 0.35rem; }
+
+.intro { border-left: 3px solid var(--accent); padding-left: 1rem; margin: 1.25rem 0 1rem; }
+.kind {
+  margin: 0 0 0.25rem;
+  color: var(--accent-text);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 500; }
+.summary { margin: 0.75rem 0 0; max-width: 42rem; color: var(--ink-muted); line-height: 1.45; }
+
+.sheet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+.sheet ul { margin: 0; padding-left: 1.1rem; }
+.sheet li { margin: 0.3rem 0; line-height: 1.4; }
+.links li { color: var(--accent-text); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 100%;
+}
+.card h2 { margin: 0; font-size: 1.35rem; font-weight: 500; }
+.card p { margin: 0; color: var(--ink-muted); line-height: 1.4; }
+.rel { color: var(--ink); }
+.end {
+  margin-top: auto;
+  color: var(--ink-muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+.end.stand { margin-top: 0.5rem; }
+
+.btn {
+  margin-top: auto;
+  align-self: flex-start;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  cursor: pointer;
+}
+.btn:hover { background: var(--accent-text); border-color: var(--accent-text); color: var(--paper); }
+
+.view-in { animation: rise var(--dur) var(--ease); }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 720px) {
+  .sheet { grid-template-columns: 1fr; }
+  .word { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 1ms; --dur: 1ms; }
+  .view-in { animation: none; }
+}

@@ -89,6 +89,7 @@ func TestStorageHostDeclaration(t *testing.T) {
 		"audio.filenkov.store":    30 * time.Minute,
 		"llm.filenkov.store":      10 * time.Minute,
 		"observer.filenkov.store": 5 * time.Minute,
+		"demo.filenkov.store":     60 * time.Second,
 	}
 	if len(f.Hosts) != len(want) {
 		t.Fatalf("host count = %d, locked set has %d", len(f.Hosts), len(want))

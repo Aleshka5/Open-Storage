@@ -1,0 +1,27 @@
+name: demo
+
+# The demo namespace. Entry point: `cd deploy/demo && make up`.
+# Decision: adrs/14-demo-namespace.md.
+# The gateway declares demo_network external and reaches demo:80 on it.
+
+networks:
+  demo_network:
+    name: demo_network
+
+services:
+  frontend:
+    build:
+      context: ../../src/demo/frontend
+    image: ${REGISTRY:?REGISTRY is required}/demo/frontend:${IMAGE_TAG:-latest}
+    container_name: demo-frontend
+    restart: unless-stopped
+    networks:
+      demo_network:
+        aliases:
+          - demo
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s

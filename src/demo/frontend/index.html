@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-theme="dark" style="color-scheme: dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Map · filenkov.store</title>
+    <script>
+      var KEY = "theme.preference";
+      function readPreference() {
+        try {
+          var parts = document.cookie ? document.cookie.split(";") : [];
+          var prefix = KEY + "=";
+          for (var i = 0; i < parts.length; i++) {
+            var entry = parts[i].replace(/^\s+/, "");
+            if (entry.indexOf(prefix) === 0) {
+              var stored = entry.substring(prefix.length);
+              if (stored === "light" || stored === "dark" || stored === "system") return stored;
+            }
+          }
+        } catch (e) {}
+        return "dark";
+      }
+      function resolve(preference) {
+        if (preference === "light" || preference === "dark") return preference;
+        return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      }
+      function apply(preference) {
+        var theme = resolve(preference);
+        var root = document.documentElement;
+        root.dataset.theme = theme;
+        root.style.colorScheme = theme === "light" ? "light" : "dark";
+        var meta = document.querySelector('meta[name="color-scheme"]');
+        if (meta) meta.content = root.style.colorScheme;
+      }
+      apply(readPreference());
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
