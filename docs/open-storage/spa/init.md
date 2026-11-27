@@ -25,7 +25,7 @@ Routes in `src/router.tsx`. Every page lives inside `ProtectedRoute`, which rend
 | `/` | `RootRedirect` | `/files`, or the "open this site through the hub" error | — |
 | `/auth` | `RootRedirect` | Same. There is no local sign-in page. | — |
 | `/files` | `FilesPage` | File manager on `/api/files` | any user |
-| `/photos` | `PhotosPage` | Infinite grid, lightbox, upload, multi-delete, description search | any user |
+| `/photos` | `PhotosPage` | Infinite grid, lightbox, multi-delete, and description search. Upload shows one progress bar. | any user |
 | `/generated`, `/generated/:id` | `GeneratedImagesPage`, `GeneratedImagePage` | Image-generation history: list, one run, delete | any user; the sidebar item is hidden for `BLOCKED` |
 | `/private` | `PrivatePage` | Passphrase unlock, then the encrypted file manager | any user |
 | `/keys` | `KeysRegistryPage` | Key/value registry inside the vault; every add or delete writes immediately | any user |

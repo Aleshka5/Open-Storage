@@ -47,7 +47,7 @@ export default function PhotosPage() {
   const isSearchingRef = useRef(false);
   const searchRequestRef = useRef(0);
 
-  const { uploads, uploadPhotos, clearFinished } = usePhotoUpload();
+  const { uploads, uploadPhotos } = usePhotoUpload();
   const fetchQuota = useQuotaStore((state) => state.fetchQuota);
 
   const showingSearchResults = activeQuery !== null && !isSearching;
@@ -248,16 +248,21 @@ export default function PhotosPage() {
 
   const handleUpload = useCallback(
     (files: File[]) => {
-      void uploadPhotos(files, (photo) => {
-        setPhotos((current) => {
-          if (current.some((item) => item.id === photo.id)) {
-            return current;
-          }
+      void (async () => {
+        const stored = await uploadPhotos(files, (photo) => {
+          setPhotos((current) => {
+            if (current.some((item) => item.id === photo.id)) {
+              return current;
+            }
 
-          return [photo, ...current];
+            return [photo, ...current];
+          });
         });
-        void fetchQuota();
-      });
+
+        if (stored > 0) {
+          void fetchQuota();
+        }
+      })();
     },
     [fetchQuota, uploadPhotos],
   );
@@ -355,11 +360,7 @@ export default function PhotosPage() {
         />
       )}
 
-      <PhotoUploadFab
-        uploads={uploads}
-        onFilesSelected={handleUpload}
-        onClearFinished={clearFinished}
-      />
+      <PhotoUploadFab uploads={uploads} onFilesSelected={handleUpload} />
 
       <Modal
         isOpen={isDeleteModalOpen}
