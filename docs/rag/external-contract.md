@@ -29,7 +29,7 @@ The edge answers its own errors `{"error":{"code","message"}}`; the services ans
 
 | Call | Used for | Contract |
 |---|---|---|
-| `POST {LLM_BASE_URL}/chat/completions`, OpenAI-compatible | The answer in `chat` | Streams SSE deltas; a `429` is retried, other `4xx` ends the turn without saving a pair. The URL is env, not a network: no `llm_network` |
+| `POST {LLM_BASE_URL}/chat/completions`, OpenAI-compatible | The answer in `chat` | Streams SSE deltas; a `429` is retried, other `4xx` ends the turn without saving a pair. `LLM_BASE_URL` is the LiteLLM router, `http://litellm-proxy-server:4000/v1` on `common_network` ([llm/init.md](../llm/init.md)); provider keys live at the router. No `llm_network` |
 | `POST ocr:8090/ocr` | Text from a rendered scan page | One image per call, `OCR_TIMEOUT` (120 s) |
 | `POST embedding:8091/embed`, `POST embedding:8091/embed/image` | Chunk and image vectors | Batch 16, dimension 768, `EMBEDDING_TIMEOUT` (30 s). `sha256` and the batch shape are the contracts in the old tree's `docs/internal-services.md` |
 

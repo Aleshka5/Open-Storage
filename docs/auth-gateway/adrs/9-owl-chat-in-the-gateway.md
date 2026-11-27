@@ -1,6 +1,6 @@
 ## Status
 
-Accepted. Supersedes [ADR-0006](6-owl-chat-out-of-scope.md).
+Accepted. Supersedes ADR-0006 (`owl-chat-out-of-scope`), removed from this index; the decision stands in the history of ADR-0009.
 
 ## Decision
 

@@ -1,6 +1,6 @@
 # Cutover
 
-AS IS of the planners in [open-storage-cutover](../../scripts/open-storage-cutover/). Story: [US-08](../user_stories/us-08-data-cutover/init.md).
+AS IS of the planners in [open-storage-cutover](../../scripts/open-storage-cutover/). 
 
 The tools plan and compare fixtures. They do not run `pg_dump`, `pg_restore`, `psql`, `mc`, a DNS change, or decommission. No dump has been taken by this change. Counts are queries the operator would run; this page records none.
 
@@ -48,4 +48,4 @@ The old stack's volumes stay. The proxy block and the gateway host block are rev
 
 ## Decommission review
 
-Not a command. The checklist is the story's [decommission task](../user_stories/us-08-data-cutover/tasks/task-08-decommission.md): the rollback window has passed, the dump and the bucket copy are still readable, and only then are the old containers and volumes removed. `~/projects/WebStorage` is archived or removed with a pointer at this repository. The live database and bucket are the [common](../common/init.md) services (`postgres`, bucket `storage` on `minio`). They stay. `mlflow` and the other buckets stay.
+Not a command. The decommission checklist: the rollback window has passed, the dump and the bucket copy are still readable, and only then are the old containers and volumes removed. `~/projects/WebStorage` is archived or removed with a pointer at this repository. The live database and bucket are the [common](../common/init.md) services (`postgres`, bucket `storage` on `minio`). They stay. `mlflow` and the other buckets stay.

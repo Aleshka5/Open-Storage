@@ -2,11 +2,11 @@
 
 ## Status
 
-Accepted. Supersedes the shared-cookie rejection in [US-09](../docs/user_stories/us-09-storage-theme/init.md) D1. [ADR-0003](3-one-session-store.md) is unchanged.
+Accepted. Supersedes the shared-cookie rejection in the storage-theme story (US-09, removed) D1. [ADR-0003](3-one-session-store.md) is unchanged.
 
 ## Decision
 
-`theme.preference` is one session cookie, not per-origin `localStorage`. This supersedes the shared-cookie rejection in [US-09](../docs/user_stories/us-09-storage-theme/init.md) D1. [ADR-0003](3-one-session-store.md) is unchanged: the cookie is a UI preference, not the auth session. Logout does not clear it. The gateway and the storage app do not read it.
+`theme.preference` is one session cookie, not per-origin `localStorage`. This supersedes the shared-cookie rejection in the storage-theme story (US-09, removed) D1. [ADR-0003](3-one-session-store.md) is unchanged: the cookie is a UI preference, not the auth session. Logout does not clear it. The gateway and the storage app do not read it.
 
 [Brand book §1](../docs/brand-book/init.md) owns the cookie attributes. Read the cookie only. Ignore a leftover `localStorage` key. No migration. Persist the choice, never the resolved theme. A blocked write is silent and the page still paints.
 

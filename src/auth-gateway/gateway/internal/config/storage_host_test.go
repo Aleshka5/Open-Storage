@@ -87,7 +87,6 @@ func TestStorageHostDeclaration(t *testing.T) {
 		"image.filenkov.store":    30 * time.Minute,
 		"rag.filenkov.store":      5 * time.Minute,
 		"audio.filenkov.store":    30 * time.Minute,
-		"llm.filenkov.store":      10 * time.Minute,
 		"observer.filenkov.store": 5 * time.Minute,
 		"demo.filenkov.store":     60 * time.Second,
 	}

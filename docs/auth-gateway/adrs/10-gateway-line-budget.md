@@ -1,6 +1,6 @@
 ## Status
 
-Accepted. Supersedes [ADR-0007](7-gateway-line-budget.md).
+Accepted. Supersedes ADR-0007 (`gateway-line-budget`, 4200 lines), removed from this index.
 
 ## Decision
 

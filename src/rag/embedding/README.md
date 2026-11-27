@@ -1,43 +1,43 @@
 # Embedding
 
-Внутренний сервис векторов для RAG Chat. Слушает `POST /embed`, `POST /embed/image` и `GET /health` в сети `rag_internal`. Снаружи хоста порт не публикуется.
+The internal vector service for RAG Chat. Listens on `POST /embed`, `POST /embed/image` and `GET /health` inside `rag_internal`. No host port is published.
 
-Норма: `docs/openapi-internal.yaml`, `docs/internal-services.md`, `docs/configuration.md`.
+Norm: `docs/openapi-internal.yaml`, `docs/internal-services.md`, `docs/configuration.md` in the legacy tree; this namespace's entry is [docs/rag/init.md](../../../docs/rag/init.md).
 
-Модель в ответе — `google/embeddinggemma-2`. Вектор — 768 чисел после mean pooling и L2-нормализации. Усечения до 512, 256 или 128 нет.
+The model in the answer is `google/embeddinggemma-2`. A vector is 768 numbers after mean pooling and L2 normalization. No truncation to 512, 256 or 128 exists.
 
-Считает вектор `llama-server` из llama.cpp (архитектура `gemma-embedding2`) на `127.0.0.1:8092`. FastAPI на `EMBEDDING_PORT` (8091) клеит префикс и проверяет вектор. В сеть приложения виден только FastAPI. PyTorch и `model.safetensors` не используются. F16 не загружается. Проектор изображения `mmproj-embeddinggemma-2-Q8_0.gguf` (`EMBEDDING_MMPROJ`) передаётся в `llama-server` флагом `--mmproj`. Отдельный аудиопроектор не загружается.
+`llama-server` from llama.cpp (architecture `gemma-embedding2`) computes the vector at `127.0.0.1:8092`. FastAPI at `EMBEDDING_PORT` (8091) attaches the prefix and validates the vector. Only FastAPI is visible on the application network. PyTorch and `model.safetensors` are not used. F16 is not loaded. The image projector `mmproj-embeddinggemma-2-Q8_0.gguf` (`EMBEDDING_MMPROJ`) is passed to `llama-server` with `--mmproj`. No separate audio projector loads.
 
-Веса по умолчанию: `ggml-org/embeddinggemma-2-GGUF`, файл `embeddinggemma-2-Q8_0.gguf`. Токены считает `tokenizer.json` ревизии `google/embeddinggemma-2`, указанной в `.src_sha` этого GGUF (`914f7f89142e33e77833254d9c9b90c3cef7303b`). В счёт входят `<bos>` и `<eos>` из post-processor этого файла.
+Default weights: `ggml-org/embeddinggemma-2-GGUF`, file `embeddinggemma-2-Q8_0.gguf`. Tokens count with the `tokenizer.json` of the `google/embeddinggemma-2` revision recorded in that GGUF's `.src_sha` (`914f7f89142e33e77833254d9c9b90c3cef7303b`). The count includes the `<bos>` and `<eos>` from that file's post-processor.
 
-## Префиксы
+## Prefixes
 
-Один `input_type` на пачку.
+One `input_type` per batch.
 
-| `input_type` | Строка для модели |
+| `input_type` | String for the model |
 |--------------|-------------------|
 | `query` | `task: question answering \| query: {text}` |
 | `document` | `title: {title} \| text: {text}` |
 
-`title` — имя файла. Для `document` он обязателен, для `query` запрещён, в том числе пустой и `null`. Края `texts` и `title` снимаются; пустая строка после `strip` — `400 validation_error`. Сервис сам текст не обрезает: если после префикса токенов больше `EMBEDDING_MAX_TOKENS` (1024), ответ `400`.
+`title` is the file name. Required for `document`, forbidden for `query`, including empty and `null`. `texts` and `title` edges are stripped; an empty string after `strip` — `400 validation_error`. The service trims no text itself: if tokens after the prefix exceed `EMBEDDING_MAX_TOKENS` (1024), the answer is `400`.
 
-Пачка — от 1 до `EMBEDDING_BATCH_SIZE` текстов. По умолчанию 16. Поле `model`, если передано, должно совпасть с `EMBEDDING_MODEL`.
+A batch is 1 to `EMBEDDING_BATCH_SIZE` texts, 16 by default. A `model` field, when sent, must equal `EMBEDDING_MODEL`.
 
-`embeddings[i]` соответствует `texts[i]`. Длина не равна `EMBEDDING_DIM`, NaN, бесконечность или нулевая норма — `502 upstream_failed`. Если норма не 1, сервис нормализует сам. Таймаут пачки — `504 upstream_timeout`.
+`embeddings[i]` matches `texts[i]`. A length other than `EMBEDDING_DIM`, NaN, infinity, or a zero norm — `502 upstream_failed`. When the norm is not 1, the service normalizes itself. A batch timeout — `504 upstream_timeout`.
 
-## Изображения
+## Images
 
-`POST /embed/image` считает вектор картинки в то же пространство 768. Тело — `images`, массив base64 от 1 до `EMBEDDING_MAX_IMAGES` (4). Необязательный `model` такой же, как у `/embed`. Поля `texts`, `input_type` и `title` дают `400 validation_error`: у картинки нет префикса задачи.
+`POST /embed/image` computes an image vector in the same 768 space. The body is `images`: a base64 array of 1 to `EMBEDDING_MAX_IMAGES` (4). The optional `model` field behaves as in `/embed`. Fields `texts`, `input_type` and `title` give `400 validation_error`: an image has no task prefix.
 
-Контейнер берётся только из сигнатуры: JPEG (`FF D8 FF`), PNG (`89 50 4E 47 0D 0A 1A 0A`), GIF (`GIF87a` / `GIF89a`), WebP (`RIFF` и `WEBP` на смещении 8). Другое, битый base64 и декодированный размер больше `EMBEDDING_MAX_IMAGE_BYTES` (10485760) — `400`, поле `images`. Сигнатура принята, а llama-server не декодировал файл, ответил ошибкой или проектор изображения не загружен — `502 upstream_failed`. Таймаут — `504 upstream_timeout`. `POST /embed` и `GET /health` при отсутствии проектора остаются доступны. Если переданы несколько из `texts`, `input_type`, `title`, `details.fields` называет каждое.
+A container is accepted only by signature: JPEG (`FF D8 FF`), PNG (`89 50 4E 47 0D 0A 1A 0A`), GIF (`GIF87a` / `GIF89a`), WebP (`RIFF` plus `WEBP` at offset 8). Anything else, bad base64, and a decoded size above `EMBEDDING_MAX_IMAGE_BYTES` (10485760) — `400`, field `images`. A signature accepted but llama-server fails to decode the file, answers with an error, or the image projector is not loaded — `502 upstream_failed`. Timeout — `504 upstream_timeout`. `POST /embed` and `GET /health` stay available without the projector. When several of `texts`, `input_type`, `title` were sent, `details.fields` names each.
 
-В `POST /v1/embeddings` уходит пачка без текста. У каждого элемента `input` один блок `content` с частью `image_url` и data-URI `data:image/<тип>;base64,<base64>`. Рядом `encoding_format` равен `float`. Ответ тот же, что у `/embed`: `embeddings[i]` соответствует `images[i]`, та же L2-проекция.
+`POST /v1/embeddings` takes the batch without text. Each `input` element holds one `content` block with an `image_url` part and the data URI `data:image/<type>;base64,<base64>`. Beside it `encoding_format` equals `float`. The answer matches `/embed`: `embeddings[i]` corresponds to `images[i]`, the same L2 projection.
 
-`GET /health` отвечает `200` и `{"status":"ok"}` только после загрузки GGUF. Неудачная загрузка останавливает процесс. Необязательный `X-Request-Id` (UUID) возвращается; иначе выдаётся новый UUID.
+`GET /health` answers `200` with `{"status":"ok"}` only after the GGUF loads. A failed load stops the process. An optional `X-Request-Id` (UUID) is returned; otherwise a new UUID is issued.
 
-## Переменные
+## Variables
 
-| Переменная | По умолчанию |
+| Variable | Default |
 |------------|----------------|
 | `EMBEDDING_PORT` | `8091` |
 | `EMBEDDING_MODEL` | `google/embeddinggemma-2` |
@@ -54,33 +54,33 @@
 | `EMBEDDING_LLAMA_NGL` | `999` |
 | `LOG_LEVEL` | `info` |
 
-`EMBEDDING_LLAMA_NGL` уходит в `llama-server` как `-ngl`: сколько слоёв модели считать на GPU. `999` (по умолчанию) — все слои, `-1` — то же самое в терминах llama.cpp, `0` — только CPU. Допустимый диапазон `-1..999`, иное значение не даёт процессу стартовать. На CPU-сборке образа флаг ничего не меняет: бинарник без CUDA его игнорирует.
+`EMBEDDING_LLAMA_NGL` goes to `llama-server` as `-ngl`: how many layers run on GPU. `999` (default) is all layers, `-1` means the same in llama.cpp terms, `0` is CPU only. The allowed range is `-1..999`; any other value stops the process from starting. On the CPU image build the flag changes nothing: the non-CUDA binary ignores it.
 
-`EMBEDDING_LLAMA_URL` остаётся на `127.0.0.1` или `localhost`. Неверное значение не даёт процессу стартовать: в лог пишется имя переменной, без значения. `EMBEDDING_CONTEXT`, `--batch-size` и `--ubatch-size` одинаковые. `--parallel` у llama-server равен 1. Бюджет памяти контейнера — около 2 ГиБ.
+`EMBEDDING_LLAMA_URL` stays on `127.0.0.1` or `localhost`. A bad value stops the start; the log names the variable, never its value. `EMBEDDING_CONTEXT`, `--batch-size` and `--ubatch-size` are equal. llama-server's `--parallel` is 1. The container memory budget is about 2 GiB.
 
-## Запуск и проверка
+## Run and check
 
-Зависимости ставит `uv`, не pip. `uv.lock` фиксирует версии. `requirements.txt` — тот же список для чтения.
+Dependencies install through `uv`, not pip. `uv.lock` pins versions. `requirements.txt` is the same list for reading.
 
 ```bash
-cd services/embedding
+cd src/rag/embedding
 uv sync --group dev
 uv run ruff check
 uv run ruff format --check
 uv run pytest
 ```
 
-Образ собирается Podman из `Containerfile` (тот же текст, что `Dockerfile`). В файле два target'а: `cpu` (он же `default`, сборка без `--target`) и `cuda`:
+The image builds with Podman from `Containerfile` (the same text as `Dockerfile`). The file has two targets: `cpu` (also `default`, a build without `--target`) and `cuda`:
 
 ```bash
-# CPU, по умолчанию
-podman build -f services/embedding/Containerfile -t embedding services/embedding
-# GPU: тот же сервис на ghcr.io/ggml-org/llama.cpp:server-cuda12
-podman build -f services/embedding/Containerfile --target cuda -t embedding:gpu services/embedding
+# CPU, the default
+podman build -f Containerfile -t embedding .
+# GPU: the same service on ghcr.io/ggml-org/llama.cpp:server-cuda12
+podman build -f Containerfile --target cuda -t embedding:gpu .
 ```
 
-В `cuda`-сборке `llama-server` и библиотеки ggml из `/app` базового образа переносятся в `/opt/llama` (там же остаются `libcudart` и `libcublas` из CUDA runtime), `LLAMA_ARG_HOST`/`LLAMA_ARG_PORT` перекрываются на `127.0.0.1:8092`, Python ставится системный (`UV_PYTHON=python3`). Слои на GPU задаёт `EMBEDDING_LLAMA_NGL`.
+In the `cuda` build, `llama-server` and the ggml libraries from `/app` of the base image move to `/opt/llama` (`libcudart` and `libcublas` from the CUDA runtime stay there), `LLAMA_ARG_HOST`/`LLAMA_ARG_PORT` are overridden to `127.0.0.1:8092`, and Python is the system one (`UV_PYTHON=python3`). GPU layers are set by `EMBEDDING_LLAMA_NGL`.
 
-В образе два процесса: `llama-server` только на `127.0.0.1:8092` и `python -m embedding` на 8091. Порт 8092 наружу не открывается, порт 8091 на хост compose не публикует. Первый запрос не ждёт загрузки весов: она заканчивается до готовности `/health`.
+The image runs two processes: `llama-server` on `127.0.0.1:8092` only, and `python -m embedding` on 8091. Port 8092 never opens outward; compose publishes no host port for 8091. The first request waits for no weight download: loading finishes before `/health` turns ready.
 
-Тесты ходят в фиктивный энкодер и не скачивают GGUF. Боевой вход `python -m embedding` вызывает `load_model`: скачивание текстового Q8_0 и `mmproj-embeddinggemma-2-Q8_0.gguf`, запуск `llama-server --embeddings --pooling mean --mmproj` и ожидание его `/health`. Нет файла проектора — процесс не останавливается, `POST /embed/image` отвечает `502`.
+Tests call a stub encoder and download no GGUF. The real entry `python -m embedding` runs `load_model`: it downloads the text Q8_0 and `mmproj-embeddinggemma-2-Q8_0.gguf`, starts `llama-server --embeddings --pooling mean --mmproj`, and waits for its `/health`. Without the projector file the process still starts; `POST /embed/image` answers `502`.

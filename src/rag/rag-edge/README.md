@@ -1,30 +1,30 @@
 # rag-edge
 
-Единственный HTTP-вход RAG. Слушает порт `8080` и не публикует его на хост.
+The one HTTP entry of RAG. Listens on port `8080` and publishes no host port.
 
-Контейнер подключается к двум сетям:
+The container joins two networks:
 
 - `rag_network` — the only RAG member. The auth gateway joins this network as external and proxies to `http://rag-edge:8080`; behind that edge the services may trust identity v1 headers.
-- `rag_internal` — отсюда edge ходит к `file-collector`, `chat` и `frontend`.
+- `rag_internal` — from here the edge reaches `file-collector`, `chat` and `frontend`.
 
-## Маршруты
+## Routes
 
-| Путь | Куда |
+| Path | Where |
 |------|------|
-| `GET /health` | Ответ самого edge: `{"status":"ok"}`. Без заголовка личности, без MongoDB и очереди. |
-| `/api/files` и `/api/files/*` | `FILE_COLLECTOR_URL` |
-| `/api/chats` и `/api/chats/*` | `CHAT_URL` |
-| всё остальное | `FRONTEND_URL` |
+| `GET /health` | the edge's own answer: `{"status":"ok"}`. No identity header, no MongoDB, no queue. |
+| `/api/files` and `/api/files/*` | `FILE_COLLECTOR_URL` |
+| `/api/chats` and `/api/chats/*` | `CHAT_URL` |
+| everything else | `FRONTEND_URL` |
 
-Тело загрузки проходит целиком. Своего более жёсткого предела, чем `MAX_UPLOAD_BYTES`, у edge нет. `413` отвечает File Collector.
+An upload body passes through whole. The edge sets no limit stricter than `MAX_UPLOAD_BYTES`; `413` comes from File Collector.
 
-Ответ `text/event-stream` не буферизуется: байты чата отдаются по мере прихода от Chat. На такой ответ добавляется `X-Accel-Buffering: no`.
+A `text/event-stream` answer is not buffered: chat bytes go out as Chat sends them. Such an answer carries `X-Accel-Buffering: no`.
 
 The incoming `X-Auth-Subject`, `X-Auth-Roles` and `X-Request-Id` go upstream. The edge does not verify them and does not mint a user: the gateway sets them. When `X-Request-Id` is absent or is not a UUID the edge creates a UUID, sends it upstream and returns it. Header set: [identity v1](../../../docs/auth-gateway/external-contracts/identity-v1.md).
 
-## Переменные
+## Variables
 
-| Переменная | По умолчанию |
+| Variable | Default |
 |------------|----------------|
 | `RAG_EDGE_PORT` | `8080` |
 | `MAX_UPLOAD_BYTES` | `524288000` |
@@ -33,17 +33,17 @@ The incoming `X-Auth-Subject`, `X-Auth-Roles` and `X-Request-Id` go upstream. Th
 | `FRONTEND_URL` | `http://frontend:3000` |
 | `LOG_LEVEL` | `info` |
 
-Имена хостов по умолчанию совпадают с именами сервисов compose. Неверное значение останавливает процесс: в лог пишется имя переменной, без значения. Логи — JSON, поле `service` равно `rag-edge`.
+The default host names match the compose service names. A bad value stops the process; the log names the variable, never its value. Logs are JSON with `service` equal to `rag-edge`.
 
-## Сборка
+## Build
 
 ```sh
 podman build -f Containerfile -t rag-edge .
 ```
 
-`Dockerfile` совпадает с `Containerfile`.
+`Dockerfile` matches `Containerfile`.
 
-## Проверка
+## Check
 
 ```sh
 uv run ruff check
@@ -51,4 +51,4 @@ uv run ruff format --check
 uv run pytest
 ```
 
-Тесты поднимают локальные заглушки и не требуют file-collector, chat и frontend.
+Tests start local stubs and need no file-collector, chat or frontend.

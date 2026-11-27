@@ -3,8 +3,8 @@
 | Path | What |
 |---|---|
 | [Caddyfile](../../../deploy/auth-gateway/Caddyfile) | Site config, in git. The live edge reads it via the `/etc/caddy/Caddyfile` symlink. Every SSO host and `id.` are on `127.0.0.1:8083`. `id.` is public ([ADR-0013](../adrs/13-idp-host-public.md)). |
-| [Caddyfile symlink](/etc/caddy/Caddyfile) | Symlink to that file |
-| [Service](/var/lib/caddy/.local/share/caddy/) | ACME certs and the local CA. Not backed up. Reissued, except the CA root clients already trust. |
+| `/etc/caddy/Caddyfile` | Symlink to that file |
+| `/var/lib/caddy/.local/share/caddy/` | ACME certs and the local CA. Not backed up. Reissued, except the CA root clients already trust. |
 
 ## Certificates
 

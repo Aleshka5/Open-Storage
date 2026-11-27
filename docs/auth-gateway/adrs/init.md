@@ -3,11 +3,11 @@
 - ([3-flat-realm-roles.md](3-flat-realm-roles.md)) - Service access is flat realm roles `svc:<service>:<level>` with only a global `admin`, block is `enabled: false`.
 - ([4-config-fails-at-start.md](4-config-fails-at-start.md)) - `config.yaml` is validated at start and any change means a restart: no hot reload, no warning-only mode.
 - ([5-port-from-auth-service.md](5-port-from-auth-service.md)) - The auth-gateway namespace starts as a port of the running `~/projects/Auth-Service` stack, not a rewrite, and settles four open decisions along the way.
-- ([6-owl-chat-out-of-scope.md](6-owl-chat-out-of-scope.md)) - The owl chat is dropped from this release and `/api/chat` stays only as an unused public proxy route (superseded by ADR-0009).
-- ([7-gateway-line-budget.md](7-gateway-line-budget.md)) - The gateway's Go budget is 4200 lines excluding tests, replacing the earlier 2000-line figure (superseded by ADR-0010).
-- ([10-gateway-line-budget.md](10-gateway-line-budget.md)) - The gateway's Go budget is 5500 lines excluding tests, measured at 4953 after the owl packages.
 - ([8-idp-host-frame-self.md](8-idp-host-frame-self.md)) - The `id.filenkov.store` host is served with `frame: self` because Keycloak's `check_session_iframe` must frame itself for session polling.
 - ([9-owl-chat-in-the-gateway.md](9-owl-chat-in-the-gateway.md)) - The owl chat returns, answered by the gateway itself via `llm:` config and ported `llm`/`tracing`/`chat` packages; supersedes ADR-0006.
+- ([10-gateway-line-budget.md](10-gateway-line-budget.md)) - The gateway's Go budget is 5500 lines excluding tests, measured at 4953 after the owl packages; supersedes ADR-0007.
 - ([11-theme-reveal-rim.md](11-theme-reveal-rim.md)) - A theme circle refracts only on a 36px rim; the disk interior and the page after the reveal stay unfiltered (superseded by ADR-0012).
 - ([12-theme-reveal-without-rim.md](12-theme-reveal-without-rim.md)) - The theme reveal is one hard-edged circle, with no rim, no displacement filter and no SVG filter; supersedes ADR-0011.
 - ([13-idp-host-public.md](13-idp-host-public.md)) - `id.filenkov.store` is public. The proxy does not apply the LAN / WireGuard gate to it. `meet.` and `hermes.` keep that gate.
+
+Deleted: ADR-0006 (`owl-chat-out-of-scope`) and ADR-0007 (`gateway-line-budget` 4200). Both were superseded inside this index (by ADR-0009 and ADR-0010), each carried its own number twice, and their numbers are free for new namespace decisions. Numbers 6 and 7 are intentionally unused here.

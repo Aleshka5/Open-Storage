@@ -1,6 +1,6 @@
 # storage.filenkov.store
 
-What this repository declares for the storage host. DNS, the certificate, a live gateway reload, and a probe of the public name are operator steps. They are not run from this tree. Story: [US-07](../user_stories/us-07-edge-host/init.md).
+What this repository declares for the storage host. DNS, the certificate, a live gateway reload, and a probe of the public name are operator steps. They are not run from this tree.
 
 ## Declaration
 
@@ -13,7 +13,7 @@ The gateway block is [config.yaml](../../src/auth-gateway/gateway/config.yaml):
 
 `services` includes `storage`, so `policy.Parse` accepts `service(storage, family, admin)`. The product route table is owned by [upstreams](../auth-gateway/external-contracts/upstreams.md).
 
-Response-header values on the other hosts in that same file, locked as they stand: `filenkov.store` and `id.filenkov.store` use the default `60s`; `image.filenkov.store` and `audio.filenkov.store` also declare `30m`; `rag.filenkov.store` is `5m`; `llm.filenkov.store` is `10m`; `observer.filenkov.store` is `5m`.
+Response-header values on the other hosts in that same file, locked as they stand: `filenkov.store` and `id.filenkov.store` use the default `60s`; `image.filenkov.store` and `audio.filenkov.store` also declare `30m`; `rag.filenkov.store` is `5m`; `observer.filenkov.store` is `5m`.
 
 A realm role `admin` with no `svc:storage:*` role does not pass `service(storage, family, admin)`. The host has no separate `policy: admin` route.
 

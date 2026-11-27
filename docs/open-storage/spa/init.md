@@ -61,7 +61,7 @@ There is no logout, no OAuth start and no token storage in the client: all three
 | Stage | What happens |
 |---|---|
 | `frontend/` | `npm run build` → `dist/`. `frontend/Dockerfile` and `nginx.conf` exist but are not the production path. |
-| Image | The `app` image is a multi-stage build: `node:20-alpine` builds `frontend/`, and the result is copied into the Python image at `/opt/spa` (`backend/Dockerfile`; decision D5 in [US-05](../../user_stories/us-05-storage-namespace/init.md)). |
+| Image | The `app` image is a multi-stage build: `node:20-alpine` builds `frontend/`, and the result is copied into the Python image at `/opt/spa` (`backend/Dockerfile`). |
 | Runtime | FastAPI serves it: `GET /` returns `/opt/spa/index.html` with `Cache-Control: no-cache`, `/assets/*` is a static mount, and every other `GET` path falls back to `index.html` (or to a real file inside that directory). When the directory is missing, `GET /` answers `{"status":"ok","version":"1.0"}` instead. |
 | Edge | One upstream for the origin, `app:8000`. There is no second web server to route to. |
 

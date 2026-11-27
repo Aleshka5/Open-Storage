@@ -195,7 +195,7 @@ GitHub: https://github.com/Aleshka5/Auth-Service
 Link: https://filenkov.store
 
 ### LLM Service
-Link: https://llm.filenkov.store
+Link: https://lite-llm.filenkov.store
 
 ### Hermes Plugins
 Connects my gateway auth with Hermes auth, and updates the Hermes web UI.

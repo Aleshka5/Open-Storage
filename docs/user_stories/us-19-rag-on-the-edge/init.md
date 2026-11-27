@@ -1,4 +1,4 @@
-> **ID:** US-18
+> **ID:** US-19
 > **Status:** TODO
 > **Specs:** [ADR-0009](../../../adrs/9-rag-namespace.md), [ADR-0011](../../../adrs/11-gateway-joins-rag-network.md), [ADR-0001](../../../adrs/1-one-contract-version.md), [identity v1](../../auth-gateway/external-contracts/identity-v1.md), [upstreams](../../auth-gateway/external-contracts/upstreams.md), [rag/init.md](../../rag/init.md), [images.md](../../images.md)
 

@@ -22,6 +22,12 @@ The engine is `podman` when `podman` is on `PATH`, otherwise `docker`. `ENGINE=d
 
 `common` publishes nothing. Postgres, Redis, MinIO, RabbitMQ, Mongo, Keycloak and Qdrant stay on their upstream registries.
 
+## The registry itself
+
+The registry runs from [`deploy/registry-compose.yaml`](../deploy/registry-compose.yaml) — one `registry:latest` container with htpasswd auth, host publish `5000:5000`, data in `~/.registry/data`. It is not a namespace: no env file, no Makefile, no network of its own. `docker compose -f deploy/registry-compose.yaml up -d` starts it.
+
+`https://registry.filenkov.store` is served by the edge proxy with `tls internal` and a LAN / WireGuard gate ([Caddyfile](../deploy/auth-gateway/Caddyfile)). A machine that pushes or pulls must trust Caddy's local CA root, the same condition as `meet.filenkov.store`, and be logged in (`podman login registry.filenkov.store` / `docker login`). The password file is `~/.registry/registry.password` on the host; it is never a repository file.
+
 To run a date that is not `latest`:
 
 ```bash

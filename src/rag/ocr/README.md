@@ -1,83 +1,83 @@
 # OCR
 
-Внутренний сервис распознавания одной страницы. Контракт — `docs/openapi-internal.yaml`, поведение — `docs/internal-services.md`. Сервис слушает только сеть `rag_internal`. Порт на хост не публикуется.
+The internal single-page recognition service. The contract was `docs/openapi-internal.yaml` and the behaviour `docs/internal-services.md` in the legacy tree; the namespace entry is [docs/rag/init.md](../../../docs/rag/init.md). The service listens on `rag_internal` only. No host port is published.
 
-## Модель
+## Model
 
 `OCR_MODEL=surya-ocr-2`.
 
-Движок: **Surya OCR 2** через **llama.cpp**, одна модель на английский и русский.
+Engine: **Surya OCR 2** through **llama.cpp**, one model for English and Russian.
 
-При старте процесса, до открытия порта, скачиваются `surya-2.gguf` и `surya-2-mmproj.gguf` из `datalab-to/surya-ocr-2-gguf` и поднимается `llama-server` на `127.0.0.1:8092`. Этот порт в сеть `rag_internal` не публикуется. Число потоков и потолок памяти llama-server не задаются. Рассуждение модели выключено (`--reasoning off`): иначе Qwen3.5 пишет `<think>` до конца бюджета страницы. Повторяющийся хвост останавливает генерацию сразу, слот освобождается, и страница не ждёт `OCR_TIMEOUT`.
+At process start, before the port opens, `surya-2.gguf` and `surya-2-mmproj.gguf` download from `datalab-to/surya-ocr-2-gguf` and `llama-server` starts at `127.0.0.1:8092`. That port never publishes to `rag_internal`. llama-server's thread count and memory ceiling are not set. Model reasoning stays off (`--reasoning off`): otherwise Qwen3.5 writes `<think>` until the page budget ends. A repeating tail stops generation at once, frees the slot, and the page does not wait for `OCR_TIMEOUT`.
 
-Пока llama-server не здоров, процесс не слушает `OCR_PORT`, и проверка готовности не проходит. После старта `GET /health` спрашивает llama-server при каждом запросе: веса и CUDA-контекст живут в нём, поэтому его смерть (в том числе OOM внутри cgroup контейнера) видна как `503 dependency_unavailable`, а не как `ok`. Если загрузка не удалась, процесс завершается. GPU не требуется. Цель образа по умолчанию — `cpu` (пин-бинарник). Цель `cuda` ставит тот же сервис на `ghcr.io/ggml-org/llama.cpp:server-cuda12`; её собирает `make up-gpu`. Контракт от этого не меняется.
+While llama-server is unhealthy the process does not listen on `OCR_PORT` and readiness fails. After start, `GET /health` asks llama-server on every request: the weights and the CUDA context live there, so its death (including an OOM inside the container cgroup) shows as `503 dependency_unavailable`, not `ok`. A failed load ends the process. No GPU is required. The default image target is `cpu` (the pinned binary). The `cuda` target runs the same service on `ghcr.io/ggml-org/llama.cpp:server-cuda12`; `make up-gpu` builds it. The contract does not change.
 
-Режим работы задаёт `OCR_LLAMA_NGL` — значение флага `-ngl` у llama-server: `-1` или `999` кладут все слои на GPU, `0` оставляет чистый CPU, промежуточное N выгружает часть слоёв. Один и тот же образ годится для обоих режимов, пересборка не нужна. По умолчанию `999`, как и раньше, поэтому существующие развёртывания не меняются; для CPU-цели задайте `OCR_LLAMA_NGL=0`.
+`OCR_LLAMA_NGL` sets the mode — the `-ngl` flag value of llama-server: `-1` or `999` put all layers on GPU, `0` keeps pure CPU, an intermediate N offloads part of the layers. One image serves both modes; no rebuild. The default is `999`, as before, so existing deployments do not change; for the CPU target set `OCR_LLAMA_NGL=0`.
 
-Страницу из PDF сервис не рендерит. Ожидается PNG, который собрал Processor. Другой декодируемый растр принимается. Неразобранное тело — `400` `validation_error`.
+The service renders no page from the PDF. It expects the PNG Processor built. Another decodable raster is accepted. An unparseable body — `400` `validation_error`.
 
-Пустой `text` — успешный `200`, не ошибка.
+An empty `text` is a successful `200`, not an error.
 
 ## HTTP
 
-`POST /ocr`, `multipart/form-data`, поле `image`.
+`POST /ocr`, `multipart/form-data`, field `image`.
 
 ```json
 {
-  "text": "распознанный текст",
+  "text": "recognized text",
   "confidence": 0.92,
   "processing_time_ms": 340
 }
 ```
 
-`confidence` — число от 0 до 1 или `null`, если движок не отдал оценку. `processing_time_ms` — время работы движка, целое ≥ 0.
+`confidence` is a number from 0 to 1, or `null` when the engine gave no estimate. `processing_time_ms` is engine time, an integer ≥ 0.
 
-Бюджет разбора — `OCR_TIMEOUT` секунд (120). По истечении сервис отвечает `504`:
+The parse budget is `OCR_TIMEOUT` seconds (120). At the deadline the service answers `504`:
 
 ```json
 {"error": {"code": "upstream_timeout", "message": "OCR timed out"}}
 ```
 
-`GET /health` → `{"status":"ok"}`, пока llama-server отвечает. Иначе — `503`:
+`GET /health` → `{"status":"ok"}` while llama-server answers. Otherwise `503`:
 
 ```json
 {"error": {"code": "dependency_unavailable", "message": "Model is not loaded"}}
 ```
 
-`503` означает, что следующий `POST /ocr` вернул бы `500`; перезапуск контейнера через Switch-Service возвращает сервис в строй.
+A `503` means the next `POST /ocr` would return `500`; a container restart through Switch-Service brings the service back.
 
-Необязательный заголовок `X-Request-Id` (UUID) возвращается в ответе. Если его нет или он не UUID, сервис подставляет новый UUID.
+An optional `X-Request-Id` header (UUID) returns in the answer. Absent or non-UUID, the service substitutes a new UUID.
 
-## Переменные
+## Variables
 
-| Переменная | По умолчанию | Смысл |
+| Variable | Default | Meaning |
 |------------|--------------|--------|
-| `OCR_PORT` | `8090` | Порт внутри сети. |
-| `OCR_MODEL` | `surya-ocr-2` | Surya OCR 2. Другое значение не даёт процессу стартовать. |
-| `OCR_TIMEOUT` | `120` | Секунды на один разбор. |
-| `OCR_LLAMA_URL` | `http://127.0.0.1:8092` | llama-server внутри контейнера. |
-| `OCR_LLAMA_NGL` | `999` | Слоёв на GPU: `-1`/`999` — все, `0` — CPU. Допустимо `-1..999`. |
+| `OCR_PORT` | `8090` | Port inside the network. |
+| `OCR_MODEL` | `surya-ocr-2` | Surya OCR 2. Any other value stops the start. |
+| `OCR_TIMEOUT` | `120` | Seconds for one parse. |
+| `OCR_LLAMA_URL` | `http://127.0.0.1:8092` | llama-server inside the container. |
+| `OCR_LLAMA_NGL` | `999` | Layers on GPU: `-1`/`999` — all, `0` — CPU. Allowed `-1..999`. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warning`, `error`. |
 
-Неверное значение пишется в лог только именем переменной.
+A bad value logs only the variable name.
 
-## Запуск
+## Run
 
-Из каталога `services/ocr`:
+From this directory:
 
 ```bash
 uv sync
 uv run python -m ocr_service
 ```
 
-Образ (порт наружу не пробрасывается):
+Image (no outward port forward):
 
 ```bash
 podman build -f Dockerfile --target cpu -t ocr .
 podman build -f Dockerfile --target cuda -t ocr:cuda .
 ```
 
-## Тесты
+## Tests
 
 ```bash
 uv run ruff check src tests
@@ -85,4 +85,4 @@ uv run ruff format --check src tests
 uv run pytest
 ```
 
-Тесты подставляют фальшивый читатель страницы и не скачивают веса. Боевой вход `python -m ocr_service` поднимает `llama-server` с `surya-2.gguf` и `surya-2-mmproj.gguf`.
+Tests substitute a fake page reader and download no weights. The real entry `python -m ocr_service` starts `llama-server` with `surya-2.gguf` and `surya-2-mmproj.gguf`.

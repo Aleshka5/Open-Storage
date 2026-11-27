@@ -35,8 +35,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 120s
-    ports:
-      - 4001:4001
 
   # OpenAI-compatible router. Reads config.yaml beside this file.
   litellm-proxy:
@@ -50,8 +48,11 @@ services:
       - ./config.yaml:/app/config.yaml:ro
     networks:
       - common_network
+    # Loopback only: the edge proxy forwards lite-llm.filenkov.store to
+    # 127.0.0.1:4000 (Caddyfile). Never a wildcard publish; qwen38 publishes
+    # nothing at all (ADR-0013).
     ports:
-      - 4000:4000
+      - "127.0.0.1:4000:4000"
 
 networks:
   common_network:

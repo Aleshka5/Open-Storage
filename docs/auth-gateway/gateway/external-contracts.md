@@ -45,7 +45,7 @@ The browser's two legs — `/protocol/openid-connect/auth` and the `GET /logout`
 
 ## LLM host
 
-The owl's model, called from `POST /api/chat` with `llm.host`, `llm.api_key`, `llm.model`, `llm.reasoning_effort`, `llm.timeout`; `LLM_HOST`, `LLM_MODEL`, `LLM_REASONING_EFFORT` override the file, and a missing key leaves the route `503` without touching anything else.
+The owl's model, called from `POST /api/chat` with `llm.host`, `llm.api_key`, `llm.model`, `llm.reasoning_effort`, `llm.timeout`. The host is the LiteLLM router (`http://litellm-proxy-server:4000/v1` on `common_network`, [llm/init.md](../../llm/init.md)); provider keys, DeepSeek included, live in the router's config. `LLM_API_KEY` here is the router's master key. `LLM_HOST`, `LLM_MODEL`, `LLM_REASONING_EFFORT` override the file, and a missing key leaves the route `503` without touching anything else.
 
 Contract: OpenAI-compatible `POST <host>/chat/completions`, `stream: true`, `Accept: text/event-stream`, `Authorization: Bearer <key>`. The gateway forwards each delta as an SSE frame and writes `[DONE]` itself. An `llm` block that names no host or no model disables the route, not the process.
 

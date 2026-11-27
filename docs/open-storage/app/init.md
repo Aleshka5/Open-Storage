@@ -107,6 +107,6 @@ All four run only when an admin calls `GET /api/admin/maintenance/run` (the firs
 
 Recorded, not decided:
 
-1. `users.id` is still a UUID column. The reader uses `X-Auth-Subject` ([identity v1](../../auth-gateway/external-contracts/identity-v1.md)). A non-UUID subject is not inserted. Which existing rows map to idp subjects is [US-08](../../user_stories/us-08-data-cutover/init.md).
+1. `users.id` is still a UUID column. The reader uses `X-Auth-Subject` ([identity v1](../../auth-gateway/external-contracts/identity-v1.md)). A non-UUID subject is not inserted. Which existing rows map to idp subjects is [cutover.md](../cutover.md).
 2. The four unregistered jobs: are they meant to schedule, or is the hourly claim in every legacy doc the error? The code cannot answer.
 3. `.tmp` staging under `users/{user_id}/.tmp/` vs. the documented `…/files/.tmp/`: whether the current placement is intended or a path-join bug is not decidable from the code alone.

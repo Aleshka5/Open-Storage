@@ -6,7 +6,7 @@
 # header and does not route by application — that is the gateway's job, and
 # a duplicated header is a defect (browsers intersect the policies).
 #
-#   filenkov.store, storage. image. rag. audio. llm. observer. id. demo.
+#   filenkov.store, storage. image. rag. audio. observer. id. demo.
 #                        -> 127.0.0.1:8083  gateway
 #   id.filenkov.store is public (ADR-0013). meet. and hermes. keep the lan gate.
 #   meet.filenkov.store  -> 127.0.0.1:8000  Jitsi web, no SSO (LAN / WireGuard only)
@@ -53,6 +53,8 @@
 
 # --------------------------------------------------------------------- sites
 
+# The image registry (docs/images.md). tls internal: clients pull from the LAN
+# and must trust Caddy's local CA root, the same condition as meet. below.
 https://registry.filenkov.store {
 	tls internal
 
@@ -75,7 +77,6 @@ https://storage.filenkov.store,
 https://image.filenkov.store,
 https://rag.filenkov.store,
 https://audio.filenkov.store,
-https://llm.filenkov.store,
 https://observer.filenkov.store,
 https://id.filenkov.store,
 https://demo.filenkov.store {
@@ -143,7 +144,6 @@ http://storage.filenkov.store,
 http://image.filenkov.store,
 http://rag.filenkov.store,
 http://audio.filenkov.store,
-http://llm.filenkov.store,
 http://observer.filenkov.store,
 http://id.filenkov.store,
 http://demo.filenkov.store,

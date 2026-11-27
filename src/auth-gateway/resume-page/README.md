@@ -33,5 +33,5 @@ npm run dev         # proxies /auth, /admin, /api to 127.0.0.1:8080
 
 ## Out of scope
 
-The owl chat (ADR-0006). `POST /api/chat` exists on the gateway; no page calls
+The owl chat (gateway ADR-0009). `POST /api/chat` exists on the gateway; no page calls
 it.

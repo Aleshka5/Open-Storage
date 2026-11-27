@@ -1,10 +1,10 @@
 > **ID:** task-01
 > **Status:** DONE
-> **Specs:** [US-13](../init.md), [ADR-0003](../../../../adrs/3-one-session-store.md), [US-09](../../us-09-storage-theme/init.md)
+> **Specs:** [US-13](../init.md), [ADR-0003](../../../../adrs/3-one-session-store.md), [ADR-0007](../../../../adrs/7-theme-preference-is-a-session-cookie.md)
 
 ## Overview
 
-Record the store before either page changes. [US-09](../../us-09-storage-theme/init.md) D1 kept `theme.preference` in each origin’s `localStorage` and rejected a cookie on `.filenkov.store`. The new argument is that the resume page and storage are one browser session for this choice.
+Record the store before either page changes. The storage-theme story (US-09, removed) D1 kept `theme.preference` in each origin’s `localStorage` and rejected a cookie on `.filenkov.store`. The new argument is that the resume page and storage are one browser session for this choice.
 
 ## Goals
 

@@ -1,32 +1,32 @@
 # deletion-worker
 
-Consumer очереди `doc.delete`. Снимает точки Qdrant и страницы, объект MinIO — только если он принадлежит RAG, затем ставит в MongoDB статус `deleted`.
+Consumer of the `doc.delete` queue. Removes Qdrant points and pages, the MinIO object — only when it belongs to RAG — then sets the MongoDB status to `deleted`.
 
-Порядок одного сообщения фиксирован:
+The order for one message is fixed:
 
-1. Разобрать тело. Битый JSON, чужая `schema_version` или неверный `doc.delete` — `nack` без requeue.
-2. Если статус уже `deleted` — `ack`, хранилища не трогать.
-3. Если документа нет — удалить объект по `s3_key` из сообщения, кроме ключей с префиксом `users/`, `_meta/` или `shared/`. Точки по паре `user_id` + `document_id` и `file_pages` удаляются в любом случае, затем `ack`.
-4. Свежий `processing` (heartbeat не старше `STALE_PROCESSING_SECONDS`) — `nack` без requeue.
-5. Чужой `s3_key` или чужой `user_id` — `nack` без requeue, байты не удалять.
-6. Если статус ещё не `deleting`, условно перевести его из `uploaded`, `ready`, `error` или устаревшего `processing`. Проигравшая гонка перечитывает документ и выбирает ветку заново.
-7. Записать `delete_claimed_at`, если поле пустое. Пока отметки нет, объект и точки не удаляются. Три неудачные записи сдвигают `updated_at` и уводят сообщение в DLQ.
-8. Удалить объект MinIO, если в документе `object_owner` не `storage` и ключ не начинается с `users/`, `_meta/` или `shared/`. Поле читается из Mongo; нет поля или пустое значение — `rag`. В `doc.delete` поле не кладётся. Отсутствие ключа при удалении — успех. Для `storage` и чужих префиксов `delete_object` не вызывается.
-9. Удалить точки Qdrant с фильтром `user_id` и `document_id` (`file_id`) в `QDRANT_COLLECTION`, затем в `QDRANT_IMAGES_COLLECTION`. Ноль точек — успех. Нет коллекции изображений — успех.
-10. Удалить документы `file_pages` этого `file_id`. Ноль страниц — успех.
-11. Условно перевести `deleting` → `deleted` и только потом `ack`.
+1. Parse the body. Bad JSON, a foreign `schema_version` or a wrong `doc.delete` — `nack` without requeue.
+2. Status already `deleted` — `ack`, touch no storage.
+3. No document — delete the object at the message's `s3_key`, except keys prefixed `users/`, `_meta/` or `shared/`. Points for the `user_id` + `document_id` pair and the `file_pages` rows are removed either way, then `ack`.
+4. Fresh `processing` (heartbeat newer than `STALE_PROCESSING_SECONDS`) — `nack` without requeue.
+5. Foreign `s3_key` or foreign `user_id` — `nack` without requeue, delete no bytes.
+6. If the status is not yet `deleting`, move it conditionally from `uploaded`, `ready`, `error` or stale `processing`. A race loser re-reads the document and picks its branch again.
+7. Write `delete_claimed_at` when empty. While the claim is absent, no object and no points are deleted. Three failed writes shift `updated_at` and route the message to the DLQ.
+8. Delete the MinIO object when the document's `object_owner` is not `storage` and the key does not start with `users/`, `_meta/` or `shared/`. The field is read from Mongo; missing or empty means `rag`. `doc.delete` never carries the field. A missing key during deletion is success. For `storage` and foreign prefixes `delete_object` is not called.
+9. Delete Qdrant points filtered by `user_id` and `document_id` (`file_id`) in `QDRANT_COLLECTION`, then in `QDRANT_IMAGES_COLLECTION`. Zero points is success. A missing images collection is success.
+10. Delete this `file_id`'s `file_pages` documents. Zero pages is success.
+11. Move `deleting` → `deleted` conditionally, and only then `ack`.
 
-Повтор того же `doc.delete` после `deleted` подтверждается и состояние не меняет. Падение после удаления объекта и до `deleted` оставляет `deleting`; следующая доставка дочищает хранилища и ставит `deleted`. Отдельный объект для ремонта не нужен.
+A repeated `doc.delete` after `deleted` is acknowledged and changes no state. A crash after the object delete and before `deleted` leaves `deleting`; the next delivery finishes the storages and sets `deleted`. No separate repair object is needed.
 
-Сбой MinIO, Qdrant или `file_pages` после трёх попыток и сбой финальной записи MongoDB после одной дополнительной попытки — `nack(requeue=false)`. Статус остаётся `deleting`. Неподтверждённое сообщение брокер отдаст снова, только если процесс умер до `ack`/`nack`.
+MinIO, Qdrant or `file_pages` failure after short retries, and a final MongoDB write failure after one extra attempt — `nack(requeue=false)`. The status stays `deleting`. The broker redelivers an unacknowledged message only if the process died before `ack`/`nack`.
 
-При старте процесс идемпотентно объявляет топологию `doc_events` и один раз проходит sweeper: `status=deleting`, `delete_claimed_at=null`, `updated_at` старше `DELETE_REQUEUE_AFTER_SECONDS`. Дальше sweeper повторяется не реже `SWEEP_INTERVAL_SECONDS`. На каждом канале `basic_qos(prefetch_count=1)` до `basic_consume`. Число каналов — `DELETION_CONCURRENCY`.
+At start the process declares the `doc_events` topology idempotently and runs the sweeper once: `status=deleting`, `delete_claimed_at=null`, `updated_at` older than `DELETE_REQUEUE_AFTER_SECONDS`. After that the sweeper repeats no less often than `SWEEP_INTERVAL_SECONDS`. Every channel sets `basic_qos(prefetch_count=1)` before `basic_consume`. The channel count is `DELETION_CONCURRENCY`.
 
-## Переменные
+## Variables
 
-Обязательные, без значения по умолчанию: `MONGODB_URI`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `QDRANT_URL`, `RABBITMQ_URL`. В лог попадает имя отсутствующей переменной, не её значение.
+Required, no default: `MONGODB_URI`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `QDRANT_URL`, `RABBITMQ_URL`. The log names a missing variable, never its value.
 
-| Переменная | По умолчанию |
+| Variable | Default |
 |------------|----------------|
 | `S3_BUCKET` | `storage` |
 | `S3_REGION` | `us-east-1` |
@@ -40,14 +40,14 @@ Consumer очереди `doc.delete`. Снимает точки Qdrant и стр
 | `SWEEP_INTERVAL_SECONDS` | `60` |
 | `DELETE_REQUEUE_AFTER_SECONDS` | `120` |
 
-`MONGODB_URI` включает имя базы. Логи — JSON, поле `service` равно `deletion-worker`.
+`MONGODB_URI` includes the database name. Logs are JSON with `service` equal to `deletion-worker`.
 
-## Запуск и проверка
+## Run and check
 
-Зависимости ставит `uv` из `uv.lock`. `requirements.txt` — тот же набор сторонних пакетов без локального проекта.
+Dependencies install through `uv` from `uv.lock`. `requirements.txt` is the same set of third-party packages without the local project.
 
 ```bash
-cd services/deletion-worker
+cd src/rag/deletion-worker
 uv sync --group dev
 uv run pytest
 uv run ruff check
@@ -55,4 +55,4 @@ uv run ruff format --check
 uv run python -m deletion_worker
 ```
 
-Образ: `Containerfile` (Podman) и идентичный `Dockerfile`. Сборка из этого каталога, команда процесса — `python -m deletion_worker`. Порта нет.
+Images: `Containerfile` (Podman) and an identical `Dockerfile`. Build from this directory; the process command is `python -m deletion_worker`. No published port.

@@ -7,9 +7,9 @@ services:
       REGISTRY_AUTH_HTPASSWD_PATH: /auth/registry.password
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
     volumes:
-      # Монтируем файл паролей.
+      # Mount the password file.
       - ~/.registry/registry.password:/auth/registry.password
-      # Монтируем директорию с данными.
+      # Mount the data directory.
       - ~/.registry/data:/data
     ports:
       - 5000:5000

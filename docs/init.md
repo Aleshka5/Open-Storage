@@ -25,7 +25,7 @@ Every host on `filenkov.store` enters through the proxy. The gateway authenticat
     - Description: The infrastructure map. One static page on `demo_network`. The gateway is the only inbound path.
     - Detail inside the block: [demo/init.md](demo/init.md).
  - llm: qwen38 (llama.cpp), litellm-proxy-server
-    - Description: The chat model tandem. The router answers OpenAI-compatible calls and forwards to the server by name on `common_network`. Its bookkeeping is the `common` Postgres (`db_litellm`). The gateway reaches the router as `litellm-proxy-server:4000`; the proxy serves `lite-llm.` itself.
+    - Description: The chat model tandem. The router answers every OpenAI-compatible call in the system — products and the gateway's own owl chat included — and forwards each model group to its server by name on `common_network`. Its bookkeeping is the `common` Postgres (`db_litellm`). The gateway reaches the router as `litellm-proxy-server:4000`; the proxy serves `lite-llm.` itself.
     - Detail inside the block: [llm/init.md](llm/init.md).
 
 A namespace gets a directory when its first service exists. The shape is ([repository-layout.md](repository-layout.md)).
@@ -39,7 +39,6 @@ flowchart TB
   W["Browser"]
   V["VPN client"]
   G["Google<br/>the only login"]
-  DS["api.deepseek.com"]
   AG["auth-gateway:<br/>proxy, gateway, idp, idp_db, resume-page"]
   OS["open-storage:<br/>app"]
   RG["rag:<br/>rag-edge and the stack behind it"]
@@ -53,7 +52,6 @@ flowchart TB
   V -->|"TLS 443"| AG
   AG -.->|"no SSO, LAN only"| HM
   AG -->|"discovery JWKS token revoke<br/>Admin API for /admin"| G
-  AG -->|"chat: true, OpenAI-compatible"| DS
   AG -->|"storage host, app:8000"| OS
   AG -->|"rag host, rag-edge:8080"| RG
   AG -->|"audio host, audio-api:8000 and frontend:80"| AU
@@ -61,7 +59,7 @@ flowchart TB
   OS -->|"SQL :5432, redis :6379, S3 :9000"| CM
   RG -->|"mongo, minio, rabbit"| CM
   AU -->|"mongo, minio, rabbit, redis"| CM
-  AG -->|"llm host, litellm-proxy-server:4000"| LM
+  AG -->|"owl chat, litellm-proxy-server:4000"| LM
   LM -->|"api_base qwen38:4001"| LM
   LM -->|"db_litellm"| CM
   G -->|"redirect_uri"| AG
@@ -79,15 +77,15 @@ The internals of `auth-gateway` — proxy, gateway, idp, idp_db, resume-page, th
 | storage | resource | `app:8000` on `open_network`. The namespace is [open-storage/init.md](open-storage/init.md) |
 | common data | resource | `postgres:5432`, `redis:6379`, `minio:9000` on `common_network`. RabbitMQ (`rabbitmq`, alias `rabbit`) and `mongo:27017` are on that network for other products. The namespace is [common/init.md](common/init.md) |
 | hermes | resource | Forwarded by proxy, never reach gateway, keeps its own authentication |
-| llm router | resource | `litellm-proxy-server:4000` on `common_network`. The namespace is [llm/init.md](llm/init.md) |
-| deepseek | resource | `POST /api/chat` on the apex host, served by the gateway itself |
+| llm router | resource | `litellm-proxy-server:4000` on `common_network`: every LLM caller in the system — the gateway's owl chat and `rag/chat` (`LLM_BASE_URL`) — resolves model groups here. Provider keys, DeepSeek included, live at the router. The namespace is [llm/init.md](llm/init.md) |
+| llm router (owl chat) | action | `POST /api/chat` on the apex host, served by the gateway itself through `litellm-proxy-server:4000` on `common_network` |
 
 Upstream names, hosts and per-host policy rows are owned by ([upstreams](auth-gateway/external-contracts/upstreams.md)). The consumer-side obligations are ([identity v1](auth-gateway/external-contracts/identity-v1.md)).
 
 ## Where a request goes
 
 1. Proxy terminates TLS and sets HSTS. It does not use one backend. The classes are in [deploy/auth-gateway/Caddyfile](../deploy/auth-gateway/Caddyfile):
-   - `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `llm.`, `observer.`, `id.`, `demo.` → `127.0.0.1:8083`. `id.` is public ([ADR-0013](auth-gateway/adrs/13-idp-host-public.md)). `demo.` is the infrastructure map ([demo/init.md](demo/init.md))
+   - `filenkov.store`, `storage.`, `image.`, `rag.`, `audio.`, `observer.`, `id.`, `demo.` → `127.0.0.1:8083`. `id.` is public ([ADR-0013](auth-gateway/adrs/13-idp-host-public.md)). `demo.` is the infrastructure map ([demo/init.md](demo/init.md))
    - `meet.filenkov.store` → `127.0.0.1:8000`, no SSO and not the gateway, LAN / WireGuard only
    - `hermes.` → `127.0.0.1:9119`, `lite-llm.` → `127.0.0.1:4000` (the `llm` router's published port, [llm/init.md](llm/init.md))
 2. When the request reaches the gateway, it matches host, then path, then method. First match wins. Each host has exactly one `/**`, last.

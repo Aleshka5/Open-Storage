@@ -1,6 +1,6 @@
 > **ID:** ...
 > **Status:** TODO/IN PROGRESS/REVIEW/DONE
-> **Specs:** [API Contract §9](../../API%20Contract.md), ... [BACKEND_DOCS](../../BACKEND_DOCS.md)
+> **Specs:** [name](relative/path to the document that owns each fact), ...
 
 ## Overview
 

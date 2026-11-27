@@ -32,7 +32,7 @@ What RAG is as a product is not restated here. The old tree's `docs/` is the gro
 ## Non-goals
 
 - Changing what the product does. Endpoints, chunking, batching (16), OCR, embedding and the SSE shape stay as the old tree's `docs/` says.
-- A data migration from the old `rag-mongo` and `qdrant-data` volumes. The stand starts empty; a cutover of existing documents is a later story, like [US-08](../us-08-data-cutover/init.md) was for storage.
+- A data migration from the old `rag-mongo` and `qdrant-data` volumes. The stand starts empty; a cutover of existing documents is a later story, as the storage one was ([cutover.md](../../open-storage/cutover.md)).
 - Editing the gateway and idp for D6. That is a separate change in the auth-gateway namespace, and this story only records the condition.
 - The frontend beyond its port to v1: no redesign, no theme work.
 

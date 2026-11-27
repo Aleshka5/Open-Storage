@@ -40,7 +40,6 @@ upstreams:
   idp: "idp:8080"
   storage: "app:8000"
   image: "qwen-image:8000"
-  llm: "qwen38:4001"
   rag: "rag-edge:8080"
   audio: "audio-api:8000"
   audio_web: "frontend:80"
@@ -56,7 +55,10 @@ upstreams:
 # leaves POST /api/chat answering 503 and everything else running. The key is
 # env:LLM_API_KEY (set in .env), never a literal in this file.
 llm:
-  host: "https://api.deepseek.com/v1"
+  # Every LLM call goes through the LiteLLM router (docs/llm/init.md);
+  # provider keys, DeepSeek included, live in the router's config, not here.
+  # The gateway's LLM_API_KEY is the router's LITELLM_MASTER_KEY.
+  host: "http://litellm-proxy-server:4000/v1"
   api_key: "env:LLM_API_KEY"
   model: "deepseek-flash"
   # "none" keeps a reasoning model from thinking before a two-sentence answer.
@@ -130,12 +132,6 @@ hosts:
       - { path: /health, upstream: audio, policy: public }
       - { path: /api/**, upstream: audio, policy: "service(audio, family, admin)" }
       - { path: /**, policy: session }
-
-  - host: llm.filenkov.store
-    upstream: llm
-    timeouts: { response_header: 10m }
-    routes:
-      - { path: /**, policy: admin }
 
   - host: observer.filenkov.store
     upstream: grafana

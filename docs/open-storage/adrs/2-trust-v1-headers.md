@@ -6,7 +6,7 @@ Accepted
 
 The open-storage app trusts identity v1 headers and does not verify the bearer JWT. It is a v1 consumer reachable only on `open_network`, which is the header-trust condition in [identity v1](../../auth-gateway/external-contracts/identity-v1.md).
 
-`get_current_user` reads `X-Auth-Subject`, `X-Auth-Email`, `X-Auth-Name`, `X-Auth-Roles` and `X-Auth-Session`. An absent subject is 401 and writes no `users` row. The subject is not parsed into a UUID in the reader. `users.id` stays a UUID column; what that column holds after cutover is [US-08](../../user_stories/us-08-data-cutover/init.md).
+`get_current_user` reads `X-Auth-Subject`, `X-Auth-Email`, `X-Auth-Name`, `X-Auth-Roles` and `X-Auth-Session`. An absent subject is 401 and writes no `users` row. The subject is not parsed into a UUID in the reader. `users.id` stays a UUID column; what that column holds after cutover is [cutover.md](../cutover.md).
 
 `Role` stays `STRANGER`, `FAMILY`, `ADMIN`, `BLOCKED`. It is a pure function of `X-Auth-Roles`: `svc:storage:blocked` wins, else `svc:storage:admin`, else `svc:storage:family`, else `STRANGER`. A missing or empty header is `STRANGER`. Unknown tokens are ignored. `check_role` keeps its signature. `Role.can_access_shared()` and `Role.can_access_admin()` are removed.
 
@@ -28,4 +28,4 @@ The app no longer learns another user's storage role from a directory. The `user
 
 ## Risk
 
-Header trust holds only while the app has no public port. A client that can reach `app:8000` on `open_network` can forge the five headers. A non-UUID subject fails closed at the column until US-08. A family member who is allowed through the gateway still receives the app's 403 on `/api/admin/**`, which is a different body from the edge's `{"error":"forbidden"}`.
+Header trust holds only while the app has no public port. A client that can reach `app:8000` on `open_network` can forge the five headers. A non-UUID subject fails closed at the column until the data cutover ([cutover.md](../cutover.md)). A family member who is allowed through the gateway still receives the app's 403 on `/api/admin/**`, which is a different body from the edge's `{"error":"forbidden"}`.

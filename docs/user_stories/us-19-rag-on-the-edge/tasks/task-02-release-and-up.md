@@ -1,6 +1,6 @@
 > **ID:** task-02
 > **Status:** TODO
-> **Specs:** [US-18](../init.md), [ADR-0010](../../../../adrs/10-published-images.md), [images.md](../../../images.md), [ADR-0011](../../../../adrs/11-gateway-joins-rag-network.md)
+> **Specs:** [US-19](../init.md), [ADR-0010](../../../../adrs/10-published-images.md), [images.md](../../../images.md), [ADR-0011](../../../../adrs/11-gateway-joins-rag-network.md)
 
 ## Overview
 

@@ -11,9 +11,11 @@ from urllib.error import HTTPError
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 BASE_URL = os.environ.get("VERIFY_BASE_URL", "http://127.0.0.1:8000")
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "fad80223@gmail.com")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fsa80223")
-PASSPHRASE = os.environ.get("VERIFY_PASSPHRASE", "test-secret-phrase")
+# No credential defaults: a literal in a committed file is a defect
+# (constitution.md). The script fails fast when they are missing.
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+PASSPHRASE = os.environ.get("VERIFY_PASSPHRASE", "")
 
 
 class CheckResult:
@@ -33,6 +35,13 @@ class CheckResult:
 
 
 def main() -> int:
+    missing = [name for name, value in
+               (("ADMIN_EMAIL", ADMIN_EMAIL), ("ADMIN_PASSWORD", ADMIN_PASSWORD),
+                ("VERIFY_PASSPHRASE", PASSPHRASE)) if not value]
+    if missing:
+        print(f"missing required environment variables: {', '.join(missing)}")
+        return 2
+
     results = CheckResult()
     opener = build_opener(HTTPCookieProcessor(CookieJar()))
     test_ip = f"verify-{uuid.uuid4().hex[:8]}"

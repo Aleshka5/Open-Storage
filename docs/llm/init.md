@@ -7,7 +7,7 @@ The chat model tandem. One llama.cpp server holds the weights, one LiteLLM route
 | Service | Container | DNS name | Port | Host publish | State |
 |---|---|---|---|---|---|
 | `qwen38` | `qwen38` | `qwen38` | 4001 | no | bind `/media/aleksey/HardDisk/gguf_models:/models`, read-only |
-| `litellm-proxy` | `litellm-proxy-server` | `litellm-proxy-server` | 4000 | no | `db_litellm` in the `common` Postgres |
+| `litellm-proxy` | `litellm-proxy-server` | `litellm-proxy-server` | 4000 | `127.0.0.1:4000` only, for the proxy's `lite-llm.` forward | `db_litellm` in the `common` Postgres |
 
 The server image is `ghcr.io/ggml-org/llama.cpp:server-cuda12` and takes the whole card (`nvidia.com/gpu=all`, `-ngl -1`). The model is `/models/HuiHui/qwen3.8/model_q8.gguf`, context 128000. The router image is `ghcr.io/berriai/litellm:main-latest` and reads [config.yaml](../../deploy/llm/config.yaml).
 
@@ -21,7 +21,7 @@ The server image is `ghcr.io/ggml-org/llama.cpp:server-cuda12` and takes the who
 
 ## Network reach
 
-The router and the server both join `common_network`, and nothing else. The router reaches the server as `qwen38:4001`. The gateway declares `models_network` and reads the same upstream `qwen38:4001`, so the server is reachable from the edge as well. `llm_network` is not joined: it was the old script's private bridge and carries no member.
+The router and the server both join `common_network`, and nothing else. The router reaches the server as `qwen38:4001`. Every LLM consumer in the system — products and the gateway's owl chat — calls the router as `litellm-proxy-server:4000` on `common_network`; provider keys (DeepSeek included) live in the router's config, not with the caller. The old direct `qwen38:4001` upstream and the `llm.filenkov.store` host route are removed from the gateway: one entry point per meaning. `llm_network` is not joined: it was the old script's private bridge and carries no member.
 
 ## Schema
 
@@ -35,8 +35,10 @@ flowchart TB
 
   GW["auth-gateway"]
   PR["edge proxy"]
+  RC["rag chat"]
 
   GW -->|"OpenAI chat"| LR
+  RC -->|"chat/completions"| LR
   LR -->|"api_base qwen38:4001"| QS
   LR -->|"db_litellm"| PG
   PR -->|"lite-llm.filenkov.store"| LR

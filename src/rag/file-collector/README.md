@@ -1,17 +1,17 @@
 # File Collector
 
-HTTP-сервис приёма PDF. Порт по умолчанию — `8081`.
+PDF intake HTTP service. Default port `8081`.
 
-Контракт: [docs/openapi.yaml](../../docs/openapi.yaml), [docs/api.md](../../docs/api.md), [docs/data-models.md](../../docs/data-models.md), [docs/messaging.md](../../docs/messaging.md). Образ собирается из `Containerfile` через `podman build`. `Dockerfile` повторяет тот же текст. Зависимости ставятся через `uv` и зафиксированы в `uv.lock`. `requirements.txt` — экспорт этого замка, не способ установки.
+The namespace contracts live in [docs/rag](../../../docs/rag/init.md): the edge split is [rag/init.md](../../../docs/rag/init.md), the consumer-side obligations are [identity v1](../../../docs/auth-gateway/external-contracts/identity-v1.md). The image builds from `Containerfile` via `podman build`; `Dockerfile` repeats the same text. Dependencies install through `uv` and are pinned in `uv.lock`. `requirements.txt` is an export of that lock, not an install path.
 
-## Переменные
+## Variables
 
-Обязательные, без значений по умолчанию: `MONGODB_URI`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `RABBITMQ_URL`.
+Required, no default: `MONGODB_URI`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `RABBITMQ_URL`.
 
-| Переменная | По умолчанию |
-|------------|----------------|
+| Variable | Default |
+|----------|---------|
 | `FILE_COLLECTOR_PORT` | `8081` |
-| `MAX_UPLOAD_BYTES` | `524288000` (500 МиБ) |
+| `MAX_UPLOAD_BYTES` | `524288000` (500 MiB) |
 | `S3_BUCKET` | `storage` |
 | `S3_REGION` | `us-east-1` |
 | `RABBITMQ_EXCHANGE` | `doc_events` |
@@ -19,29 +19,29 @@ HTTP-сервис приёма PDF. Порт по умолчанию — `8081`.
 | `STALE_PROCESSING_SECONDS` | `900` |
 | `LOG_LEVEL` | `info` |
 
-При старте сервис создаёт бакет, индексы коллекции `files` и топологию RabbitMQ. Повторный старт данные не удаляет.
+At start the service creates the bucket, the `files` collection indexes, and the RabbitMQ topology. A restart deletes no data.
 
-## Маршруты
+## Routes
 
-| Метод | Путь | Ответ |
-|-------|------|--------|
-| `GET` | `/health` | `{"status":"ok"}` без проверки зависимостей и без `X-Auth-Subject` |
-| `POST` | `/api/files` | `202` карточка файла, публикация `doc.process` |
-| `GET` | `/api/files` | список своих файлов без `deleted` |
-| `GET` | `/api/files/{file_id}` | карточка; чужой и `deleted` — `404` |
-| `GET` | `/api/files/{file_id}/content` | байты PDF; чужой, `deleted` и `deleting` — `404` |
-| `DELETE` | `/api/files/{file_id}` | `202` и `doc.delete`; свежий `processing` — `409` |
+| Method | Path | Answer |
+|--------|------|--------|
+| `GET` | `/health` | `{"status":"ok"}` — no dependency check, no `X-Auth-Subject` |
+| `POST` | `/api/files` | `202` file card, publishes `doc.process` |
+| `GET` | `/api/files` | the caller's own file list without `deleted` |
+| `GET` | `/api/files/{file_id}` | card; another user's or `deleted` — `404` |
+| `GET` | `/api/files/{file_id}/content` | PDF bytes; another user's, `deleted` and `deleting` — `404` |
+| `DELETE` | `/api/files/{file_id}` | `202` and `doc.delete`; fresh `processing` — `409` |
 
-Пользователь берётся только из `X-Auth-Subject` (канонический UUID), иначе `401 unauthenticated`. `X-Auth-Roles` — список realm-ролей через пробел: точный токен `svc:rag:blocked` — `403 forbidden`, `svc:rag:family` и `svc:rag:admin` проходят. Заголовки прошлой версии (`X-Auth-User-Id`, `X-Auth-Role`, `X-User-Id`) не читаются.
+The user comes only from `X-Auth-Subject` (canonical UUID), otherwise `401 unauthenticated`. `X-Auth-Roles` is the space-separated realm-role list: the exact token `svc:rag:blocked` — `403 forbidden`; `svc:rag:family` and `svc:rag:admin` pass. Legacy headers (`X-Auth-User-Id`, `X-Auth-Role`, `X-User-Id`) are not read.
 
-## Локально
+## Locally
 
 ```bash
-cd services/file-collector
+cd src/rag/file-collector
 uv sync --all-groups
 uv run ruff check
 uv run ruff format --check
 uv run pytest
 ```
 
-Тесты ходят в FastAPI через подставные MongoDB, MinIO и RabbitMQ и не требуют стенда.
+Tests call FastAPI through stub MongoDB, MinIO and RabbitMQ and need no stand.

@@ -1,6 +1,6 @@
 # open-storage
 
-Storage product: files, photos, an encrypted private vault, uploaded resumes, generated-image history, quotas and admin. This namespace runs `app`. Postgres, Redis and MinIO are the [common](../common/init.md) services on `common_network`. The SPA source is built into the app image and is not a running service. The network decision is [ADR 3](adrs/3-app-on-common-data.md). The story that brought the tree here is [US-05](../user_stories/us-05-storage-namespace/init.md); the move onto `common_network` is [US-15](../user_stories/us-15-common-network/init.md). This page is service-level only. What a service does is linked.
+Storage product: files, photos, an encrypted private vault, uploaded resumes, generated-image history, quotas and admin. This namespace runs `app`. Postgres, Redis and MinIO are the [common](../common/init.md) services on `common_network`. The SPA source is built into the app image and is not a running service. The network decision is [ADR 3](adrs/3-app-on-common-data.md). The tree came from the old WebStorage repository; the move onto `common_network` is [US-15](../user_stories/us-15-common-network/init.md). This page is service-level only. What a service does is linked.
 
 ## Services
 
@@ -53,7 +53,7 @@ flowchart TB
 
 ## Mismatches
 
-- [US-05](../user_stories/us-05-storage-namespace/init.md) task-02 and its Definition of Done say the compose file names no external network. The file follows [ADR 1](adrs/1-own-data-on-open-network.md) and task-04: `open_network` is `external: true`, and `app` joins only that network.
+- The original namespace story said the compose file names no external network. The file follows [ADR 1](adrs/1-own-data-on-open-network.md): `open_network` is `external: true`, and `app` joins only that network.
 - [spa/init.md](spa/init.md) still names `frontend/` paths. The source tree is `src/open-storage/spa`.
 
 ## Identity this block consumes
