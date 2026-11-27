@@ -26,7 +26,7 @@ function list(items: string[] | undefined): string[] {
   return Array.isArray(items) ? items : [];
 }
 
-function Detail({ layer, onSelect }: { layer: Layer | null; onSelect: (id: string) => void }) {
+export function Detail({ layer, onSelect }: { layer: Layer | null; onSelect: (id: string) => void }) {
   if (!layer) {
     return <p className="os-demo-map__empty">Select a node to read its schema.</p>;
   }

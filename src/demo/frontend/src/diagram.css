@@ -1,0 +1,190 @@
+.os-demo-show {
+  display: flex;
+  border: 1px solid var(--rule);
+}
+
+.os-demo-show__option {
+  min-height: 2.25rem;
+  min-width: 5.5rem;
+  padding: 0 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.os-demo-show__option:hover {
+  background: var(--chip);
+}
+
+.os-demo-show__option--on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.os-demo-show__option--on:hover {
+  background: var(--accent-text);
+  color: var(--paper);
+}
+
+.os-demo-show__option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.os-demo-diagram .os-demo-map__viewport {
+  background: var(--paper-raised);
+}
+
+.os-demo-diagram__world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.os-demo-diagram__region {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ink);
+  border-radius: 22px;
+  background: transparent;
+  pointer-events: none;
+}
+
+.os-demo-diagram__region--system {
+  background-color: color-mix(in srgb, var(--accent) 10%, var(--paper-raised));
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 7px,
+    color-mix(in srgb, var(--accent) 32%, transparent) 7px,
+    color-mix(in srgb, var(--accent) 32%, transparent) 8px
+  );
+}
+
+.os-demo-diagram__region--docker {
+  background-color: color-mix(in srgb, #6a8eae 12%, var(--paper-raised));
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 7px,
+    color-mix(in srgb, #6a8eae 34%, transparent) 7px,
+    color-mix(in srgb, #6a8eae 34%, transparent) 8px
+  );
+}
+
+.os-demo-diagram__region--group {
+  border-radius: 16px;
+  border-width: 1px;
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+}
+
+.os-demo-diagram__region--box {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  padding: 0.4rem 0.7rem;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.os-demo-diagram__region--on,
+.os-demo-diagram__node--on,
+.os-demo-diagram__label--on {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.os-demo-diagram__edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+  color: var(--ink);
+}
+
+.os-demo-diagram__edge {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.os-demo-diagram__edge--on {
+  color: var(--accent);
+  stroke-width: 2.25;
+}
+
+.os-demo-diagram__edge--relation {
+  stroke-dasharray: 5 4;
+}
+
+.os-demo-diagram__edges marker path {
+  fill: currentColor;
+}
+
+.os-demo-diagram__label,
+.os-demo-diagram__node {
+  position: absolute;
+  box-sizing: border-box;
+  margin: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.os-demo-diagram__label {
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 0 0.45rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.os-demo-diagram__label--static {
+  cursor: default;
+}
+
+.os-demo-diagram__node {
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 0.2rem 0.55rem;
+  overflow: hidden;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.os-demo-diagram__node--head {
+  font-weight: 650;
+}
+
+.os-demo-diagram__node:hover,
+.os-demo-diagram__label:hover,
+.os-demo-diagram__region--box:hover {
+  border-color: var(--accent);
+}
+
+.os-demo-diagram__node:focus-visible,
+.os-demo-diagram__label:focus-visible,
+.os-demo-diagram__region--box:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .os-demo-diagram__world,
+  .os-demo-diagram__node,
+  .os-demo-diagram__label,
+  .os-demo-diagram__region {
+    transition: none;
+  }
+}
